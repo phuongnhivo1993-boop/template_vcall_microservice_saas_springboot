@@ -1,0 +1,407 @@
+Dựa chỉ trên 2 hợp đồng này (Alpha VCall + CareSoft Omnichannel), không xét các tài liệu Medihub247, DeepCare, CIS, EMR, Telemedicine trước đó, thì hệ thống cần xây dựng thực chất là:
+
+Bài toán Business
+Hệ thống Contact Center Healthcare
+
+Cho phép:
+
+Tổng đài Call Center
+SIP Trunk
+Mobile SIP
+IP PBX
+Contact Center
+CRM khách hàng
+Ticket CSKH
+Omnichannel Chat
+Fanpage
+Email
+SMS
+Call Recording
+Agent Management
+Campaign Calling
+CDR Billing
+Monitoring
+Reporting
+
+Theo hợp đồng:
+
+Alpha VCall cung cấp VoIP, SIP, Audio Call, Video Call, Recording, PBX.
+CareSoft cung cấp Omnichannel CSKH gồm:
+Live Chat
+Fanpage
+Email
+SMS
+IP PBX
+Agent Management
+Kiến trúc tổng thể
+                    Internet
+                         |
+                  API Gateway
+                         |
+--------------------------------------------------
+|        Contact Center Platform                  |
+--------------------------------------------------
+
+ IAM Service
+ Agent Service
+ Customer Service
+ CRM Service
+ Ticket Service
+ Call Service
+ SIP Service
+ PBX Service
+ Recording Service
+ Omnichannel Service
+ Chat Service
+ Email Service
+ SMS Service
+ Campaign Service
+ Billing Service
+ CDR Service
+ Reporting Service
+ Notification Service
+ Audit Service
+
+--------------------------------------------------
+
+ Redis
+ Kafka
+ PostgreSQL
+ ElasticSearch
+ MinIO
+Bounded Context
+1. Identity Context
+
+Quản lý người dùng
+
+Roles
+Super Admin
+Supervisor
+Agent
+QA
+Finance
+Customer
+Service
+iam-service
+2. Agent Context
+
+Theo hợp đồng:
+
+Agent = Điện thoại viên
+Chức năng
+Tạo Agent
+Kích hoạt
+Phân nhóm
+Chấm công
+Trạng thái Online
+Service
+agent-service
+Tables
+agents
+agent_groups
+agent_status
+agent_sessions
+3. Customer Context
+Chức năng
+Quản lý khách hàng
+Service
+customer-service
+Tables
+customers
+customer_contacts
+customer_addresses
+4. CRM Context
+
+Từ CareSoft.
+
+Chức năng
+Lead
+Opportunity
+Customer Journey
+Customer Note
+Service
+crm-service
+Tables
+leads
+opportunities
+activities
+customer_notes
+5. Contact Center Context
+
+Core business.
+
+Chức năng
+Inbound Call
+Outbound Call
+Queue
+IVR
+ACD
+Service
+call-service
+6. SIP Management Context
+
+Từ Alpha VCall.
+
+Quản lý
+Mobile SIP
+SIP Account
+SIP Registration
+Service
+sip-service
+Tables
+sip_accounts
+sip_devices
+sip_registration
+7. PBX Context
+
+Theo hợp đồng:
+
+IP PBX
+Máy nhánh
+Chức năng
+Extension
+Queue
+Ring Group
+IVR
+Service
+pbx-service
+Tables
+extensions
+queues
+ring_groups
+ivr_flows
+8. Call Recording Context
+
+Theo hợp đồng:
+
+Ghi âm cuộc gọi
+Chức năng
+Recording
+Playback
+Download
+Retention Policy
+Service
+recording-service
+Storage
+MinIO
+S3
+Tables
+recordings
+recording_metadata
+9. Omnichannel Context
+
+Theo hợp đồng CareSoft.
+
+Channels
+Facebook Fanpage
+Live Chat
+Email
+SMS
+Call
+Service
+omnichannel-service
+Chức năng
+Đồng bộ hội thoại
+Gán Agent
+Routing
+10. Chat Context
+Chức năng
+Website Chat
+Mobile Chat
+Service
+chat-service
+Tables
+conversations
+messages
+attachments
+11. Email Context
+Chức năng
+Inbound Email
+Outbound Email
+Template
+Service
+email-service
+12. SMS Context
+
+Theo hợp đồng:
+
+Brand Name SMS
+Chức năng
+Send SMS
+SMS Campaign
+SMS Template
+Service
+sms-service
+13. Ticket Context
+
+Sau mỗi cuộc gọi hoặc chat.
+
+Chức năng
+Ticket
+Escalation
+SLA
+Service
+ticket-service
+Tables
+tickets
+ticket_comments
+ticket_status
+sla_rules
+14. Campaign Context
+
+Theo mô hình outbound call center.
+
+Chức năng
+Auto Dialer
+Campaign
+Contact List
+Service
+campaign-service
+Tables
+campaigns
+campaign_members
+campaign_results
+15. Billing Context
+
+Theo hợp đồng có:
+
+CCC
+SIP
+Thuê bao tháng
+Phút gọi
+Recording
+Service
+billing-service
+Chức năng
+Tính cước
+Invoice
+Usage
+Tables
+pricing_plans
+subscriptions
+invoices
+invoice_items
+16. CDR Context
+
+Hợp đồng yêu cầu:
+
+CDR
+Call Detail Record
+Service
+cdr-service
+Chức năng
+Import CDR
+Reconciliation
+Rating
+Tables
+cdr_records
+cdr_summary
+Scale
+
+CDR nên lưu:
+
+ClickHouse
+
+thay vì PostgreSQL.
+
+17. Reporting Context
+Dashboard
+Tổng cuộc gọi
+Cuộc gọi thành công
+Cuộc gọi thất bại
+Agent Performance
+SLA
+Chi phí
+Service
+reporting-service
+18. Notification Context
+Chức năng
+SMS
+Email
+Push
+Service
+notification-service
+19. Audit Context
+
+Theo hợp đồng có:
+
+Logging
+Kiểm tra gian lận
+Đối soát
+Truy xuất CDR
+Service
+audit-service
+Tables
+audit_logs
+security_logs
+Kiến trúc Event Driven
+
+Kafka Topics
+
+agent.created
+
+customer.created
+
+call.started
+
+call.answered
+
+call.ended
+
+call.recorded
+
+cdr.generated
+
+ticket.created
+
+ticket.closed
+
+chat.started
+
+chat.closed
+
+email.received
+
+sms.sent
+
+campaign.started
+
+campaign.finished
+
+invoice.created
+
+payment.completed
+Hạ tầng đề xuất
+Backend
+Java 21
+Spring Boot 3
+Spring Cloud
+Voice Platform
+Kamailio
+FreeSWITCH
+
+hoặc
+
+Kamailio
+Asterisk
+Database
+OLTP
+PostgreSQL
+CDR
+ClickHouse
+Cache
+Redis
+Search
+ElasticSearch
+File
+MinIO
+Quy mô Microservice
+Domain	Service
+Core Voice	5
+CRM	4
+Omnichannel	4
+Billing	2
+Platform	4
+Tổng	~19 Service
+
+Đây là kiến trúc phù hợp nếu xây dựng lại toàn bộ nền tảng Alpha VCall + CareSoft từ đầu theo mô hình SaaS Contact Center, phục vụ các doanh nghiệp như Medihub, bệnh viện, phòng khám hoặc tổng đài chăm sóc khách hàng quy mô lớn.
