@@ -13,7 +13,7 @@
     <packaging>jar</packaging>
 
     <name>SIP Service</name>
-    <description>SIP Account, Device & Registration Management</description>
+    <description>SIP Account, Device &amp; Registration Management</description>
 
     <dependencies>
         <dependency>
@@ -48,6 +48,7 @@
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
+            <version>${mapstruct.version}</version>
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -57,6 +58,7 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
         </dependency>
         <dependency>
             <groupId>com.vcall</groupId>

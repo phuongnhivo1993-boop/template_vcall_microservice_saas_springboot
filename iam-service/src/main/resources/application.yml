@@ -4,10 +4,15 @@ server:
 spring:
   application:
     name: iam-service
+  config:
+    import: optional:configserver:http://localhost:8888
+  cloud:
+    config:
+      enabled: false
   datasource:
     url: jdbc:postgresql://localhost:5432/vcall_iam
-    username: postgres
-    password: postgres
+    username: vcall
+    password: vcall@123
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
