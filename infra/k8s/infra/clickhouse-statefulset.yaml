@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse
+  namespace: vcall
+spec:
+  selector:
+    app: clickhouse
+  ports:
+  - port: 8123
+    targetPort: 8123
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse
+  namespace: vcall
+spec:
+  serviceName: clickhouse
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clickhouse
+  template:
+    metadata:
+      labels:
+        app: clickhouse
+    spec:
+      containers:
+      - name: clickhouse
+        image: clickhouse/clickhouse-server:latest
+        ports:
+        - containerPort: 8123
+        readinessProbe:
+          tcpSocket:
+            port: 8123
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/clickhouse
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi

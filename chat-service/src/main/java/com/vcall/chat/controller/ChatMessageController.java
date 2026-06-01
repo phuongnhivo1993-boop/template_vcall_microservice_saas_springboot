@@ -1,0 +1,48 @@
+package com.vcall.chat.controller;
+
+import com.vcall.chat.dto.ChatMessageRequest;
+import com.vcall.chat.dto.ChatMessageResponse;
+import com.vcall.chat.service.ChatMessageService;
+import com.vcall.common.dto.ApiResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/chat/conversations/{id}/messages")
+@RequiredArgsConstructor
+public class ChatMessageController {
+
+    private final ChatMessageService chatMessageService;
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<ChatMessageResponse>> sendMessage(
+            @PathVariable UUID id, @Valid @RequestBody ChatMessageRequest request) {
+        ChatMessageResponse response = chatMessageService.sendMessage(id, request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Message sent successfully", response));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<ChatMessageResponse>>> getMessages(@PathVariable UUID id) {
+        List<ChatMessageResponse> messages = chatMessageService.getMessages(id);
+        return ResponseEntity.ok(ApiResponse.success(messages));
+    }
+
+    @GetMapping("/unread-count")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getUnreadCount(@PathVariable UUID id) {
+        long count = chatMessageService.getUnreadCount(id);
+        return ResponseEntity.ok(ApiResponse.success(Map.of("unreadCount", count)));
+    }
+}

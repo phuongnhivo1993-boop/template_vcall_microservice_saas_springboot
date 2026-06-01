@@ -1,0 +1,25 @@
+package com.vcall.chat.repository;
+
+import com.vcall.chat.entity.ChatConversation;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@Repository
+public interface ChatConversationRepository extends JpaRepository<ChatConversation, UUID> {
+
+    Optional<ChatConversation> findByConversationId(String conversationId);
+
+    List<ChatConversation> findByCustomerId(UUID customerId);
+
+    List<ChatConversation> findByAgentId(UUID agentId);
+
+    List<ChatConversation> findByStatus(ChatConversation.Status status);
+
+    List<ChatConversation> findByStatusAndSource(ChatConversation.Status status, ChatConversation.Source source);
+
+    long countByStatus(ChatConversation.Status status);
+}

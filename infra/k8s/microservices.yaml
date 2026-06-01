@@ -1,0 +1,1348 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iam-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: iam-service
+  template:
+    metadata:
+      labels:
+        app: iam-service
+    spec:
+      containers:
+      - name: iam-service
+        image: vcall/iam-service:latest
+        ports:
+        - containerPort: 8101
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_iam
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8101
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8101
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: iam-service
+  namespace: vcall
+spec:
+  selector:
+    app: iam-service
+  ports:
+  - port: 8101
+    targetPort: 8101
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: agent-service
+  template:
+    metadata:
+      labels:
+        app: agent-service
+    spec:
+      containers:
+      - name: agent-service
+        image: vcall/agent-service:latest
+        ports:
+        - containerPort: 8102
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_agent
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8102
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8102
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-service
+  namespace: vcall
+spec:
+  selector:
+    app: agent-service
+  ports:
+  - port: 8102
+    targetPort: 8102
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: customer-service
+  template:
+    metadata:
+      labels:
+        app: customer-service
+    spec:
+      containers:
+      - name: customer-service
+        image: vcall/customer-service:latest
+        ports:
+        - containerPort: 8103
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_customer
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8103
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8103
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-service
+  namespace: vcall
+spec:
+  selector:
+    app: customer-service
+  ports:
+  - port: 8103
+    targetPort: 8103
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crm-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: crm-service
+  template:
+    metadata:
+      labels:
+        app: crm-service
+    spec:
+      containers:
+      - name: crm-service
+        image: vcall/crm-service:latest
+        ports:
+        - containerPort: 8104
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_crm
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8104
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8104
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crm-service
+  namespace: vcall
+spec:
+  selector:
+    app: crm-service
+  ports:
+  - port: 8104
+    targetPort: 8104
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: call-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: call-service
+  template:
+    metadata:
+      labels:
+        app: call-service
+    spec:
+      containers:
+      - name: call-service
+        image: vcall/call-service:latest
+        ports:
+        - containerPort: 8105
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_call
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8105
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8105
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: call-service
+  namespace: vcall
+spec:
+  selector:
+    app: call-service
+  ports:
+  - port: 8105
+    targetPort: 8105
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sip-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sip-service
+  template:
+    metadata:
+      labels:
+        app: sip-service
+    spec:
+      containers:
+      - name: sip-service
+        image: vcall/sip-service:latest
+        ports:
+        - containerPort: 8106
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_sip
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8106
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8106
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sip-service
+  namespace: vcall
+spec:
+  selector:
+    app: sip-service
+  ports:
+  - port: 8106
+    targetPort: 8106
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pbx-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pbx-service
+  template:
+    metadata:
+      labels:
+        app: pbx-service
+    spec:
+      containers:
+      - name: pbx-service
+        image: vcall/pbx-service:latest
+        ports:
+        - containerPort: 8107
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_pbx
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8107
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8107
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pbx-service
+  namespace: vcall
+spec:
+  selector:
+    app: pbx-service
+  ports:
+  - port: 8107
+    targetPort: 8107
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recording-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: recording-service
+  template:
+    metadata:
+      labels:
+        app: recording-service
+    spec:
+      containers:
+      - name: recording-service
+        image: vcall/recording-service:latest
+        ports:
+        - containerPort: 8108
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_recording
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8108
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8108
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recording-service
+  namespace: vcall
+spec:
+  selector:
+    app: recording-service
+  ports:
+  - port: 8108
+    targetPort: 8108
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: omnichannel-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: omnichannel-service
+  template:
+    metadata:
+      labels:
+        app: omnichannel-service
+    spec:
+      containers:
+      - name: omnichannel-service
+        image: vcall/omnichannel-service:latest
+        ports:
+        - containerPort: 8109
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_omnichannel
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8109
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8109
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: omnichannel-service
+  namespace: vcall
+spec:
+  selector:
+    app: omnichannel-service
+  ports:
+  - port: 8109
+    targetPort: 8109
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: chat-service
+  template:
+    metadata:
+      labels:
+        app: chat-service
+    spec:
+      containers:
+      - name: chat-service
+        image: vcall/chat-service:latest
+        ports:
+        - containerPort: 8110
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_chat
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8110
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8110
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-service
+  namespace: vcall
+spec:
+  selector:
+    app: chat-service
+  ports:
+  - port: 8110
+    targetPort: 8110
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: email-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: email-service
+  template:
+    metadata:
+      labels:
+        app: email-service
+    spec:
+      containers:
+      - name: email-service
+        image: vcall/email-service:latest
+        ports:
+        - containerPort: 8111
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_email
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8111
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8111
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: email-service
+  namespace: vcall
+spec:
+  selector:
+    app: email-service
+  ports:
+  - port: 8111
+    targetPort: 8111
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sms-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sms-service
+  template:
+    metadata:
+      labels:
+        app: sms-service
+    spec:
+      containers:
+      - name: sms-service
+        image: vcall/sms-service:latest
+        ports:
+        - containerPort: 8112
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_sms
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8112
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8112
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sms-service
+  namespace: vcall
+spec:
+  selector:
+    app: sms-service
+  ports:
+  - port: 8112
+    targetPort: 8112
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticket-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ticket-service
+  template:
+    metadata:
+      labels:
+        app: ticket-service
+    spec:
+      containers:
+      - name: ticket-service
+        image: vcall/ticket-service:latest
+        ports:
+        - containerPort: 8113
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_ticket
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8113
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8113
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ticket-service
+  namespace: vcall
+spec:
+  selector:
+    app: ticket-service
+  ports:
+  - port: 8113
+    targetPort: 8113
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: campaign-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: campaign-service
+  template:
+    metadata:
+      labels:
+        app: campaign-service
+    spec:
+      containers:
+      - name: campaign-service
+        image: vcall/campaign-service:latest
+        ports:
+        - containerPort: 8114
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_campaign
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8114
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8114
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: campaign-service
+  namespace: vcall
+spec:
+  selector:
+    app: campaign-service
+  ports:
+  - port: 8114
+    targetPort: 8114
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: billing-service
+  template:
+    metadata:
+      labels:
+        app: billing-service
+    spec:
+      containers:
+      - name: billing-service
+        image: vcall/billing-service:latest
+        ports:
+        - containerPort: 8115
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_billing
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8115
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8115
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: billing-service
+  namespace: vcall
+spec:
+  selector:
+    app: billing-service
+  ports:
+  - port: 8115
+    targetPort: 8115
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdr-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cdr-service
+  template:
+    metadata:
+      labels:
+        app: cdr-service
+    spec:
+      containers:
+      - name: cdr-service
+        image: vcall/cdr-service:latest
+        ports:
+        - containerPort: 8116
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_cdr
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8116
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8116
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cdr-service
+  namespace: vcall
+spec:
+  selector:
+    app: cdr-service
+  ports:
+  - port: 8116
+    targetPort: 8116
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reporting-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: reporting-service
+  template:
+    metadata:
+      labels:
+        app: reporting-service
+    spec:
+      containers:
+      - name: reporting-service
+        image: vcall/reporting-service:latest
+        ports:
+        - containerPort: 8117
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_reporting
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8117
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8117
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reporting-service
+  namespace: vcall
+spec:
+  selector:
+    app: reporting-service
+  ports:
+  - port: 8117
+    targetPort: 8117
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+      - name: notification-service
+        image: vcall/notification-service:latest
+        ports:
+        - containerPort: 8118
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_notification
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8118
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8118
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: vcall
+spec:
+  selector:
+    app: notification-service
+  ports:
+  - port: 8118
+    targetPort: 8118
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-service
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: audit-service
+  template:
+    metadata:
+      labels:
+        app: audit-service
+    spec:
+      containers:
+      - name: audit-service
+        image: vcall/audit-service:latest
+        ports:
+        - containerPort: 8119
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_DATASOURCE_URL
+          value: jdbc:postgresql://postgresql:5432/vcall_audit
+        - name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: username
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vcall-db-secret
+              key: password
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+          value: kafka:9092
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8119
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8119
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: audit-service
+  namespace: vcall
+spec:
+  selector:
+    app: audit-service
+  ports:
+  - port: 8119
+    targetPort: 8119

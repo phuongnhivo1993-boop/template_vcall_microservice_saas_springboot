@@ -1,0 +1,97 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: iam-service
+          uri: lb://iam-service
+          predicates:
+            - Path=/api/v1/auth/**, /api/v1/users/**
+        - id: agent-service
+          uri: lb://agent-service
+          predicates:
+            - Path=/api/v1/agents/**
+        - id: customer-service
+          uri: lb://customer-service
+          predicates:
+            - Path=/api/v1/customers/**
+        - id: crm-service
+          uri: lb://crm-service
+          predicates:
+            - Path=/api/v1/crm/**
+        - id: call-service
+          uri: lb://call-service
+          predicates:
+            - Path=/api/v1/calls/**
+        - id: sip-service
+          uri: lb://sip-service
+          predicates:
+            - Path=/api/v1/sip/**
+        - id: pbx-service
+          uri: lb://pbx-service
+          predicates:
+            - Path=/api/v1/pbx/**
+        - id: recording-service
+          uri: lb://recording-service
+          predicates:
+            - Path=/api/v1/recordings/**
+        - id: omnichannel-service
+          uri: lb://omnichannel-service
+          predicates:
+            - Path=/api/v1/omnichannel/**
+        - id: chat-service
+          uri: lb://chat-service
+          predicates:
+            - Path=/api/v1/chat/**
+        - id: email-service
+          uri: lb://email-service
+          predicates:
+            - Path=/api/v1/email/**
+        - id: sms-service
+          uri: lb://sms-service
+          predicates:
+            - Path=/api/v1/sms/**
+        - id: ticket-service
+          uri: lb://ticket-service
+          predicates:
+            - Path=/api/v1/tickets/**
+        - id: campaign-service
+          uri: lb://campaign-service
+          predicates:
+            - Path=/api/v1/campaigns/**
+        - id: billing-service
+          uri: lb://billing-service
+          predicates:
+            - Path=/api/v1/billing/**
+        - id: cdr-service
+          uri: lb://cdr-service
+          predicates:
+            - Path=/api/v1/cdr/**
+        - id: reporting-service
+          uri: lb://reporting-service
+          predicates:
+            - Path=/api/v1/reports/**
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notifications/**
+        - id: audit-service
+          uri: lb://audit-service
+          predicates:
+            - Path=/api/v1/audit/**
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs

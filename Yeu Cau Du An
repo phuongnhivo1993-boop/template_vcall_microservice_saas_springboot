@@ -405,3 +405,4 @@ Platform	4
 Tổng	~19 Service
 
 Đây là kiến trúc phù hợp nếu xây dựng lại toàn bộ nền tảng Alpha VCall + CareSoft từ đầu theo mô hình SaaS Contact Center, phục vụ các doanh nghiệp như Medihub, bệnh viện, phòng khám hoặc tổng đài chăm sóc khách hàng quy mô lớn.
+Chu y he thong saas moi service 1 db, Microservice, springboot, nextjs, mobile expo router

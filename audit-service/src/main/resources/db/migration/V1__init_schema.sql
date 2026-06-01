@@ -1,0 +1,82 @@
+CREATE TABLE audit_logs (
+    id BIGSERIAL PRIMARY KEY,
+    actor_id UUID,
+    actor_type VARCHAR(50),
+    action VARCHAR(100) NOT NULL,
+    resource_type VARCHAR(100) NOT NULL,
+    resource_id VARCHAR(255),
+    detail TEXT,
+    old_value TEXT,
+    new_value TEXT,
+    ip_address VARCHAR(45),
+    user_agent VARCHAR(500),
+    request_id VARCHAR(100),
+    tenant_id UUID,
+    occurred_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP,
+    created_by VARCHAR(100),
+    updated_by VARCHAR(100),
+    is_deleted BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE security_logs (
+    id BIGSERIAL PRIMARY KEY,
+    event_type VARCHAR(100) NOT NULL,
+    severity VARCHAR(20) NOT NULL DEFAULT 'INFO',
+    actor_id UUID,
+    actor_username VARCHAR(100),
+    source_ip VARCHAR(45),
+    action VARCHAR(100),
+    resource_type VARCHAR(100),
+    resource_id VARCHAR(255),
+    detail TEXT,
+    outcome VARCHAR(20),
+    tenant_id UUID,
+    occurred_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP,
+    created_by VARCHAR(100),
+    updated_by VARCHAR(100),
+    is_deleted BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE fraud_alerts (
+    id BIGSERIAL PRIMARY KEY,
+    alert_type VARCHAR(100) NOT NULL,
+    severity VARCHAR(20) NOT NULL DEFAULT 'MEDIUM',
+    rule_name VARCHAR(100),
+    description TEXT NOT NULL,
+    entity_type VARCHAR(50),
+    entity_id VARCHAR(255),
+    detail TEXT,
+    status VARCHAR(20) DEFAULT 'OPEN',
+    reviewed_by UUID,
+    reviewed_at TIMESTAMP,
+    resolution TEXT,
+    tenant_id UUID,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP,
+    created_by VARCHAR(100),
+    updated_by VARCHAR(100),
+    is_deleted BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE reconciliation_audits (
+    id BIGSERIAL PRIMARY KEY,
+    reconciliation_type VARCHAR(50) NOT NULL,
+    source_data TEXT,
+    target_data TEXT,
+    status VARCHAR(20) DEFAULT 'PENDING',
+    discrepancies TEXT,
+    matched_count INT DEFAULT 0,
+    unmatched_count INT DEFAULT 0,
+    started_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    error_message TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP,
+    created_by VARCHAR(100),
+    updated_by VARCHAR(100),
+    is_deleted BOOLEAN DEFAULT FALSE
+);

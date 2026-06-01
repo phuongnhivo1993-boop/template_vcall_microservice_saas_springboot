@@ -1,0 +1,14 @@
+package com.vcall.omnichannel.repository;
+
+import com.vcall.omnichannel.entity.ChannelConfig;
+import com.vcall.omnichannel.entity.Conversation.Channel;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface ChannelConfigRepository extends JpaRepository<ChannelConfig, Long> {
+
+    Optional<ChannelConfig> findByChannel(Channel channel);
+}

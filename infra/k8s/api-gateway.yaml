@@ -1,0 +1,145 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-gateway-config
+  namespace: vcall
+data:
+  application.yml: |
+    server:
+      port: 8080
+    spring:
+      cloud:
+        gateway:
+          routes:
+            - id: iam-service
+              uri: lb://iam-service
+              predicates:
+                - Path=/api/v1/auth/**, /api/v1/users/**
+            - id: agent-service
+              uri: lb://agent-service
+              predicates:
+                - Path=/api/v1/agents/**
+            - id: customer-service
+              uri: lb://customer-service
+              predicates:
+                - Path=/api/v1/customers/**
+            - id: crm-service
+              uri: lb://crm-service
+              predicates:
+                - Path=/api/v1/crm/**
+            - id: call-service
+              uri: lb://call-service
+              predicates:
+                - Path=/api/v1/calls/**
+            - id: sip-service
+              uri: lb://sip-service
+              predicates:
+                - Path=/api/v1/sip/**
+            - id: pbx-service
+              uri: lb://pbx-service
+              predicates:
+                - Path=/api/v1/pbx/**
+            - id: recording-service
+              uri: lb://recording-service
+              predicates:
+                - Path=/api/v1/recordings/**
+            - id: omnichannel-service
+              uri: lb://omnichannel-service
+              predicates:
+                - Path=/api/v1/omnichannel/**
+            - id: chat-service
+              uri: lb://chat-service
+              predicates:
+                - Path=/api/v1/chat/**
+            - id: email-service
+              uri: lb://email-service
+              predicates:
+                - Path=/api/v1/email/**
+            - id: sms-service
+              uri: lb://sms-service
+              predicates:
+                - Path=/api/v1/sms/**
+            - id: ticket-service
+              uri: lb://ticket-service
+              predicates:
+                - Path=/api/v1/tickets/**
+            - id: campaign-service
+              uri: lb://campaign-service
+              predicates:
+                - Path=/api/v1/campaigns/**
+            - id: billing-service
+              uri: lb://billing-service
+              predicates:
+                - Path=/api/v1/billing/**
+            - id: cdr-service
+              uri: lb://cdr-service
+              predicates:
+                - Path=/api/v1/cdr/**
+            - id: reporting-service
+              uri: lb://reporting-service
+              predicates:
+                - Path=/api/v1/reports/**
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/api/v1/notifications/**
+            - id: audit-service
+              uri: lb://audit-service
+              predicates:
+                - Path=/api/v1/audit/**
+    eureka:
+      client:
+        serviceUrl:
+          defaultZone: http://service-registry:8761/eureka/
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: vcall
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+      - name: api-gateway
+        image: vcall/api-gateway:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: k8s
+        - name: SPRING_CONFIG_IMPORT
+          value: configmap:api-gateway-config
+        - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+          value: http://service-registry:8761/eureka/
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: vcall
+spec:
+  selector:
+    app: api-gateway
+  ports:
+  - port: 8080
+    targetPort: 8080
