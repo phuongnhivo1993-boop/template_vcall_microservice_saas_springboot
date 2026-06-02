@@ -14,6 +14,8 @@ import com.vcall.ticket.repository.SlaBreachRepository;
 import com.vcall.ticket.repository.SlaRuleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,6 +64,11 @@ public class SlaService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public Page<SlaRuleResponse> getAllRules(Pageable pageable) {
+        return slaRuleRepository.findAll(pageable).map(this::toResponse);
+    }
+
     @Transactional
     public SlaRuleResponse updateRule(Long id, SlaRuleRequest request) {
         SlaRule rule = slaRuleRepository.findById(id)
@@ -93,6 +100,11 @@ public class SlaService {
         return slaRuleRepository.findByIsActiveTrue().stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SlaRuleResponse> getActiveRules(Pageable pageable) {
+        return slaRuleRepository.findByIsActiveTrue(pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

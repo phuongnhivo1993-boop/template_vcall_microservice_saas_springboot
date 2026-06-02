@@ -6,6 +6,8 @@ import com.vcall.ticket.dto.SlaRuleResponse;
 import com.vcall.ticket.service.SlaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,8 +18,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/sla-rules")
@@ -34,8 +34,8 @@ public class SlaRuleController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SlaRuleResponse>>> getAllRules() {
-        List<SlaRuleResponse> rules = slaService.getAllRules();
+    public ResponseEntity<ApiResponse<Page<SlaRuleResponse>>> getAllRules(Pageable pageable) {
+        Page<SlaRuleResponse> rules = slaService.getAllRules(pageable);
         return ResponseEntity.ok(ApiResponse.success(rules));
     }
 
@@ -59,8 +59,8 @@ public class SlaRuleController {
     }
 
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<SlaRuleResponse>>> getActiveRules() {
-        List<SlaRuleResponse> rules = slaService.getActiveRules();
+    public ResponseEntity<ApiResponse<Page<SlaRuleResponse>>> getActiveRules(Pageable pageable) {
+        Page<SlaRuleResponse> rules = slaService.getActiveRules(pageable);
         return ResponseEntity.ok(ApiResponse.success(rules));
     }
 

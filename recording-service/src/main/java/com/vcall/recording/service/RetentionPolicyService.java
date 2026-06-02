@@ -9,6 +9,8 @@ import com.vcall.recording.repository.RecordingRepository;
 import com.vcall.recording.repository.RetentionPolicyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,6 +51,11 @@ public class RetentionPolicyService {
         return retentionPolicyRepository.findAll().stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RetentionPolicyResponse> getAllPolicies(Pageable pageable) {
+        return retentionPolicyRepository.findAll(pageable).map(this::toResponse);
     }
 
     @Transactional

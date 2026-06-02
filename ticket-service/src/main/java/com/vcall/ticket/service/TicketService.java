@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -170,7 +171,8 @@ public class TicketService {
     }
 
     @Transactional(readOnly = true)
-    public Page<TicketResponse> search(String q, String status, String priority, UUID assignedTo, Pageable pageable) {
+    public Page<TicketResponse> search(String q, String status, String priority, UUID assignedTo,
+                                       LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
         Specification<Ticket> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -190,6 +192,13 @@ public class TicketService {
             }
             if (assignedTo != null) {
                 predicates.add(cb.equal(root.get("assignedTo"), assignedTo));
+            }
+            if (startDate != null && endDate != null) {
+                predicates.add(cb.between(root.get("createdAt"), startDate, endDate));
+            } else if (startDate != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), startDate));
+            } else if (endDate != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), endDate));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

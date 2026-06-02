@@ -15,6 +15,7 @@ import {
   BarChartOutlined,
   SettingOutlined,
   AuditOutlined,
+  BellOutlined,
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
@@ -29,6 +30,7 @@ const menuItems = [
   { key: '/campaigns', icon: <BulbOutlined />, label: 'Campaigns' },
   { key: '/billing', icon: <DollarOutlined />, label: 'Billing' },
   { key: '/reports', icon: <BarChartOutlined />, label: 'Reports' },
+  { key: '/notifications', icon: <BellOutlined />, label: 'Notifications' },
   { key: '/settings', icon: <SettingOutlined />, label: 'Settings' },
   { key: '/audit', icon: <AuditOutlined />, label: 'Audit' },
 ];
