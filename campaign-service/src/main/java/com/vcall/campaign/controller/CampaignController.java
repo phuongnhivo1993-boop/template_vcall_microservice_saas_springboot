@@ -3,12 +3,18 @@ package com.vcall.campaign.controller;
 import com.vcall.campaign.dto.CampaignRequest;
 import com.vcall.campaign.dto.CampaignResponse;
 import com.vcall.campaign.dto.CampaignStatusRequest;
+import com.vcall.campaign.entity.Campaign;
 import com.vcall.campaign.service.CampaignService;
 import com.vcall.common.dto.ApiResponse;
+import com.vcall.common.util.CsvExportUtil;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,8 +24,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -91,5 +101,49 @@ public class CampaignController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getCampaignStats(@PathVariable Long id) {
         Map<String, Object> stats = campaignService.getStats(id);
         return ResponseEntity.ok(ApiResponse.success(stats));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<CampaignResponse>>> searchCampaigns(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String type,
+            Pageable pageable) {
+        Specification<Campaign> spec = Specification.where(null);
+        if (keyword != null && !keyword.isEmpty()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.or(
+                            cb.like(cb.lower(root.get("name")), "%" + keyword.toLowerCase() + "%"),
+                            cb.like(cb.lower(root.get("description")), "%" + keyword.toLowerCase() + "%")
+                    ));
+        }
+        if (status != null && !status.isEmpty()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(cb.lower(root.get("status").as(String.class)), status.toLowerCase()));
+        }
+        if (type != null && !type.isEmpty()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(cb.lower(root.get("type").as(String.class)), type.toLowerCase()));
+        }
+        Page<CampaignResponse> result = campaignService.searchCampaigns(spec, pageable);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @GetMapping("/export/csv")
+    public void exportCampaignsCsv(@RequestParam(required = false) String keyword,
+                                    HttpServletResponse response) throws IOException {
+        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Page<CampaignResponse> campaigns;
+        if (keyword != null && !keyword.isEmpty()) {
+            Specification<Campaign> spec = (root, query, cb) ->
+                    cb.like(cb.lower(root.get("name")), "%" + keyword.toLowerCase() + "%");
+            campaigns = campaignService.searchCampaigns(spec, pageable);
+        } else {
+            campaigns = campaignService.getAllCampaigns(pageable);
+        }
+        List<String> headers = Arrays.asList("ID", "Name", "Type", "Status", "Strategy", "Start", "End", "Created At");
+        List<List<String>> rows = CsvExportUtil.toRows(campaigns.getContent(),
+                Arrays.asList("id", "name", "type", "status", "strategy", "scheduleStart", "scheduleEnd", "createdAt"));
+        CsvExportUtil.writeCsv(response, "campaigns.csv", headers, rows);
     }
 }

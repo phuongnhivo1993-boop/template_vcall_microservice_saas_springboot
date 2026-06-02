@@ -16,6 +16,7 @@ import com.vcall.iam.repository.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -98,6 +99,11 @@ public class UserService {
     @Transactional(readOnly = true)
     public Page<UserResponse> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable).map(this::toUserResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<UserResponse> searchUsers(Specification<com.vcall.iam.entity.User> spec, Pageable pageable) {
+        return userRepository.findAll(spec, pageable).map(this::toUserResponse);
     }
 
     @Transactional

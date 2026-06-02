@@ -14,7 +14,7 @@ export const loginUser = createAsyncThunk(
   'auth/login',
   async (credentials: { email: string; password: string }, { rejectWithValue }) => {
     try {
-      const response = await authApi.login({ username: credentials.email, password: credentials.password });
+      const response = await authApi.login({ email: credentials.email, password: credentials.password });
       const { token, user } = response.data;
       await SecureStore.setItemAsync('auth_token', token);
       return { token, user };

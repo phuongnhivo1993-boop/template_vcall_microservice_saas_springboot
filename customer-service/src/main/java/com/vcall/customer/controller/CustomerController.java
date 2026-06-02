@@ -2,6 +2,7 @@ package com.vcall.customer.controller;
 
 import com.vcall.common.dto.ApiResponse;
 import com.vcall.common.dto.PagedResponse;
+import com.vcall.common.util.CsvExportUtil;
 import com.vcall.customer.dto.CustomerAddressRequest;
 import com.vcall.customer.dto.CustomerContactRequest;
 import com.vcall.customer.dto.CustomerRequest;
@@ -12,6 +13,7 @@ import com.vcall.customer.kafka.CustomerEventPublisher;
 import com.vcall.customer.service.CustomerAddressService;
 import com.vcall.customer.service.CustomerContactService;
 import com.vcall.customer.service.CustomerService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,6 +31,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -142,8 +147,22 @@ public class CustomerController {
 
     @DeleteMapping("/{customerId}/addresses/{addressId}")
     public ResponseEntity<ApiResponse<Void>> removeAddress(@PathVariable UUID customerId,
-                                                            @PathVariable Long addressId) {
+                                                             @PathVariable Long addressId) {
         customerAddressService.removeAddress(addressId);
         return ResponseEntity.ok(ApiResponse.success("Address removed", null));
+    }
+
+    @GetMapping("/export/csv")
+    public void exportCsv(@RequestParam(defaultValue = "") String keyword,
+                          HttpServletResponse response) throws IOException {
+        List<CustomerResponse> customers;
+        if (!keyword.isEmpty()) {
+            customers = customerService.search(keyword, PageRequest.of(0, 10000)).getContent();
+        } else {
+            customers = customerService.findAll(PageRequest.of(0, 10000, Sort.by("createdAt").descending())).getContent();
+        }
+        List<String> headers = Arrays.asList("ID", "Full Name", "Email", "Phone", "Company", "Gender", "Status", "Created At");
+        List<List<String>> rows = CsvExportUtil.toRows(customers, Arrays.asList("id", "fullName", "email", "phone", "company", "gender", "status", "createdAt"));
+        CsvExportUtil.writeCsv(response, "customers.csv", headers, rows);
     }
 }
