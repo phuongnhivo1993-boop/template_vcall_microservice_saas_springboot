@@ -43,10 +43,6 @@ export default function InboxPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [messageInput, setMessageInput] = useState('');
 
-  useEffect(() => {
-    loadConversations();
-  }, [channelFilter, loadConversations]);
-
   const loadConversations = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -70,6 +66,10 @@ export default function InboxPage() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    loadConversations();
+  }, [channelFilter, loadConversations]);
 
   const getChannelIcon = (channel: string) => {
     const ch = CHANNELS.find(c => c.key === channel);

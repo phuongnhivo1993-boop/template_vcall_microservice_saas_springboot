@@ -47,6 +47,13 @@ export const Permissions = {
   SETTINGS_MANAGE: 'settings:manage',
 
   ADMIN_ACCESS: 'admin:access',
+
+  KNOWLEDGE_VIEW: 'knowledge:view',
+  KNOWLEDGE_CREATE: 'knowledge:create',
+  KNOWLEDGE_EDIT: 'knowledge:edit',
+  KNOWLEDGE_DELETE: 'knowledge:delete',
+
+  INBOX_VIEW: 'inbox:view',
 } as const;
 
 export type Permission = typeof Permissions[keyof typeof Permissions];
@@ -64,6 +71,8 @@ export const RolePermissions: Record<string, Permission[]> = {
     Permissions.REPORTS_VIEW, Permissions.REPORTS_EXPORT,
     Permissions.NOTIFICATION_VIEW, Permissions.NOTIFICATION_SEND,
     Permissions.SETTINGS_VIEW,
+    Permissions.KNOWLEDGE_VIEW, Permissions.KNOWLEDGE_CREATE, Permissions.KNOWLEDGE_EDIT,
+    Permissions.INBOX_VIEW,
   ],
   AGENT: [
     Permissions.CUSTOMER_VIEW, Permissions.CUSTOMER_CREATE,
@@ -71,6 +80,8 @@ export const RolePermissions: Record<string, Permission[]> = {
     Permissions.CALL_VIEW, Permissions.CALL_MANAGE,
     Permissions.TICKET_VIEW, Permissions.TICKET_CREATE,
     Permissions.NOTIFICATION_VIEW,
+    Permissions.KNOWLEDGE_VIEW,
+    Permissions.INBOX_VIEW,
   ],
   QA: [
     Permissions.CALL_VIEW,
