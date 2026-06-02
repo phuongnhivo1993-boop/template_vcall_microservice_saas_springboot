@@ -7,11 +7,10 @@ import com.vcall.omnichannel.entity.OmnichannelRoutingRule;
 import com.vcall.omnichannel.repository.OmnichannelRoutingRuleRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,16 +19,12 @@ public class RoutingRuleService {
     private final OmnichannelRoutingRuleRepository routingRuleRepository;
 
     @Transactional(readOnly = true)
-    public List<RoutingRuleResponse> getAll(Channel channel) {
-        List<OmnichannelRoutingRule> rules;
+    public Page<RoutingRuleResponse> getAll(Channel channel, Pageable pageable) {
         if (channel != null) {
-            rules = routingRuleRepository.findByChannelAndIsActiveTrueOrderByPriority(channel);
-        } else {
-            rules = routingRuleRepository.findAll();
+            return routingRuleRepository.findByChannelAndIsActiveTrueOrderByPriority(channel, pageable)
+                    .map(this::toResponse);
         }
-        return rules.stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return routingRuleRepository.findAll(pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

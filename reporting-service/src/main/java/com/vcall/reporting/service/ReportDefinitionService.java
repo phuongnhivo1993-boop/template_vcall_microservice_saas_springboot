@@ -8,10 +8,10 @@ import com.vcall.reporting.dto.ReportDefinitionResponse;
 import com.vcall.reporting.entity.ReportDefinition;
 import com.vcall.reporting.repository.ReportDefinitionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -58,18 +58,15 @@ public class ReportDefinitionService {
     }
 
     @Transactional(readOnly = true)
-    public List<ReportDefinitionResponse> getAllReports() {
-        return reportDefinitionRepository.findByIsActiveTrue().stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<ReportDefinitionResponse> getAllReports(Pageable pageable) {
+        return reportDefinitionRepository.findByIsActiveTrue(pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<ReportDefinitionResponse> getReportsByType(String reportType) {
-        return reportDefinitionRepository.findByReportType(ReportDefinition.ReportType.valueOf(reportType.toUpperCase()))
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<ReportDefinitionResponse> getReportsByType(String reportType, Pageable pageable) {
+        return reportDefinitionRepository.findByReportType(ReportDefinition.ReportType.valueOf(reportType.toUpperCase()), pageable)
+                .map(this::toResponse);
     }
 
     @Transactional

@@ -5,6 +5,8 @@ import com.vcall.audit.entity.SecurityLog;
 import com.vcall.audit.service.SecurityLogService;
 import com.vcall.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,8 +21,8 @@ public class SecurityLogController {
     private final SecurityLogService securityLogService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SecurityLogResponse>>> getAllLogs() {
-        List<SecurityLogResponse> responses = securityLogService.getAllLogs();
+    public ResponseEntity<ApiResponse<Page<SecurityLogResponse>>> getAllLogs(Pageable pageable) {
+        Page<SecurityLogResponse> responses = securityLogService.getAllLogs(pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
@@ -31,10 +33,10 @@ public class SecurityLogController {
     }
 
     @GetMapping("/events/{eventType}")
-    public ResponseEntity<ApiResponse<List<SecurityLogResponse>>> getByEventType(
-            @PathVariable String eventType) {
+    public ResponseEntity<ApiResponse<Page<SecurityLogResponse>>> getByEventType(
+            @PathVariable String eventType, Pageable pageable) {
         SecurityLog.EventType type = SecurityLog.EventType.valueOf(eventType.toUpperCase());
-        List<SecurityLogResponse> responses = securityLogService.getByEventType(type);
+        Page<SecurityLogResponse> responses = securityLogService.getByEventType(type, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 

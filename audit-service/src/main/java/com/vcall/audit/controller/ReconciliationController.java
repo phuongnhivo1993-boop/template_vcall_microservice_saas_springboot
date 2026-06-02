@@ -5,11 +5,12 @@ import com.vcall.audit.entity.ReconciliationAudit;
 import com.vcall.audit.service.ReconciliationAuditService;
 import com.vcall.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -37,15 +38,16 @@ public class ReconciliationController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ReconciliationAuditResponse>>> getReconciliations(
+    public ResponseEntity<ApiResponse<Page<ReconciliationAuditResponse>>> getReconciliations(
             @RequestParam(required = false) String type,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status,
+            Pageable pageable) {
         ReconciliationAudit.ReconciliationType reconciliationType =
                 type != null ? ReconciliationAudit.ReconciliationType.valueOf(type.toUpperCase()) : null;
         ReconciliationAudit.ReconciliationStatus reconciliationStatus =
                 status != null ? ReconciliationAudit.ReconciliationStatus.valueOf(status.toUpperCase()) : null;
-        List<ReconciliationAuditResponse> responses =
-                reconciliationAuditService.getDiscrepancies(reconciliationType, reconciliationStatus);
+        Page<ReconciliationAuditResponse> responses =
+                reconciliationAuditService.getDiscrepancies(reconciliationType, reconciliationStatus, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 }

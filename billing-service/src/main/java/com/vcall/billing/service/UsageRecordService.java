@@ -6,6 +6,8 @@ import com.vcall.billing.entity.UsageRecord;
 import com.vcall.billing.repository.UsageRecordRepository;
 import com.vcall.common.exception.DuplicateResourceException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,21 +46,18 @@ public class UsageRecordService {
     }
 
     @Transactional(readOnly = true)
-    public List<UsageRecordResponse> getUsageBySubscriber(UUID subscriberId) {
-        return usageRecordRepository.findAll().stream()
-                .filter(r -> r.getSubscriberId().equals(subscriberId))
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<UsageRecordResponse> getUsageBySubscriber(UUID subscriberId, Pageable pageable) {
+        return usageRecordRepository.findBySubscriberId(subscriberId, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<UsageRecordResponse> getUsageByTypeAndPeriod(UUID subscriberId, UsageRecord.UsageType usageType,
-                                                              LocalDateTime startDate, LocalDateTime endDate) {
+    public Page<UsageRecordResponse> getUsageByTypeAndPeriod(UUID subscriberId, UsageRecord.UsageType usageType,
+                                                              LocalDateTime startDate, LocalDateTime endDate,
+                                                              Pageable pageable) {
         return usageRecordRepository
-                .findBySubscriberIdAndUsageTypeAndRecordedAtBetween(subscriberId, usageType, startDate, endDate)
-                .stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+                .findBySubscriberIdAndUsageTypeAndRecordedAtBetween(subscriberId, usageType, startDate, endDate, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

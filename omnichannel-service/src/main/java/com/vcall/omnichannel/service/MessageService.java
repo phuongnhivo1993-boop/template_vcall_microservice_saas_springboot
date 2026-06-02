@@ -10,13 +10,14 @@ import com.vcall.omnichannel.repository.ConversationRepository;
 import com.vcall.omnichannel.repository.MessageRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -49,19 +50,15 @@ public class MessageService {
     }
 
     @Transactional(readOnly = true)
-    public List<MessageResponse> getMessages(UUID conversationId) {
-        return messageRepository.findByConversationIdOrderBySentAt(conversationId)
-                .stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<MessageResponse> getMessages(UUID conversationId, Pageable pageable) {
+        return messageRepository.findByConversationIdOrderBySentAt(conversationId, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<MessageResponse> getMessagesAfter(UUID conversationId, LocalDateTime after) {
-        return messageRepository.findByConversationIdAndSentAtAfter(conversationId, after)
-                .stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<MessageResponse> getMessagesAfter(UUID conversationId, LocalDateTime after, Pageable pageable) {
+        return messageRepository.findByConversationIdAndSentAtAfter(conversationId, after, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional

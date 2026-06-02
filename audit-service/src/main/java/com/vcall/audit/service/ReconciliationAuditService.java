@@ -5,6 +5,8 @@ import com.vcall.audit.entity.ReconciliationAudit;
 import com.vcall.audit.repository.ReconciliationAuditRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,6 +75,17 @@ public class ReconciliationAuditService {
         return reconciliationAuditRepository.findAll().stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReconciliationAuditResponse> getDiscrepancies(ReconciliationAudit.ReconciliationType type,
+                                                               ReconciliationAudit.ReconciliationStatus status,
+                                                               Pageable pageable) {
+        if (type != null && status != null) {
+            return reconciliationAuditRepository.findByTypeAndStatus(type, status, pageable)
+                    .map(this::toResponse);
+        }
+        return reconciliationAuditRepository.findAll(pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

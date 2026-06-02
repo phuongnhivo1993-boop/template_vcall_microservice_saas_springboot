@@ -5,6 +5,8 @@ import com.vcall.billing.dto.SubscriptionResponse;
 import com.vcall.billing.service.SubscriptionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -36,13 +37,14 @@ public class SubscriptionController {
     }
 
     @GetMapping("/subscriber/{subscriberId}")
-    public ResponseEntity<List<SubscriptionResponse>> getSubscriptionsBySubscriber(@PathVariable UUID subscriberId) {
-        return ResponseEntity.ok(subscriptionService.getSubscriptionsBySubscriber(subscriberId));
+    public ResponseEntity<Page<SubscriptionResponse>> getSubscriptionsBySubscriber(@PathVariable UUID subscriberId,
+                                                                                    Pageable pageable) {
+        return ResponseEntity.ok(subscriptionService.getSubscriptionsBySubscriber(subscriberId, pageable));
     }
 
     @GetMapping("/active")
-    public ResponseEntity<List<SubscriptionResponse>> getActiveSubscriptions() {
-        return ResponseEntity.ok(subscriptionService.getActiveSubscriptions());
+    public ResponseEntity<Page<SubscriptionResponse>> getActiveSubscriptions(Pageable pageable) {
+        return ResponseEntity.ok(subscriptionService.getActiveSubscriptions(pageable));
     }
 
     @PostMapping("/{id}/cancel")

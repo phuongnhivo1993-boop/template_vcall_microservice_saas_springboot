@@ -1,6 +1,8 @@
 package com.vcall.billing.repository;
 
 import com.vcall.billing.entity.Invoice;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -15,8 +17,10 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     Optional<Invoice> findByInvoiceNumber(String invoiceNumber);
 
     List<Invoice> findBySubscriberIdOrderByIssueDateDesc(UUID subscriberId);
+    Page<Invoice> findBySubscriberIdOrderByIssueDateDesc(UUID subscriberId, Pageable pageable);
 
     List<Invoice> findByStatus(Invoice.InvoiceStatus status);
+    Page<Invoice> findByStatus(Invoice.InvoiceStatus status, Pageable pageable);
 
     List<Invoice> findByDueDateBeforeAndStatus(LocalDateTime dueDate, Invoice.InvoiceStatus status);
 }

@@ -9,6 +9,8 @@ import com.vcall.audit.repository.FraudAlertRepository;
 import com.vcall.audit.repository.SecurityLogRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -88,20 +90,14 @@ public class FraudDetectionService {
     }
 
     @Transactional(readOnly = true)
-    public List<FraudAlertResponse> getAlerts(FraudAlert.AlertStatus status, FraudAlert.Severity severity) {
+    public Page<FraudAlertResponse> getAlerts(FraudAlert.AlertStatus status, FraudAlert.Severity severity, Pageable pageable) {
         if (status != null) {
-            return fraudAlertRepository.findByStatus(status).stream()
-                    .map(this::toResponse)
-                    .toList();
+            return fraudAlertRepository.findByStatus(status, pageable).map(this::toResponse);
         }
         if (severity != null) {
-            return fraudAlertRepository.findBySeverity(severity).stream()
-                    .map(this::toResponse)
-                    .toList();
+            return fraudAlertRepository.findBySeverity(severity, pageable).map(this::toResponse);
         }
-        return fraudAlertRepository.findAll().stream()
-                .map(this::toResponse)
-                .toList();
+        return fraudAlertRepository.findAll(pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

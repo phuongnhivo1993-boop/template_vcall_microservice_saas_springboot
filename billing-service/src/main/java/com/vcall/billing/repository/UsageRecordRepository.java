@@ -1,6 +1,8 @@
 package com.vcall.billing.repository;
 
 import com.vcall.billing.entity.UsageRecord;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,6 +13,12 @@ import java.util.UUID;
 
 @Repository
 public interface UsageRecordRepository extends JpaRepository<UsageRecord, Long> {
+
+    Page<UsageRecord> findBySubscriberId(UUID subscriberId, Pageable pageable);
+
+    Page<UsageRecord> findBySubscriberIdAndUsageTypeAndRecordedAtBetween(
+            UUID subscriberId, UsageRecord.UsageType usageType, LocalDateTime start, LocalDateTime end,
+            Pageable pageable);
 
     List<UsageRecord> findBySubscriberIdAndUsageTypeAndRecordedAtBetween(
             UUID subscriberId, UsageRecord.UsageType usageType, LocalDateTime start, LocalDateTime end);

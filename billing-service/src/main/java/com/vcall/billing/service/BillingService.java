@@ -10,6 +10,8 @@ import com.vcall.billing.repository.UsageRecordRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -89,10 +91,9 @@ public class BillingService {
     }
 
     @Transactional(readOnly = true)
-    public List<InvoiceResponse> getInvoiceHistory(UUID subscriberId) {
-        return invoiceRepository.findBySubscriberIdOrderByIssueDateDesc(subscriberId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<InvoiceResponse> getInvoiceHistory(UUID subscriberId, Pageable pageable) {
+        return invoiceRepository.findBySubscriberIdOrderByIssueDateDesc(subscriberId, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

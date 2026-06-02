@@ -11,13 +11,13 @@ import com.vcall.omnichannel.kafka.OmnichannelEventPublisher;
 import com.vcall.omnichannel.repository.ConversationRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -81,38 +81,33 @@ public class ConversationService {
     }
 
     @Transactional(readOnly = true)
-    public List<ConversationResponse> getByChannel(Channel channel) {
-        return conversationRepository.findByChannel(channel)
-                .stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<ConversationResponse> getByChannel(Channel channel, Pageable pageable) {
+        return conversationRepository.findByChannel(channel, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<ConversationResponse> getByCustomer(UUID customerId) {
-        return conversationRepository.findByCustomerId(customerId)
-                .stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<ConversationResponse> getByCustomer(UUID customerId, Pageable pageable) {
+        return conversationRepository.findByCustomerId(customerId, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<ConversationResponse> search(Channel channel, ConversationStatus status, UUID agentId) {
-        List<Conversation> conversations;
-
+    public Page<ConversationResponse> search(Channel channel, ConversationStatus status, UUID agentId, Pageable pageable) {
         if (channel != null) {
-            conversations = conversationRepository.findByChannel(channel);
-        } else if (status != null) {
-            conversations = conversationRepository.findByStatus(status);
-        } else if (agentId != null) {
-            conversations = conversationRepository.findByAgentId(agentId);
-        } else {
-            conversations = conversationRepository.findAll();
+            return conversationRepository.findByChannel(channel, pageable)
+                    .map(this::toResponse);
         }
-
-        return conversations.stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        if (status != null) {
+            return conversationRepository.findByStatus(status, pageable)
+                    .map(this::toResponse);
+        }
+        if (agentId != null) {
+            return conversationRepository.findByAgentId(agentId, pageable)
+                    .map(this::toResponse);
+        }
+        return conversationRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     private Conversation findById(UUID id) {

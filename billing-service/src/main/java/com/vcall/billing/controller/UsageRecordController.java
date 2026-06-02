@@ -6,6 +6,8 @@ import com.vcall.billing.entity.UsageRecord;
 import com.vcall.billing.service.UsageRecordService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -34,8 +35,9 @@ public class UsageRecordController {
     }
 
     @GetMapping("/{subscriberId}")
-    public ResponseEntity<List<UsageRecordResponse>> getUsage(@PathVariable UUID subscriberId) {
-        return ResponseEntity.ok(usageRecordService.getUsageBySubscriber(subscriberId));
+    public ResponseEntity<Page<UsageRecordResponse>> getUsage(@PathVariable UUID subscriberId,
+                                                               Pageable pageable) {
+        return ResponseEntity.ok(usageRecordService.getUsageBySubscriber(subscriberId, pageable));
     }
 
     @GetMapping("/{subscriberId}/summary")
@@ -47,11 +49,12 @@ public class UsageRecordController {
     }
 
     @GetMapping("/{subscriberId}/type/{usageType}")
-    public ResponseEntity<List<UsageRecordResponse>> getUsageByTypeAndPeriod(
+    public ResponseEntity<Page<UsageRecordResponse>> getUsageByTypeAndPeriod(
             @PathVariable UUID subscriberId,
             @PathVariable UsageRecord.UsageType usageType,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
-        return ResponseEntity.ok(usageRecordService.getUsageByTypeAndPeriod(subscriberId, usageType, startDate, endDate));
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            Pageable pageable) {
+        return ResponseEntity.ok(usageRecordService.getUsageByTypeAndPeriod(subscriberId, usageType, startDate, endDate, pageable));
     }
 }

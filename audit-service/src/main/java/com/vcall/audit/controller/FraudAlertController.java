@@ -8,11 +8,12 @@ import com.vcall.audit.service.FraudDetectionService;
 import com.vcall.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -23,12 +24,13 @@ public class FraudAlertController {
     private final FraudDetectionService fraudDetectionService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<FraudAlertResponse>>> getAlerts(
+    public ResponseEntity<ApiResponse<Page<FraudAlertResponse>>> getAlerts(
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String severity) {
+            @RequestParam(required = false) String severity,
+            Pageable pageable) {
         FraudAlert.AlertStatus alertStatus = status != null ? FraudAlert.AlertStatus.valueOf(status.toUpperCase()) : null;
         FraudAlert.Severity alertSeverity = severity != null ? FraudAlert.Severity.valueOf(severity.toUpperCase()) : null;
-        List<FraudAlertResponse> responses = fraudDetectionService.getAlerts(alertStatus, alertSeverity);
+        Page<FraudAlertResponse> responses = fraudDetectionService.getAlerts(alertStatus, alertSeverity, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 

@@ -99,24 +99,18 @@ public class CdrService {
     }
 
     @Transactional(readOnly = true)
-    public List<CdrRecordResponse> getByDateRange(LocalDateTime start, LocalDateTime end) {
-        return cdrRecordRepository.findByStartTimeBetween(start, end).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<CdrRecordResponse> getByDateRange(LocalDateTime start, LocalDateTime end, Pageable pageable) {
+        return cdrRecordRepository.findByStartTimeBetween(start, end, pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<CdrRecordResponse> getByTenant(UUID tenantId) {
-        return cdrRecordRepository.findByTenantId(tenantId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<CdrRecordResponse> getByTenant(UUID tenantId, Pageable pageable) {
+        return cdrRecordRepository.findByTenantId(tenantId, pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<CdrRecordResponse> getByAgentId(UUID agentId) {
-        return cdrRecordRepository.findByAgentId(agentId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<CdrRecordResponse> getByAgentId(UUID agentId, Pageable pageable) {
+        return cdrRecordRepository.findByAgentId(agentId, pageable).map(this::toResponse);
     }
 
     private CdrRecordResponse toResponse(CdrRecord record) {

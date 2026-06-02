@@ -78,10 +78,20 @@ public class AuditLogService {
     }
 
     @Transactional(readOnly = true)
+    public Page<AuditLogResponse> getByActor(UUID actorId, Pageable pageable) {
+        return auditLogRepository.findByActorId(actorId, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
     public List<AuditLogResponse> getByResource(String resource, String resourceId) {
         return auditLogRepository.findByResourceAndResourceId(resource, resourceId).stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AuditLogResponse> getByResource(String resource, String resourceId, Pageable pageable) {
+        return auditLogRepository.findByResourceAndResourceId(resource, resourceId, pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

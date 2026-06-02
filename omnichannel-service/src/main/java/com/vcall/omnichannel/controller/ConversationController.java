@@ -10,6 +10,8 @@ import com.vcall.omnichannel.entity.Conversation.ConversationStatus;
 import com.vcall.omnichannel.service.ConversationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -60,17 +61,18 @@ public class ConversationController {
     }
 
     @GetMapping("/channel/{channel}")
-    public ResponseEntity<ApiResponse<List<ConversationResponse>>> getByChannel(@PathVariable Channel channel) {
-        List<ConversationResponse> responses = conversationService.getByChannel(channel);
+    public ResponseEntity<ApiResponse<Page<ConversationResponse>>> getByChannel(@PathVariable Channel channel, Pageable pageable) {
+        Page<ConversationResponse> responses = conversationService.getByChannel(channel, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ConversationResponse>>> search(
+    public ResponseEntity<ApiResponse<Page<ConversationResponse>>> search(
             @RequestParam(required = false) Channel channel,
             @RequestParam(required = false) ConversationStatus status,
-            @RequestParam(required = false) UUID agentId) {
-        List<ConversationResponse> responses = conversationService.search(channel, status, agentId);
+            @RequestParam(required = false) UUID agentId,
+            Pageable pageable) {
+        Page<ConversationResponse> responses = conversationService.search(channel, status, agentId, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 }

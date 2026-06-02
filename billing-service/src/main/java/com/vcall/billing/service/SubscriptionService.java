@@ -11,6 +11,8 @@ import com.vcall.common.exception.BadRequestException;
 import com.vcall.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -92,17 +93,15 @@ public class SubscriptionService {
     }
 
     @Transactional(readOnly = true)
-    public List<SubscriptionResponse> getSubscriptionsBySubscriber(UUID subscriberId) {
-        return subscriptionRepository.findBySubscriberId(subscriberId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<SubscriptionResponse> getSubscriptionsBySubscriber(UUID subscriberId, Pageable pageable) {
+        return subscriptionRepository.findBySubscriberId(subscriberId, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<SubscriptionResponse> getActiveSubscriptions() {
-        return subscriptionRepository.findByStatus(Subscription.SubscriptionStatus.ACTIVE).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<SubscriptionResponse> getActiveSubscriptions(Pageable pageable) {
+        return subscriptionRepository.findByStatus(Subscription.SubscriptionStatus.ACTIVE, pageable)
+                .map(this::toResponse);
     }
 
     @Scheduled(cron = "0 0 0 * * *")

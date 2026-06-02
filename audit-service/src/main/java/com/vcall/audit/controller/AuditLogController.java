@@ -7,12 +7,12 @@ import com.vcall.common.dto.ApiResponse;
 import com.vcall.common.dto.PagedResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -23,10 +23,13 @@ public class AuditLogController {
     private final AuditLogService auditLogService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<AuditLogResponse>>> getAllLogs() {
-        AuditSearchRequest request = AuditSearchRequest.builder().page(0).size(1000).build();
+    public ResponseEntity<ApiResponse<Page<AuditLogResponse>>> getAllLogs(Pageable pageable) {
+        AuditSearchRequest request = AuditSearchRequest.builder()
+                .page(pageable.getPageNumber())
+                .size(pageable.getPageSize())
+                .build();
         Page<AuditLogResponse> page = auditLogService.searchLogs(request);
-        return ResponseEntity.ok(ApiResponse.success(page.getContent()));
+        return ResponseEntity.ok(ApiResponse.success(page));
     }
 
     @GetMapping("/{id}")
@@ -70,16 +73,18 @@ public class AuditLogController {
     }
 
     @GetMapping("/actor/{actorId}")
-    public ResponseEntity<ApiResponse<List<AuditLogResponse>>> getByActor(@PathVariable UUID actorId) {
-        List<AuditLogResponse> responses = auditLogService.getByActor(actorId);
+    public ResponseEntity<ApiResponse<Page<AuditLogResponse>>> getByActor(@PathVariable UUID actorId,
+                                                                           Pageable pageable) {
+        Page<AuditLogResponse> responses = auditLogService.getByActor(actorId, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping("/resource/{resourceType}/{resourceId}")
-    public ResponseEntity<ApiResponse<List<AuditLogResponse>>> getByResource(
+    public ResponseEntity<ApiResponse<Page<AuditLogResponse>>> getByResource(
             @PathVariable String resourceType,
-            @PathVariable String resourceId) {
-        List<AuditLogResponse> responses = auditLogService.getByResource(resourceType, resourceId);
+            @PathVariable String resourceId,
+            Pageable pageable) {
+        Page<AuditLogResponse> responses = auditLogService.getByResource(resourceType, resourceId, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 }

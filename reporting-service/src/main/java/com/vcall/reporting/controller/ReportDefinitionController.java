@@ -6,6 +6,8 @@ import com.vcall.reporting.dto.ReportDefinitionResponse;
 import com.vcall.reporting.service.ReportDefinitionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/reports/definitions")
@@ -47,13 +47,14 @@ public class ReportDefinitionController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ReportDefinitionResponse>>> getAllReports(
-            @RequestParam(required = false) String reportType) {
-        List<ReportDefinitionResponse> responses;
+    public ResponseEntity<ApiResponse<Page<ReportDefinitionResponse>>> getAllReports(
+            @RequestParam(required = false) String reportType,
+            Pageable pageable) {
+        Page<ReportDefinitionResponse> responses;
         if (reportType != null && !reportType.isBlank()) {
-            responses = reportDefinitionService.getReportsByType(reportType);
+            responses = reportDefinitionService.getReportsByType(reportType, pageable);
         } else {
-            responses = reportDefinitionService.getAllReports();
+            responses = reportDefinitionService.getAllReports(pageable);
         }
         return ResponseEntity.ok(ApiResponse.success(responses));
     }

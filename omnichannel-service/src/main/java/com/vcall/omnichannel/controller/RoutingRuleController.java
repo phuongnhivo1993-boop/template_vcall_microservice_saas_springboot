@@ -7,6 +7,8 @@ import com.vcall.omnichannel.entity.Conversation.Channel;
 import com.vcall.omnichannel.service.RoutingRuleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,8 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/omnichannel/routing-rules")
 @RequiredArgsConstructor
@@ -29,9 +29,10 @@ public class RoutingRuleController {
     private final RoutingRuleService routingRuleService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<RoutingRuleResponse>>> getAll(
-            @RequestParam(required = false) Channel channel) {
-        List<RoutingRuleResponse> responses = routingRuleService.getAll(channel);
+    public ResponseEntity<ApiResponse<Page<RoutingRuleResponse>>> getAll(
+            @RequestParam(required = false) Channel channel,
+            Pageable pageable) {
+        Page<RoutingRuleResponse> responses = routingRuleService.getAll(channel, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 

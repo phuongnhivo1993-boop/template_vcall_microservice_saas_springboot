@@ -5,6 +5,8 @@ import com.vcall.audit.entity.SecurityLog;
 import com.vcall.audit.repository.SecurityLogRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,24 +40,18 @@ public class SecurityLogService {
     }
 
     @Transactional(readOnly = true)
-    public List<SecurityLogResponse> getAllLogs() {
-        return securityLogRepository.findAll().stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<SecurityLogResponse> getAllLogs(Pageable pageable) {
+        return securityLogRepository.findAll(pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<SecurityLogResponse> getByEventType(SecurityLog.EventType eventType) {
-        return securityLogRepository.findByEventType(eventType).stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<SecurityLogResponse> getByEventType(SecurityLog.EventType eventType, Pageable pageable) {
+        return securityLogRepository.findByEventType(eventType, pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<SecurityLogResponse> getByRiskLevel(SecurityLog.RiskLevel riskLevel) {
-        return securityLogRepository.findByRiskLevel(riskLevel).stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<SecurityLogResponse> getByRiskLevel(SecurityLog.RiskLevel riskLevel, Pageable pageable) {
+        return securityLogRepository.findByRiskLevel(riskLevel, pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
