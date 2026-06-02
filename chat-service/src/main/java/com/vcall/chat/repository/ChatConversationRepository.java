@@ -1,6 +1,8 @@
 package com.vcall.chat.repository;
 
 import com.vcall.chat.entity.ChatConversation;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,8 +18,10 @@ public interface ChatConversationRepository extends JpaRepository<ChatConversati
     List<ChatConversation> findByCustomerId(UUID customerId);
 
     List<ChatConversation> findByAgentId(UUID agentId);
+    Page<ChatConversation> findByAgentId(UUID agentId, Pageable pageable);
 
     List<ChatConversation> findByStatus(ChatConversation.Status status);
+    Page<ChatConversation> findByStatus(ChatConversation.Status status, Pageable pageable);
 
     List<ChatConversation> findByStatusAndSource(ChatConversation.Status status, ChatConversation.Source source);
 

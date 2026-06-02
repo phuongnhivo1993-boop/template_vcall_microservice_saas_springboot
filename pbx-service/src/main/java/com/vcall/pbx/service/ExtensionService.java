@@ -10,11 +10,10 @@ import com.vcall.pbx.entity.Extension.ExtensionType;
 import com.vcall.pbx.kafka.PbxEventPublisher;
 import com.vcall.pbx.repository.ExtensionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -53,10 +52,9 @@ public class ExtensionService {
     }
 
     @Transactional(readOnly = true)
-    public List<ExtensionResponse> getAllExtensions() {
-        return extensionRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<ExtensionResponse> getAllExtensions(Pageable pageable) {
+        return extensionRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     @Transactional
@@ -85,18 +83,16 @@ public class ExtensionService {
     }
 
     @Transactional(readOnly = true)
-    public List<ExtensionResponse> getByStatus(String status) {
+    public Page<ExtensionResponse> getByStatus(String status, Pageable pageable) {
         ExtensionStatus statusEnum = ExtensionStatus.valueOf(status.toUpperCase());
-        return extensionRepository.findByStatus(statusEnum).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return extensionRepository.findByStatus(statusEnum, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<ExtensionResponse> getBySipAccount(Long sipAccountId) {
-        return extensionRepository.findBySipAccountId(sipAccountId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<ExtensionResponse> getBySipAccount(Long sipAccountId, Pageable pageable) {
+        return extensionRepository.findBySipAccountId(sipAccountId, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional

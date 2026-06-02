@@ -6,6 +6,8 @@ import com.vcall.pbx.dto.ExtensionResponse;
 import com.vcall.pbx.service.ExtensionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,8 +19,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/pbx/extensions")
@@ -35,8 +35,8 @@ public class ExtensionController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ExtensionResponse>>> getAllExtensions() {
-        List<ExtensionResponse> extensions = extensionService.getAllExtensions();
+    public ResponseEntity<ApiResponse<Page<ExtensionResponse>>> getAllExtensions(Pageable pageable) {
+        Page<ExtensionResponse> extensions = extensionService.getAllExtensions(pageable);
         return ResponseEntity.ok(ApiResponse.success(extensions));
     }
 
@@ -74,14 +74,16 @@ public class ExtensionController {
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<ApiResponse<List<ExtensionResponse>>> getExtensionsByStatus(@PathVariable String status) {
-        List<ExtensionResponse> extensions = extensionService.getByStatus(status);
+    public ResponseEntity<ApiResponse<Page<ExtensionResponse>>> getExtensionsByStatus(@PathVariable String status,
+                                                                                       Pageable pageable) {
+        Page<ExtensionResponse> extensions = extensionService.getByStatus(status, pageable);
         return ResponseEntity.ok(ApiResponse.success(extensions));
     }
 
     @GetMapping("/sip-account/{sipAccountId}")
-    public ResponseEntity<ApiResponse<List<ExtensionResponse>>> getExtensionsBySipAccount(@PathVariable Long sipAccountId) {
-        List<ExtensionResponse> extensions = extensionService.getBySipAccount(sipAccountId);
+    public ResponseEntity<ApiResponse<Page<ExtensionResponse>>> getExtensionsBySipAccount(@PathVariable Long sipAccountId,
+                                                                                           Pageable pageable) {
+        Page<ExtensionResponse> extensions = extensionService.getBySipAccount(sipAccountId, pageable);
         return ResponseEntity.ok(ApiResponse.success(extensions));
     }
 }

@@ -12,6 +12,8 @@ import com.vcall.pbx.repository.ExtensionRepository;
 import com.vcall.pbx.repository.RingGroupMemberRepository;
 import com.vcall.pbx.repository.RingGroupRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,10 +52,9 @@ public class RingGroupService {
     }
 
     @Transactional(readOnly = true)
-    public List<RingGroupResponse> getAllRingGroups() {
-        return ringGroupRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<RingGroupResponse> getAllRingGroups(Pageable pageable) {
+        return ringGroupRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     @Transactional

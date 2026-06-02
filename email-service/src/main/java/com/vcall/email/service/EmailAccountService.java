@@ -7,6 +7,8 @@ import com.vcall.email.dto.EmailAccountResponse;
 import com.vcall.email.entity.EmailAccount;
 import com.vcall.email.repository.EmailAccountRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,10 +79,9 @@ public class EmailAccountService {
     }
 
     @Transactional(readOnly = true)
-    public List<EmailAccountResponse> getAllAccounts() {
-        return emailAccountRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<EmailAccountResponse> getAllAccounts(Pageable pageable) {
+        return emailAccountRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     @Transactional

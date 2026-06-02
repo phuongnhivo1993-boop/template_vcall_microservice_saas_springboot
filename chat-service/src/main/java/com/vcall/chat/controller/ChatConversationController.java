@@ -8,6 +8,8 @@ import com.vcall.chat.service.ChatService;
 import com.vcall.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -56,21 +57,21 @@ public class ChatConversationController {
     }
 
     @GetMapping("/active")
-    public ResponseEntity<ApiResponse<List<ChatConversationResponse>>> getActiveConversations() {
-        List<ChatConversationResponse> conversations = chatService.getActiveConversations();
+    public ResponseEntity<ApiResponse<Page<ChatConversationResponse>>> getActiveConversations(Pageable pageable) {
+        Page<ChatConversationResponse> conversations = chatService.getActiveConversations(pageable);
         return ResponseEntity.ok(ApiResponse.success(conversations));
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ChatConversationResponse>>> getAllConversations() {
-        List<ChatConversationResponse> conversations = chatService.getByStatus(Status.ACTIVE);
+    public ResponseEntity<ApiResponse<Page<ChatConversationResponse>>> getAllConversations(Pageable pageable) {
+        Page<ChatConversationResponse> conversations = chatService.getByStatus(Status.ACTIVE, pageable);
         return ResponseEntity.ok(ApiResponse.success(conversations));
     }
 
     @GetMapping("/agent/{agentId}")
-    public ResponseEntity<ApiResponse<List<ChatConversationResponse>>> getConversationsByAgent(
-            @PathVariable UUID agentId) {
-        List<ChatConversationResponse> conversations = chatService.getByAgentId(agentId);
+    public ResponseEntity<ApiResponse<Page<ChatConversationResponse>>> getConversationsByAgent(
+            @PathVariable UUID agentId, Pageable pageable) {
+        Page<ChatConversationResponse> conversations = chatService.getByAgentId(agentId, pageable);
         return ResponseEntity.ok(ApiResponse.success(conversations));
     }
 }

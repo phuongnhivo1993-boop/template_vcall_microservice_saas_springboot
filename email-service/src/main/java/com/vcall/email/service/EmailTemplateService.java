@@ -7,6 +7,8 @@ import com.vcall.email.dto.EmailTemplateResponse;
 import com.vcall.email.entity.EmailTemplate;
 import com.vcall.email.repository.EmailTemplateRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,17 +68,15 @@ public class EmailTemplateService {
     }
 
     @Transactional(readOnly = true)
-    public List<EmailTemplateResponse> getAllTemplates() {
-        return emailTemplateRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<EmailTemplateResponse> getAllTemplates(Pageable pageable) {
+        return emailTemplateRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<EmailTemplateResponse> getByCategory(String category) {
-        return emailTemplateRepository.findByCategory(category).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<EmailTemplateResponse> getByCategory(String category, Pageable pageable) {
+        return emailTemplateRepository.findByCategory(category, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional

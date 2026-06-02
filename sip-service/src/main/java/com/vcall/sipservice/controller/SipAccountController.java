@@ -6,6 +6,8 @@ import com.vcall.sipservice.dto.SipAccountResponse;
 import com.vcall.sipservice.service.SipAccountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -29,8 +30,8 @@ public class SipAccountController {
     private final SipAccountService sipAccountService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SipAccountResponse>>> getAll() {
-        List<SipAccountResponse> accounts = sipAccountService.findAll();
+    public ResponseEntity<ApiResponse<Page<SipAccountResponse>>> getAll(Pageable pageable) {
+        Page<SipAccountResponse> accounts = sipAccountService.findAll(pageable);
         return ResponseEntity.ok(ApiResponse.success(accounts));
     }
 

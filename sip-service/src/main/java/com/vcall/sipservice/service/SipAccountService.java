@@ -11,6 +11,8 @@ import com.vcall.sipservice.repository.SipAccountRepository;
 import com.vcall.sipservice.repository.SipDeviceRepository;
 import com.vcall.sipservice.repository.SipRegistrationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,10 +29,9 @@ public class SipAccountService {
     private final SipEventPublisher sipEventPublisher;
 
     @Transactional(readOnly = true)
-    public List<SipAccountResponse> findAll() {
-        return sipAccountRepository.findAll().stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<SipAccountResponse> findAll(Pageable pageable) {
+        return sipAccountRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

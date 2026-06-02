@@ -7,10 +7,10 @@ import com.vcall.sipservice.entity.SipDevice;
 import com.vcall.sipservice.repository.SipAccountRepository;
 import com.vcall.sipservice.repository.SipDeviceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -20,10 +20,9 @@ public class SipDeviceService {
     private final SipAccountRepository sipAccountRepository;
 
     @Transactional(readOnly = true)
-    public List<SipDeviceResponse> findAll() {
-        return sipDeviceRepository.findAll().stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<SipDeviceResponse> findAll(Pageable pageable) {
+        return sipDeviceRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -74,10 +73,9 @@ public class SipDeviceService {
     }
 
     @Transactional(readOnly = true)
-    public List<SipDeviceResponse> findByAccountId(Long sipAccountId) {
-        return sipDeviceRepository.findBySipAccountId(sipAccountId).stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<SipDeviceResponse> findByAccountId(Long sipAccountId, Pageable pageable) {
+        return sipDeviceRepository.findBySipAccountId(sipAccountId, pageable)
+                .map(this::toResponse);
     }
 
     private SipDeviceResponse toResponse(SipDevice device) {

@@ -12,6 +12,8 @@ import com.vcall.chat.repository.ChatConversationRepository;
 import com.vcall.chat.repository.ChatMessageRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,10 +72,9 @@ public class ChatService {
     }
 
     @Transactional(readOnly = true)
-    public List<ChatConversationResponse> getActiveConversations() {
-        return conversationRepository.findByStatus(Status.ACTIVE).stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<ChatConversationResponse> getActiveConversations(Pageable pageable) {
+        return conversationRepository.findByStatus(Status.ACTIVE, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -84,17 +85,15 @@ public class ChatService {
     }
 
     @Transactional(readOnly = true)
-    public List<ChatConversationResponse> getByStatus(Status status) {
-        return conversationRepository.findByStatus(status).stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<ChatConversationResponse> getByStatus(Status status, Pageable pageable) {
+        return conversationRepository.findByStatus(status, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<ChatConversationResponse> getByAgentId(UUID agentId) {
-        return conversationRepository.findByAgentId(agentId).stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<ChatConversationResponse> getByAgentId(UUID agentId, Pageable pageable) {
+        return conversationRepository.findByAgentId(agentId, pageable)
+                .map(this::toResponse);
     }
 
     private ChatConversationResponse toResponse(ChatConversation conversation) {

@@ -9,6 +9,8 @@ import com.vcall.chat.repository.ChatConversationRepository;
 import com.vcall.chat.repository.ChatMessageRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,10 +46,9 @@ public class ChatMessageService {
     }
 
     @Transactional(readOnly = true)
-    public List<ChatMessageResponse> getMessages(UUID conversationId) {
-        return messageRepository.findByConversationIdOrderBySentAtAsc(conversationId).stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<ChatMessageResponse> getMessages(UUID conversationId, Pageable pageable) {
+        return messageRepository.findByConversationIdOrderBySentAtAsc(conversationId, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional

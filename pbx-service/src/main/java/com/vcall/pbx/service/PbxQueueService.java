@@ -13,6 +13,8 @@ import com.vcall.pbx.repository.ExtensionRepository;
 import com.vcall.pbx.repository.PbxQueueMemberRepository;
 import com.vcall.pbx.repository.PbxQueueRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,10 +57,9 @@ public class PbxQueueService {
     }
 
     @Transactional(readOnly = true)
-    public List<PbxQueueResponse> getAllQueues() {
-        return pbxQueueRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<PbxQueueResponse> getAllQueues(Pageable pageable) {
+        return pbxQueueRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     @Transactional

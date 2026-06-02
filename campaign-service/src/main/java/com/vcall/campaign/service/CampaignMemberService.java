@@ -11,6 +11,8 @@ import com.vcall.campaign.repository.CampaignMemberRepository;
 import com.vcall.campaign.repository.CampaignRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -70,10 +71,9 @@ public class CampaignMemberService {
     }
 
     @Transactional(readOnly = true)
-    public List<CampaignMemberResponse> getMembers(Long campaignId) {
-        return campaignMemberRepository.findByCampaignId(campaignId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<CampaignMemberResponse> getMembers(Long campaignId, Pageable pageable) {
+        return campaignMemberRepository.findByCampaignId(campaignId, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional

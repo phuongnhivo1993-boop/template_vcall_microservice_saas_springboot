@@ -6,6 +6,8 @@ import com.vcall.campaign.service.CampaignMemberService;
 import com.vcall.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,9 +40,9 @@ public class CampaignMemberController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CampaignMemberResponse>>> getMembers(
-            @PathVariable Long campaignId) {
-        List<CampaignMemberResponse> members = campaignMemberService.getMembers(campaignId);
+    public ResponseEntity<ApiResponse<Page<CampaignMemberResponse>>> getMembers(
+            @PathVariable Long campaignId, Pageable pageable) {
+        Page<CampaignMemberResponse> members = campaignMemberService.getMembers(campaignId, pageable);
         return ResponseEntity.ok(ApiResponse.success(members));
     }
 

@@ -1,10 +1,13 @@
 package com.vcall.email.controller;
 
+import com.vcall.common.dto.ApiResponse;
 import com.vcall.email.dto.EmailAccountRequest;
 import com.vcall.email.dto.EmailAccountResponse;
 import com.vcall.email.service.EmailAccountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,8 +18,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/email/accounts")
@@ -42,8 +43,8 @@ public class EmailAccountController {
     }
 
     @GetMapping
-    public ResponseEntity<List<EmailAccountResponse>> getAllAccounts() {
-        return ResponseEntity.ok(emailAccountService.getAllAccounts());
+    public ResponseEntity<ApiResponse<Page<EmailAccountResponse>>> getAllAccounts(Pageable pageable) {
+        return ResponseEntity.ok(ApiResponse.success(emailAccountService.getAllAccounts(pageable)));
     }
 
     @PutMapping("/{id}/default")

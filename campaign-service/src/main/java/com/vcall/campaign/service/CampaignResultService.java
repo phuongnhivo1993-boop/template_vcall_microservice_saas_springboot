@@ -11,12 +11,13 @@ import com.vcall.campaign.repository.CampaignRepository;
 import com.vcall.campaign.repository.CampaignResultRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -60,17 +61,15 @@ public class CampaignResultService {
     }
 
     @Transactional(readOnly = true)
-    public List<CampaignResultResponse> getResults(Long campaignId) {
-        return campaignResultRepository.findByCampaignId(campaignId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<CampaignResultResponse> getResults(Long campaignId, Pageable pageable) {
+        return campaignResultRepository.findByCampaignId(campaignId, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<CampaignResultResponse> getAgentResults(UUID agentId) {
-        return campaignResultRepository.findByAgentId(agentId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<CampaignResultResponse> getAgentResults(UUID agentId, Pageable pageable) {
+        return campaignResultRepository.findByAgentId(agentId, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -78,7 +77,7 @@ public class CampaignResultService {
         ResultType type = ResultType.valueOf(resultType.toUpperCase());
         return campaignResultRepository.findByResultType(type).stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private CampaignResultResponse toResponse(CampaignResult result) {

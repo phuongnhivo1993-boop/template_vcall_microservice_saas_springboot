@@ -1,6 +1,8 @@
 package com.vcall.campaign.repository;
 
 import com.vcall.campaign.entity.CampaignMember;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,6 +15,7 @@ public interface CampaignMemberRepository extends JpaRepository<CampaignMember, 
     List<CampaignMember> findByCampaignIdAndStatus(Long campaignId, CampaignMember.MemberStatus status);
 
     List<CampaignMember> findByCampaignId(Long campaignId);
+    Page<CampaignMember> findByCampaignId(Long campaignId, Pageable pageable);
 
     long countByCampaignIdAndStatus(Long campaignId, CampaignMember.MemberStatus status);
 
