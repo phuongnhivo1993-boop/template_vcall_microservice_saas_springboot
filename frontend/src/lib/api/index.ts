@@ -34,14 +34,18 @@ export const customersApi = {
   create: (data: Record<string, unknown>) => apiClient.post('/customers', data),
   update: (id: string, data: Record<string, unknown>) => apiClient.put(`/customers/${id}`, data),
   delete: (id: string) => apiClient.delete(`/customers/${id}`),
-  search: (query: string) => apiClient.get('/customers/search', { params: { q: query } }),
+  search: (keyword: string) => apiClient.get('/customers/search', { params: { keyword } }),
 };
 
 export const callsApi = {
   list: (params?: Record<string, unknown>) => apiClient.get('/calls', { params }),
   getById: (id: string) => apiClient.get(`/calls/${id}`),
-  start: (data: Record<string, unknown>) => apiClient.post('/calls/start', data),
-  end: (id: string) => apiClient.post(`/calls/${id}/end`),
+  start: (data: Record<string, unknown>) => apiClient.post('/calls', data),
+  end: (id: string) => apiClient.post(`/calls/${id}/hangup`),
+  mute: (id: string) => apiClient.post(`/calls/${id}/mute`),
+  unmute: (id: string) => apiClient.post(`/calls/${id}/unmute`),
+  hold: (id: string) => apiClient.post(`/calls/${id}/hold`),
+  resume: (id: string) => apiClient.post(`/calls/${id}/resume`),
   transfer: (id: string, data: Record<string, unknown>) =>
     apiClient.post(`/calls/${id}/transfer`, data),
   getRecording: (id: string) => apiClient.get(`/calls/${id}/recording`),
@@ -104,8 +108,9 @@ export const settingsApi = {
 };
 
 export const auditApi = {
-  list: (params?: Record<string, unknown>) => apiClient.get('/audit-logs', { params }),
-  getById: (id: string) => apiClient.get(`/audit-logs/${id}`),
+  list: (params?: Record<string, unknown>) => apiClient.get('/audit/logs', { params }),
+  getById: (id: string) => apiClient.get(`/audit/logs/${id}`),
+  search: (params?: Record<string, unknown>) => apiClient.get('/audit/logs/search', { params }),
   export: (params?: Record<string, unknown>) =>
     apiClient.get('/audit-logs/export', { params, responseType: 'blob' }),
 };

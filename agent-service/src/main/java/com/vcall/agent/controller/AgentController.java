@@ -20,9 +20,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -83,5 +85,17 @@ public class AgentController {
     public ResponseEntity<ApiResponse<List<AgentStatusResponse>>> getStatusHistory(@PathVariable UUID id) {
         List<AgentStatusResponse> history = agentStatusService.getStatusHistory(id, null, null);
         return ResponseEntity.ok(ApiResponse.success(history));
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<ApiResponse<AgentResponse>> getProfile(@RequestParam UUID userId) {
+        AgentResponse response = agentService.getAgentByUserId(userId);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
+        Map<String, Object> stats = agentService.getAgentStats();
+        return ResponseEntity.ok(ApiResponse.success(stats));
     }
 }

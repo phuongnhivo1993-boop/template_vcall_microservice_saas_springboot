@@ -26,16 +26,24 @@ services.docker.enable = true;
     previews = {
       enable = true;
       previews = {
-        # web = {
-        #   # Example: run "npm run dev" with PORT set to IDX's defined port for previews,
-        #   # and show it in IDX's web preview panel
-        #   command = ["npm" "run" "dev"];
-        #   manager = "web";
-        #   env = {
-        #     # Environment variables to set for your server
-        #     PORT = "$PORT";
-        #   };
-        # };
+        frontend = {
+          command = [
+            "sh" "-c" "node -e \"const h=require('http'); h.createServer((r,s)=>{const p=h.request({host:'localhost',port:3000,path:r.url,method:r.method,headers:r.headers},r2=>{s.writeHead(r2.statusCode,r2.headers);r2.pipe(s)});r.pipe(p)}).listen(parseInt(process.env.PORT),()=>console.log('proxy on '+process.env.PORT))\""
+          ];
+          manager = "web";
+          env = {
+            PORT = "$PORT";
+          };
+        };
+        api = {
+          command = [
+            "sh" "-c" "node -e \"const h=require('http'); h.createServer((r,s)=>{const p=h.request({host:'localhost',port:8080,path:r.url,method:r.method,headers:r.headers},r2=>{s.writeHead(r2.statusCode,r2.headers);r2.pipe(s)});r.pipe(p)}).listen(parseInt(process.env.PORT),()=>console.log('proxy on '+process.env.PORT))\""
+          ];
+          manager = "web";
+          env = {
+            PORT = "$PORT";
+          };
+        };
       };
     };
 

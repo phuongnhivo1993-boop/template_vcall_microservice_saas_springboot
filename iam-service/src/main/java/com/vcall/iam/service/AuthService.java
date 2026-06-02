@@ -1,5 +1,6 @@
 package com.vcall.iam.service;
 
+import com.vcall.common.exception.ResourceNotFoundException;
 import com.vcall.iam.dto.LoginRequest;
 import com.vcall.iam.dto.LoginResponse;
 import com.vcall.iam.dto.RefreshTokenRequest;
@@ -108,5 +109,12 @@ public class AuthService {
 
     public void logout(String refreshToken) {
         refreshTokens.remove(refreshToken);
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponse getCurrentUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+        return userService.toUserResponse(user);
     }
 }

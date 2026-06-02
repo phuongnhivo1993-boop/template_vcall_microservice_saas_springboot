@@ -82,6 +82,6 @@ public class Call extends BaseEntity {
     }
 
     public enum CallStatus {
-        RINGING, IN_PROGRESS, COMPLETED, FAILED, BUSY, NO_ANSWER
+        RINGING, IN_PROGRESS, COMPLETED, FAILED, BUSY, NO_ANSWER, ON_HOLD
     }
 }

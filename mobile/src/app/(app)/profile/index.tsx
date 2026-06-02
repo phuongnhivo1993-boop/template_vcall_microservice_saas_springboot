@@ -1,24 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, Switch, ActivityIndicator,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
 import StatusBadge from '../../../components/StatusBadge';
-import { clearAuth } from '../../../store/slices/authSlice';
+import { logoutUser } from '../../../store/slices/authSlice';
+import { agentsApi } from '../../../lib/api';
 import type { RootState, AppDispatch } from '../../../store';
 import type { AgentStatus } from '../../../types';
-
-const MOCK_AGENT = {
-  name: 'Agent Smith',
-  email: 'agent.smith@vcall.com',
-  extension: '101',
-  avatar: undefined,
-  callsToday: 24,
-  avgDuration: 245,
-};
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -26,14 +18,26 @@ export default function ProfileScreen() {
   const user = useSelector((state: RootState) => state.auth.user);
   const [status, setStatus] = useState<AgentStatus>('online');
   const [isOnline, setIsOnline] = useState(true);
+  const [stats, setStats] = useState<{ totalAgents?: number; onlineCount?: number; offlineCount?: number; busyCount?: number }>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    agentsApi.getStats()
+      .then((res) => setStats(res.data?.data || {}))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleToggle = (value: boolean) => {
     setIsOnline(value);
     setStatus(value ? 'online' : 'offline');
+    if (user?.agentId) {
+      agentsApi.updateStatus(user.agentId, value ? 'ONLINE' : 'OFFLINE').catch(() => {});
+    }
   };
 
-  const handleLogout = () => {
-    dispatch(clearAuth());
+  const handleLogout = async () => {
+    await dispatch(logoutUser());
     router.replace('/(auth)/login');
   };
 
@@ -46,12 +50,8 @@ export default function ProfileScreen() {
           <Ionicons name="person-circle" size={80} color={Colors.primary} />
           <View style={[styles.statusDot, { backgroundColor: isOnline ? Colors.online : Colors.offline }]} />
         </View>
-        <Text style={styles.name}>{user?.name || MOCK_AGENT.name}</Text>
-        <Text style={styles.email}>{user?.email || MOCK_AGENT.email}</Text>
-        <View style={styles.extensionRow}>
-          <Ionicons name="call-outline" size={16} color={Colors.textSecondary} />
-          <Text style={styles.extension}>Ext. {MOCK_AGENT.extension}</Text>
-        </View>
+        <Text style={styles.name}>{user?.fullName || user?.name || 'Agent'}</Text>
+        <Text style={styles.email}>{user?.email || ''}</Text>
       </View>
 
       <View style={styles.section}>
@@ -71,28 +71,32 @@ export default function ProfileScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Today's Stats</Text>
+        {loading ? (
+          <ActivityIndicator size="small" color={Colors.primary} />
+        ) : (
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <Ionicons name="call-outline" size={24} color={Colors.primary} />
-            <Text style={styles.statValue}>{MOCK_AGENT.callsToday}</Text>
-            <Text style={styles.statLabel}>Calls Today</Text>
+            <Ionicons name="people-outline" size={24} color={Colors.primary} />
+            <Text style={styles.statValue}>{stats.totalAgents ?? '-'}</Text>
+            <Text style={styles.statLabel}>Total Agents</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="timer-outline" size={24} color={Colors.success} />
-            <Text style={styles.statValue}>{Math.floor(MOCK_AGENT.avgDuration / 60)}m</Text>
-            <Text style={styles.statLabel}>Avg Duration</Text>
+            <Ionicons name="checkmark-circle-outline" size={24} color={Colors.success} />
+            <Text style={styles.statValue}>{stats.onlineCount ?? '-'}</Text>
+            <Text style={styles.statLabel}>Online</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="chatbubbles-outline" size={24} color={Colors.warning} />
-            <Text style={styles.statValue}>12</Text>
-            <Text style={styles.statLabel}>Chats</Text>
+            <Ionicons name="close-circle-outline" size={24} color={Colors.error} />
+            <Text style={styles.statValue}>{stats.offlineCount ?? '-'}</Text>
+            <Text style={styles.statLabel}>Offline</Text>
           </View>
           <View style={styles.statCard}>
-            <Ionicons name="ticket-outline" size={24} color={Colors.error} />
-            <Text style={styles.statValue}>5</Text>
-            <Text style={styles.statLabel}>Tickets</Text>
+            <Ionicons name="timer-outline" size={24} color={Colors.warning} />
+            <Text style={styles.statValue}>{stats.busyCount ?? '-'}</Text>
+            <Text style={styles.statLabel}>Busy</Text>
           </View>
         </View>
+        )}
       </View>
 
       <View style={styles.section}>

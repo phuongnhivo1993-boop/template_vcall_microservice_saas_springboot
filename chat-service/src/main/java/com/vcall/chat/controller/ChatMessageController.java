@@ -45,4 +45,10 @@ public class ChatMessageController {
         long count = chatMessageService.getUnreadCount(id);
         return ResponseEntity.ok(ApiResponse.success(Map.of("unreadCount", count)));
     }
+
+    @PostMapping("/read")
+    public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable UUID id) {
+        chatMessageService.markAsRead(id);
+        return ResponseEntity.ok(ApiResponse.success("Messages marked as read", null));
+    }
 }

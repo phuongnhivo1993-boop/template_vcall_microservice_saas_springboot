@@ -1,19 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
+import { ticketsApi } from '../../../lib/api';
 import type { Ticket, TicketStatus, TicketPriority } from '../../../types';
 
-const MOCK_TICKETS: Ticket[] = [
-  { id: '1', title: 'Cannot access email', description: 'User reports inability to log into email account', status: 'open', priority: 'high', customerId: 'c1', customerName: 'John Doe', createdAt: new Date(Date.now() - 3600000).toISOString(), updatedAt: new Date(Date.now() - 3600000).toISOString(), comments: [] },
-  { id: '2', title: 'Billing discrepancy', description: 'Customer was charged incorrect amount', status: 'in_progress', priority: 'critical', customerId: 'c2', customerName: 'Jane Roe', createdAt: new Date(Date.now() - 7200000).toISOString(), updatedAt: new Date(Date.now() - 1800000).toISOString(), comments: [] },
-  { id: '3', title: 'Feature request: Dark mode', description: 'Customer would like dark mode support', status: 'open', priority: 'low', customerId: 'c3', customerName: 'Bob Wilson', createdAt: new Date(Date.now() - 86400000).toISOString(), updatedAt: new Date(Date.now() - 86400000).toISOString(), comments: [] },
-  { id: '4', title: 'Account verification pending', description: 'Unable to verify identity documents', status: 'in_progress', priority: 'medium', customerId: 'c4', customerName: 'Alice Brown', createdAt: new Date(Date.now() - 172800000).toISOString(), updatedAt: new Date(Date.now() - 43200000).toISOString(), comments: [] },
-  { id: '5', title: 'Refund request', description: 'Customer requesting full refund', status: 'resolved', priority: 'high', customerId: 'c5', customerName: 'Charlie Davis', createdAt: new Date(Date.now() - 259200000).toISOString(), updatedAt: new Date(Date.now() - 86400000).toISOString(), comments: [] },
-];
+const MOCK_TICKETS: Ticket[] = [];
 
 const FILTERS: { label: string; value: TicketStatus | 'all' }[] = [
   { label: 'All', value: 'all' },
@@ -45,10 +40,19 @@ function formatDate(dateStr: string): string {
 export default function TicketsScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<TicketStatus | 'all'>('all');
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    ticketsApi.getAll()
+      .then((res) => setTickets(res.data?.data || res.data || []))
+      .catch(() => setTickets([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = activeFilter === 'all'
-    ? MOCK_TICKETS
-    : MOCK_TICKETS.filter((t) => t.status === activeFilter);
+    ? tickets
+    : tickets.filter((t) => t.status === activeFilter);
 
   const renderTicket = useCallback(({ item }: { item: Ticket }) => (
     <TouchableOpacity
@@ -93,6 +97,9 @@ export default function TicketsScreen() {
         )}
       />
 
+      {loading ? (
+        <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
+      ) : (
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
@@ -100,6 +107,7 @@ export default function TicketsScreen() {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       />
+      )}
     </View>
   );
 }

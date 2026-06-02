@@ -3,8 +3,10 @@ package com.vcall.call.controller;
 import com.vcall.call.dto.CallRequest;
 import com.vcall.call.dto.CallResponse;
 import com.vcall.call.dto.CallStatusRequest;
+import com.vcall.call.dto.TransferRequest;
 import com.vcall.call.entity.Call;
 import com.vcall.call.service.CallService;
+import com.vcall.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -64,5 +66,35 @@ public class CallController {
         if (start == null) start = LocalDateTime.now().minusHours(24);
         if (end == null) end = LocalDateTime.now();
         return ResponseEntity.ok(callService.getCallsByDateRange(Call.CallStatus.IN_PROGRESS, start, end));
+    }
+
+    @PostMapping("/{id}/transfer")
+    public ResponseEntity<CallResponse> transferCall(@PathVariable UUID id,
+                                                      @Valid @RequestBody TransferRequest request) {
+        return ResponseEntity.ok(callService.transferCall(id, request.getTargetAgentId()));
+    }
+
+    @PostMapping("/{id}/mute")
+    public ResponseEntity<ApiResponse<CallResponse>> muteCall(@PathVariable UUID id) {
+        CallResponse response = callService.muteCall(id);
+        return ResponseEntity.ok(ApiResponse.success("Call muted", response));
+    }
+
+    @PostMapping("/{id}/unmute")
+    public ResponseEntity<ApiResponse<CallResponse>> unmuteCall(@PathVariable UUID id) {
+        CallResponse response = callService.unmuteCall(id);
+        return ResponseEntity.ok(ApiResponse.success("Call unmuted", response));
+    }
+
+    @PostMapping("/{id}/hold")
+    public ResponseEntity<ApiResponse<CallResponse>> holdCall(@PathVariable UUID id) {
+        CallResponse response = callService.holdCall(id);
+        return ResponseEntity.ok(ApiResponse.success("Call on hold", response));
+    }
+
+    @PostMapping("/{id}/resume")
+    public ResponseEntity<ApiResponse<CallResponse>> resumeCall(@PathVariable UUID id) {
+        CallResponse response = callService.resumeCall(id);
+        return ResponseEntity.ok(ApiResponse.success("Call resumed", response));
     }
 }

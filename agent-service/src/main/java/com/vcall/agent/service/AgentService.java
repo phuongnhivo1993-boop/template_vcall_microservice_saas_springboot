@@ -19,7 +19,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -134,6 +136,25 @@ public class AgentService {
                 .filter(m -> m.getGroup().getId().equals(groupId))
                 .findFirst()
                 .ifPresent(agentGroupMemberRepository::delete);
+    }
+
+    @Transactional(readOnly = true)
+    public AgentResponse getAgentByUserId(UUID userId) {
+        Agent agent = agentRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Agent not found for userId: " + userId));
+        return toResponse(agent);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getAgentStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalAgents", agentRepository.count());
+        stats.put("onlineCount", agentRepository.countByStatus(AgentStatusEnum.ONLINE));
+        stats.put("offlineCount", agentRepository.countByStatus(AgentStatusEnum.OFFLINE));
+        stats.put("busyCount", agentRepository.countByStatus(AgentStatusEnum.BUSY));
+        stats.put("onBreakCount", agentRepository.countByStatus(AgentStatusEnum.BREAK));
+        stats.put("awayCount", agentRepository.countByStatus(AgentStatusEnum.AWAY));
+        return stats;
     }
 
     @Transactional(readOnly = true)

@@ -4,6 +4,7 @@ import com.vcall.call.dto.CallRequest;
 import com.vcall.call.dto.CallResponse;
 import com.vcall.call.dto.CallStatusRequest;
 import com.vcall.call.entity.Call;
+import com.vcall.call.entity.Call.CallStatus;
 import com.vcall.call.kafka.CallEventPublisher;
 import com.vcall.call.repository.CallRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
@@ -118,6 +119,47 @@ public class CallService {
                 .orElseThrow(() -> new ResourceNotFoundException("Call not found with id: " + id));
         call.setAgentId(targetAgentId);
         call = callRepository.save(call);
+        eventPublisher.publishEvent("CALL_TRANSFERRED", call);
+        return toResponse(call);
+    }
+
+    @Transactional
+    public CallResponse muteCall(UUID id) {
+        Call call = callRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found with id: " + id));
+        call.setStatus(CallStatus.IN_PROGRESS);
+        call = callRepository.save(call);
+        eventPublisher.publishEvent("CALL_MUTED", call);
+        return toResponse(call);
+    }
+
+    @Transactional
+    public CallResponse unmuteCall(UUID id) {
+        Call call = callRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found with id: " + id));
+        call.setStatus(CallStatus.IN_PROGRESS);
+        call = callRepository.save(call);
+        eventPublisher.publishEvent("CALL_UNMUTED", call);
+        return toResponse(call);
+    }
+
+    @Transactional
+    public CallResponse holdCall(UUID id) {
+        Call call = callRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found with id: " + id));
+        call.setStatus(CallStatus.ON_HOLD);
+        call = callRepository.save(call);
+        eventPublisher.publishEvent("CALL_HELD", call);
+        return toResponse(call);
+    }
+
+    @Transactional
+    public CallResponse resumeCall(UUID id) {
+        Call call = callRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found with id: " + id));
+        call.setStatus(CallStatus.IN_PROGRESS);
+        call = callRepository.save(call);
+        eventPublisher.publishEvent("CALL_RESUMED", call);
         return toResponse(call);
     }
 

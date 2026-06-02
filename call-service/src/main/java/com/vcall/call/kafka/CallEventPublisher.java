@@ -41,6 +41,10 @@ public class CallEventPublisher {
         publishEvent("call.queue.left", call, "CALL_QUEUE_LEFT");
     }
 
+    public void publishEvent(String eventType, Call call) {
+        publishEvent("call.events", call, eventType);
+    }
+
     private void publishEvent(String topic, Call call, String eventType) {
         try {
             String payload = objectMapper.writeValueAsString(call);

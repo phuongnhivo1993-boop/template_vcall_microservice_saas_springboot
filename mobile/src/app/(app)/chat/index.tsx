@@ -1,19 +1,12 @@
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
+import { chatApi } from '../../../lib/api';
 import type { Conversation } from '../../../types';
-
-const MOCK_CONVERSATIONS: Conversation[] = [
-  { id: '1', customerId: 'c1', customerName: 'John Doe', lastMessage: 'Thanks for your help!', lastMessageAt: new Date(Date.now() - 600000).toISOString(), unreadCount: 0, status: 'active' },
-  { id: '2', customerId: 'c2', customerName: 'Jane Roe', lastMessage: 'I still have an issue with my account', lastMessageAt: new Date(Date.now() - 1800000).toISOString(), unreadCount: 2, status: 'active' },
-  { id: '3', customerId: 'c3', customerName: 'Bob Wilson', lastMessage: 'When will the technician arrive?', lastMessageAt: new Date(Date.now() - 3600000).toISOString(), unreadCount: 1, status: 'active' },
-  { id: '4', customerId: 'c4', customerName: 'Alice Brown', lastMessage: 'Perfect, thank you!', lastMessageAt: new Date(Date.now() - 7200000).toISOString(), unreadCount: 0, status: 'resolved' },
-  { id: '5', customerId: 'c5', customerName: 'Charlie Davis', lastMessage: 'I need a refund', lastMessageAt: new Date(Date.now() - 14400000).toISOString(), unreadCount: 0, status: 'pending' },
-];
 
 function formatRelativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -28,6 +21,15 @@ function formatRelativeTime(dateStr: string): string {
 
 export default function ChatListScreen() {
   const router = useRouter();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    chatApi.getConversations()
+      .then((res) => setConversations(res.data?.data || res.data || []))
+      .catch(() => setConversations([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const renderItem = useCallback(({ item }: { item: Conversation }) => (
     <TouchableOpacity
@@ -64,13 +66,17 @@ export default function ChatListScreen() {
         <Text style={styles.title}>Chat</Text>
       </View>
 
+      {loading ? (
+        <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
+      ) : (
       <FlatList
-        data={MOCK_CONVERSATIONS}
+        data={conversations}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       />
+      )}
     </View>
   );
 }

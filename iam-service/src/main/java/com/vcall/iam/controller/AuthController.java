@@ -4,10 +4,13 @@ import com.vcall.common.dto.ApiResponse;
 import com.vcall.iam.dto.LoginRequest;
 import com.vcall.iam.dto.LoginResponse;
 import com.vcall.iam.dto.RefreshTokenRequest;
+import com.vcall.iam.dto.UserResponse;
 import com.vcall.iam.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,5 +39,11 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> logout(@RequestBody RefreshTokenRequest request) {
         authService.logout(request.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> me(Authentication authentication) {
+        UserResponse response = authService.getCurrentUser(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 }

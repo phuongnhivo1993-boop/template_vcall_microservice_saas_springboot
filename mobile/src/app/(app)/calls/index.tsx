@@ -1,43 +1,25 @@
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
 import CallCard from '../../../components/CallCard';
+import { callsApi } from '../../../lib/api';
 import type { Call } from '../../../types';
-
-const MOCK_CALLS: Call[] = [
-  {
-    id: '1', callerId: 'c1', callerName: 'John Doe', callerNumber: '+1 555-0101',
-    calleeName: 'Agent Smith', calleeNumber: '+1 555-1001', direction: 'incoming',
-    status: 'ended', duration: 245, startedAt: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: '2', callerId: 'c2', callerName: 'Jane Roe', callerNumber: '+1 555-0102',
-    calleeName: 'Agent Smith', calleeNumber: '+1 555-1001', direction: 'outgoing',
-    status: 'ended', duration: 120, startedAt: new Date(Date.now() - 7200000).toISOString(),
-  },
-  {
-    id: '3', callerId: 'c3', callerName: 'Bob Wilson', callerNumber: '+1 555-0103',
-    calleeName: 'Agent Smith', calleeNumber: '+1 555-1001', direction: 'incoming',
-    status: 'missed', duration: 0, startedAt: new Date(Date.now() - 10800000).toISOString(),
-  },
-  {
-    id: '4', callerId: 'c4', callerName: 'Alice Brown', callerNumber: '+1 555-0104',
-    calleeName: 'Agent Smith', calleeNumber: '+1 555-1001', direction: 'incoming',
-    status: 'ended', duration: 480, startedAt: new Date(Date.now() - 14400000).toISOString(),
-  },
-  {
-    id: '5', callerId: 'c5', callerName: 'Charlie Davis', callerNumber: '+1 555-0105',
-    calleeName: 'Agent Smith', calleeNumber: '+1 555-1001', direction: 'outgoing',
-    status: 'voicemail', duration: 45, startedAt: new Date(Date.now() - 18000000).toISOString(),
-  },
-];
 
 export default function CallsScreen() {
   const router = useRouter();
+  const [calls, setCalls] = useState<Call[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    callsApi.getHistory()
+      .then((res) => setCalls(res.data?.data || res.data || []))
+      .catch(() => setCalls([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const renderItem = useCallback(({ item }: { item: Call }) => (
     <CallCard call={item} onPress={() => router.push(`/calls/${item.id}`)} />
@@ -53,13 +35,17 @@ export default function CallsScreen() {
         </TouchableOpacity>
       </View>
 
+      {loading ? (
+        <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
+      ) : (
       <FlatList
-        data={MOCK_CALLS}
+        data={calls}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       />
+      )}
 
       <TouchableOpacity
         style={styles.fab}
