@@ -106,6 +106,122 @@ export interface TicketComment {
   createdAt: string;
 }
 
+export interface DashboardStats {
+  totalCalls: number;
+  totalTickets: number;
+  totalConversations: number;
+  totalCustomers: number;
+  missedCalls: number;
+  avgWaitTime: number;
+  satisfaction: number;
+}
+
+export interface Activity {
+  id: string;
+  type: 'call' | 'ticket' | 'chat' | 'system';
+  message: string;
+  timestamp: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  company?: string;
+  totalTickets: number;
+  lastContact: string;
+  status: 'active' | 'inactive' | 'lead';
+}
+
+export interface Campaign {
+  id: string;
+  name: string;
+  description: string;
+  type: 'email' | 'sms' | 'call' | 'social';
+  status: 'draft' | 'active' | 'paused' | 'completed';
+  sentCount: number;
+  openRate: number;
+  clickRate: number;
+  startDate: string;
+  endDate?: string;
+  createdAt: string;
+}
+
+export interface Invoice {
+  id: string;
+  amount: number;
+  currency: string;
+  status: 'paid' | 'pending' | 'overdue' | 'cancelled';
+  description: string;
+  issuedAt: string;
+  paidAt?: string;
+  dueDate: string;
+}
+
+export interface Report {
+  id: string;
+  name: string;
+  type: string;
+  period: string;
+  createdAt: string;
+  format: 'pdf' | 'csv' | 'excel';
+}
+
+export interface SupervisorAgent {
+  id: string;
+  name: string;
+  email: string;
+  extension: string;
+  status: AgentStatus;
+  callsActive: number;
+  callsToday: number;
+  avgDuration: number;
+  online: boolean;
+}
+
+export interface Webhook {
+  id: string;
+  name: string;
+  url: string;
+  events: string[];
+  status: 'active' | 'inactive' | 'failed';
+  lastTriggered?: string;
+  createdAt: string;
+}
+
+export interface KnowledgeArticle {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  tags: string[];
+  views: number;
+  helpful: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AutomationRule {
+  id: string;
+  name: string;
+  description: string;
+  trigger: string;
+  action: string;
+  status: 'active' | 'inactive';
+  lastRun?: string;
+  createdAt: string;
+}
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  read: boolean;
+  createdAt: string;
+}
+
 export interface AuthState {
   token: string | null;
   user: User | null;

@@ -11,13 +11,13 @@ import {
 const { Title, Text, Paragraph } = Typography;
 
 const CHANNELS = [
-  { key: 'all', label: 'All Channels', icon: <GlobalOutlined /> },
-  { key: 'chat', label: 'Chat', icon: <MessageOutlined />, color: '#52c41a' },
+  { key: 'all', label: 'Tất cả kênh', icon: <GlobalOutlined /> },
+  { key: 'chat', label: 'Chat trực tuyến', icon: <MessageOutlined />, color: '#52c41a' },
   { key: 'email', label: 'Email', icon: <MailOutlined />, color: '#722ed1' },
   { key: 'sms', label: 'SMS', icon: <SmileOutlined />, color: '#1890ff' },
-  { key: 'facebook', label: 'Facebook', icon: <FacebookOutlined />, color: '#1877F2' },
+  { key: 'facebook', label: 'Facebook Messenger', icon: <FacebookOutlined />, color: '#1877F2' },
   { key: 'zalo', label: 'Zalo', icon: <MessageOutlined />, color: '#0068FF' },
-  { key: 'call', label: 'Call Notes', icon: <PhoneOutlined />, color: '#faad14' },
+  { key: 'call', label: 'Ghi chú cuộc gọi', icon: <PhoneOutlined />, color: '#faad14' },
 ];
 
 interface Conversation {
@@ -115,11 +115,11 @@ export default function InboxPage() {
   }));
 
   if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}><Spin size="large" tip="Loading inbox..." /></div>;
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}><Spin size="large" tip="Đang tải..." /></div>;
   }
 
   if (error) {
-    return <Alert message="Error" description={error} type="error" showIcon action={<Button onClick={loadConversations}>Retry</Button>} />;
+    return <Alert message="Lỗi" description={error} type="error" showIcon action={<Button onClick={loadConversations}>Thử lại</Button>} />;
   }
 
   return (
@@ -132,7 +132,7 @@ export default function InboxPage() {
           <Col>
             <Input
               prefix={<SearchOutlined />}
-              placeholder="Search conversations..."
+              placeholder="Tìm kiếm..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               style={{ width: 280 }}
@@ -147,7 +147,7 @@ export default function InboxPage() {
           <Card size="small" style={{ height: '100%' }}>
             <List
               dataSource={filteredConversations}
-              locale={{ emptyText: <Empty description="No conversations found" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+              locale={{ emptyText: <Empty description="Không có dữ liệu" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
               renderItem={(conv) => (
                 <List.Item
                   onClick={() => handleSelectConversation(conv)}
@@ -240,7 +240,7 @@ export default function InboxPage() {
                 <Input.TextArea
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
-                  placeholder="Type a message..."
+                  placeholder="Nhập tin nhắn..."
                   autoSize={{ minRows: 2, maxRows: 4 }}
                   onPressEnter={(e) => {
                     if (!e.shiftKey) {
@@ -251,7 +251,7 @@ export default function InboxPage() {
                   style={{ marginBottom: 8 }}
                 />
                 <Button type="primary" icon={<SendOutlined />} onClick={handleSendMessage} disabled={!messageInput.trim()}>
-                  Send
+                  Gửi
                 </Button>
               </div>
             </Card>

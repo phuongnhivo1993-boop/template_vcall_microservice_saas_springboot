@@ -54,6 +54,11 @@ export const Permissions = {
   KNOWLEDGE_DELETE: 'knowledge:delete',
 
   INBOX_VIEW: 'inbox:view',
+
+  WEBHOOK_VIEW: 'webhook:view',
+  WEBHOOK_CREATE: 'webhook:create',
+  WEBHOOK_EDIT: 'webhook:edit',
+  WEBHOOK_DELETE: 'webhook:delete',
 } as const;
 
 export type Permission = typeof Permissions[keyof typeof Permissions];
@@ -73,6 +78,7 @@ export const RolePermissions: Record<string, Permission[]> = {
     Permissions.SETTINGS_VIEW,
     Permissions.KNOWLEDGE_VIEW, Permissions.KNOWLEDGE_CREATE, Permissions.KNOWLEDGE_EDIT,
     Permissions.INBOX_VIEW,
+    Permissions.WEBHOOK_VIEW, Permissions.WEBHOOK_CREATE, Permissions.WEBHOOK_EDIT, Permissions.WEBHOOK_DELETE,
   ],
   AGENT: [
     Permissions.CUSTOMER_VIEW, Permissions.CUSTOMER_CREATE,

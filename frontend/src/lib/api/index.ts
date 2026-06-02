@@ -357,6 +357,33 @@ export const notificationsApi = {
   getStats: () => apiClient.get('/notifications/stats'),
 };
 
+export const knowledgeBaseApi = {
+  list: (params?: Record<string, unknown>) => apiClient.get('/knowledge-base/articles', { params }),
+  getById: (id: string) => apiClient.get(`/knowledge-base/articles/${id}`),
+  create: (data: Record<string, unknown>) => apiClient.post('/knowledge-base/articles', data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.put(`/knowledge-base/articles/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/knowledge-base/articles/${id}`),
+};
+
+export const automationApi = {
+  list: (params?: Record<string, unknown>) => apiClient.get('/automation/rules', { params }),
+  getById: (id: string) => apiClient.get(`/automation/rules/${id}`),
+  create: (data: Record<string, unknown>) => apiClient.post('/automation/rules', data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.put(`/automation/rules/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/automation/rules/${id}`),
+  toggle: (id: string, isActive: boolean) =>
+    apiClient.patch(`/automation/rules/${id}`, { isActive }),
+};
+
+export const webhooksApi = {
+  list: (params?: Record<string, unknown>) => apiClient.get('/webhooks', { params }),
+  getById: (id: string) => apiClient.get(`/webhooks/${id}`),
+  create: (data: Record<string, unknown>) => apiClient.post('/webhooks', data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.put(`/webhooks/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/webhooks/${id}`),
+  test: (id: string) => apiClient.post(`/webhooks/${id}/test`),
+};
+
 export const chatApi = {
   getConversations: (params?: Record<string, unknown>) =>
     apiClient.get('/chat/conversations', { params }),

@@ -36,6 +36,8 @@
         <module>reporting-service</module>
         <module>notification-service</module>
         <module>audit-service</module>
+        <module>scheduling-service</module>
+        <module>survey-service</module>
     </modules>
 
     <parent>

@@ -55,3 +55,50 @@ export const chatApi = {
   markRead: (conversationId: string) =>
     api.post(`/chat/conversations/${conversationId}/read`),
 };
+
+export const dashboardApi = {
+  getStats: () => api.get('/dashboard/stats'),
+  getActivities: () => api.get('/dashboard/activities'),
+};
+
+export const crmApi = {
+  getAll: (params?: { page?: number; search?: string }) =>
+    api.get('/customers', { params }),
+};
+
+export const campaignsApi = {
+  getAll: () => api.get('/campaigns'),
+};
+
+export const billingApi = {
+  getInvoices: () => api.get('/billing/invoices'),
+};
+
+export const reportsApi = {
+  getAll: () => api.get('/reports'),
+};
+
+export const supervisorApi = {
+  getAgents: () => api.get('/supervisor/agents'),
+  getQueueStats: () => api.get('/supervisor/queue'),
+};
+
+export const webhooksApi = {
+  getAll: () => api.get('/webhooks'),
+};
+
+export const knowledgeBaseApi = {
+  getAll: (params?: { category?: string; search?: string }) =>
+    api.get('/knowledge-base/articles', { params }),
+  getArticle: (id: string) => api.get(`/knowledge-base/articles/${id}`),
+};
+
+export const automationApi = {
+  getAll: () => api.get('/automation/rules'),
+};
+
+export const notificationsApi = {
+  getAll: () => api.get('/notifications'),
+  markRead: (id: string) => api.post(`/notifications/${id}/read`),
+  markAllRead: () => api.post('/notifications/read-all'),
+};

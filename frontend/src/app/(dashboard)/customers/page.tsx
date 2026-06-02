@@ -28,14 +28,7 @@ interface Customer {
   lastContact: string;
 }
 
-const mockCustomers: Customer[] = [
-  { id: 'C-001', name: 'John Smith', email: 'john@example.com', phone: '+1 (555) 123-4567', status: 'active', plan: 'Premium', totalCalls: 45, lastContact: '2026-06-01' },
-  { id: 'C-002', name: 'Alice Brown', email: 'alice@example.com', phone: '+1 (555) 234-5678', status: 'active', plan: 'Enterprise', totalCalls: 128, lastContact: '2026-06-01' },
-  { id: 'C-003', name: 'Bob Wilson', email: 'bob@example.com', phone: '+1 (555) 345-6789', status: 'inactive', plan: 'Basic', totalCalls: 12, lastContact: '2026-05-28' },
-  { id: 'C-004', name: 'Carol Davis', email: 'carol@example.com', phone: '+1 (555) 456-7890', status: 'active', plan: 'Premium', totalCalls: 67, lastContact: '2026-06-01' },
-  { id: 'C-005', name: 'Tom Harris', email: 'tom@example.com', phone: '+1 (555) 567-8901', status: 'blocked', plan: 'Basic', totalCalls: 3, lastContact: '2026-05-15' },
-  { id: 'C-006', name: 'Diana Clark', email: 'diana@example.com', phone: '+1 (555) 678-9012', status: 'active', plan: 'Enterprise', totalCalls: 203, lastContact: '2026-06-01' },
-];
+
 
 const statusColors: Record<string, string> = {
   active: 'green',
@@ -62,8 +55,6 @@ export default function CustomersPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [filters, setFilters] = useState<Record<string, any>>({});
-  const [useMock, setUseMock] = useState(false);
-
   const fetchCustomers = useCallback(async (page = 1, size = 10, params?: Record<string, any>) => {
     setLoading(true);
     setError(null);
@@ -83,27 +74,13 @@ export default function CustomersPage() {
       } else if (data.data) {
         setCustomers(Array.isArray(data.data) ? data.data : []);
       }
-      setUseMock(false);
     } catch (err: any) {
-      if (!useMock) {
-        setUseMock(true);
-        const filtered = mockCustomers.filter((c) => {
-          if (!params) return true;
-          if (params.name && !c.name.toLowerCase().includes(params.name.toLowerCase())) return false;
-          if (params.status && c.status !== params.status) return false;
-          if (params.plan && c.plan !== params.plan) return false;
-          return true;
-        });
-        setCustomers(filtered);
-        setPagination((prev) => ({ ...prev, total: filtered.length }));
-      } else {
-        setError(err?.response?.data?.message || err?.message || 'Failed to load customers');
-        setCustomers([]);
-      }
+      setError(err?.response?.data?.message || err?.message || 'Failed to load customers');
+      setCustomers([]);
     } finally {
       setLoading(false);
     }
-  }, [useMock]);
+  }, []);
 
   useEffect(() => {
     fetchCustomers(1, pagination.pageSize);
@@ -125,18 +102,12 @@ export default function CustomersPage() {
       }
     });
     setFilters(cleaned);
-    if (useMock) {
-      const filtered = mockCustomers.filter((c) => {
-        if (cleaned.name && !c.name.toLowerCase().includes(cleaned.name.toLowerCase())) return false;
-        if (cleaned.status && c.status !== cleaned.status) return false;
-        if (cleaned.plan && c.plan !== cleaned.plan) return false;
-        return true;
-      });
-      setCustomers(filtered);
-      setPagination((prev) => ({ ...prev, total: filtered.length }));
-    } else {
-      fetchCustomers(1, pagination.pageSize, cleaned);
-    }
+    fetchCustomers(1, pagination.pageSize, cleaned);
+  };
+
+  const handleReset = () => {
+    setFilters({});
+    fetchCustomers(1, pagination.pageSize);
   };
 
   const handleReset = () => {
@@ -167,9 +138,9 @@ export default function CustomersPage() {
         try {
           await customersApi.delete(customer.id);
           message.success('Deleted successfully');
-        } catch {
-          if (useMock) message.success('Deleted successfully (mock)');
-          else throw new Error('Delete failed');
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Delete failed');
+          throw err;
         }
         fetchCustomers(pagination.current, pagination.pageSize, filters);
       },
