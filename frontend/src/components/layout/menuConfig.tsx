@@ -35,4 +35,5 @@ export const menuItems: MenuItem[] = [
   { key: 'wallboard', label: 'Wallboard', icon: <BarChartOutlined />, path: '/wallboard', permission: Permissions.ADMIN_ACCESS },
   { key: 'knowledge-base', label: 'Knowledge Base', icon: <BookOutlined />, path: '/knowledge-base', permission: Permissions.KNOWLEDGE_VIEW },
   { key: 'automation', label: 'Automation', icon: <ThunderboltOutlined />, path: '/automation', permission: Permissions.ADMIN_ACCESS },
+  { key: 'portal', label: 'Customer Portal', icon: <SafetyOutlined />, path: '/portal', permission: Permissions.CUSTOMER_VIEW },
 ];
