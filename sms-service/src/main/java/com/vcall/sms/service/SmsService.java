@@ -12,6 +12,8 @@ import com.vcall.sms.kafka.SmsEventPublisher;
 import com.vcall.sms.repository.SmsMessageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -84,25 +86,17 @@ public class SmsService {
         return toResponse(message);
     }
 
-    public List<SmsResponse> getSmsHistory(String from, String to, LocalDateTime startDate, LocalDateTime endDate) {
+    public Page<SmsResponse> getSmsHistory(String from, String to, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
         if (from != null && !from.isBlank()) {
-            return smsMessageRepository.findByFromNumber(from).stream()
-                    .map(this::toResponse)
-                    .collect(Collectors.toList());
+            return smsMessageRepository.findByFromNumber(from, pageable).map(this::toResponse);
         }
         if (to != null && !to.isBlank()) {
-            return smsMessageRepository.findByToNumber(to).stream()
-                    .map(this::toResponse)
-                    .collect(Collectors.toList());
+            return smsMessageRepository.findByToNumber(to, pageable).map(this::toResponse);
         }
         if (startDate != null && endDate != null) {
-            return smsMessageRepository.findBySentAtBetween(startDate, endDate).stream()
-                    .map(this::toResponse)
-                    .collect(Collectors.toList());
+            return smsMessageRepository.findBySentAtBetween(startDate, endDate, pageable).map(this::toResponse);
         }
-        return smsMessageRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return smsMessageRepository.findAll(pageable).map(this::toResponse);
     }
 
     @Transactional

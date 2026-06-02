@@ -6,6 +6,8 @@ import com.vcall.billing.entity.PricingPlan;
 import com.vcall.billing.service.PricingPlanService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,8 +19,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/billing/plans")
@@ -44,17 +44,18 @@ public class PricingPlanController {
     }
 
     @GetMapping
-    public ResponseEntity<List<PricingPlanResponse>> getAllPlans(
-            @RequestParam(required = false) PricingPlan.PlanType planType) {
+    public ResponseEntity<Page<PricingPlanResponse>> getAllPlans(
+            @RequestParam(required = false) PricingPlan.PlanType planType,
+            Pageable pageable) {
         if (planType != null) {
-            return ResponseEntity.ok(pricingPlanService.getPlansByType(planType));
+            return ResponseEntity.ok(pricingPlanService.getPlansByType(planType, pageable));
         }
-        return ResponseEntity.ok(pricingPlanService.getAllPlans());
+        return ResponseEntity.ok(pricingPlanService.getAllPlans(pageable));
     }
 
     @GetMapping("/active")
-    public ResponseEntity<List<PricingPlanResponse>> getActivePlans() {
-        return ResponseEntity.ok(pricingPlanService.getActivePlans());
+    public ResponseEntity<Page<PricingPlanResponse>> getActivePlans(Pageable pageable) {
+        return ResponseEntity.ok(pricingPlanService.getActivePlans(pageable));
     }
 
     @DeleteMapping("/{id}")

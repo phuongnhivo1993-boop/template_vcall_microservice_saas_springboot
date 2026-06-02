@@ -6,6 +6,8 @@ import com.vcall.notification.entity.NotificationPreference;
 import com.vcall.notification.service.NotificationPreferenceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -25,8 +26,9 @@ public class NotificationPreferenceController {
     private final NotificationPreferenceService preferenceService;
 
     @GetMapping("/{userId}")
-    public ResponseEntity<ApiResponse<List<NotificationPreference>>> getByUser(@PathVariable UUID userId) {
-        List<NotificationPreference> preferences = preferenceService.getPreferences(userId);
+    public ResponseEntity<ApiResponse<Page<NotificationPreference>>> getByUser(@PathVariable UUID userId,
+                                                                                Pageable pageable) {
+        Page<NotificationPreference> preferences = preferenceService.getPreferences(userId, pageable);
         return ResponseEntity.ok(ApiResponse.success(preferences));
     }
 

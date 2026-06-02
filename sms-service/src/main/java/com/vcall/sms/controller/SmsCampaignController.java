@@ -6,6 +6,8 @@ import com.vcall.sms.dto.SmsCampaignResponse;
 import com.vcall.sms.service.SmsCampaignService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,8 +18,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/sms/campaigns")
@@ -40,8 +40,8 @@ public class SmsCampaignController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SmsCampaignResponse>>> getAllCampaigns() {
-        List<SmsCampaignResponse> responses = smsCampaignService.getAllCampaigns();
+    public ResponseEntity<ApiResponse<Page<SmsCampaignResponse>>> getAllCampaigns(Pageable pageable) {
+        Page<SmsCampaignResponse> responses = smsCampaignService.getAllCampaigns(pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 

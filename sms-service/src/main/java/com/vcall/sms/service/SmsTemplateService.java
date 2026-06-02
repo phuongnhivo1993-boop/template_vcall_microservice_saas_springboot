@@ -9,12 +9,13 @@ import com.vcall.sms.dto.SmsTemplateResponse;
 import com.vcall.sms.entity.SmsTemplate;
 import com.vcall.sms.repository.SmsTemplateRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,16 +46,15 @@ public class SmsTemplateService {
         return toResponse(template);
     }
 
-    public List<SmsTemplateResponse> getAllTemplates() {
-        return smsTemplateRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<SmsTemplateResponse> getAllTemplates(Pageable pageable) {
+        return smsTemplateRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     public List<SmsTemplateResponse> getActiveTemplates() {
         return smsTemplateRepository.findByIsActiveTrue().stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional

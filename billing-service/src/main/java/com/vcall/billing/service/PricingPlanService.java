@@ -7,11 +7,10 @@ import com.vcall.billing.repository.PricingPlanRepository;
 import com.vcall.common.exception.DuplicateResourceException;
 import com.vcall.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -61,24 +60,21 @@ public class PricingPlanService {
     }
 
     @Transactional(readOnly = true)
-    public List<PricingPlanResponse> getAllPlans() {
-        return pricingPlanRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<PricingPlanResponse> getAllPlans(Pageable pageable) {
+        return pricingPlanRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<PricingPlanResponse> getActivePlans() {
-        return pricingPlanRepository.findByIsActiveTrue().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<PricingPlanResponse> getActivePlans(Pageable pageable) {
+        return pricingPlanRepository.findByIsActiveTrue(pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<PricingPlanResponse> getPlansByType(PricingPlan.PlanType planType) {
-        return pricingPlanRepository.findByPlanType(planType).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<PricingPlanResponse> getPlansByType(PricingPlan.PlanType planType, Pageable pageable) {
+        return pricingPlanRepository.findByPlanType(planType, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional

@@ -7,6 +7,8 @@ import com.vcall.notification.dto.NotificationResponse;
 import com.vcall.notification.service.NotificationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,8 +48,9 @@ public class NotificationController {
     }
 
     @GetMapping("/recipient/{recipientId}")
-    public ResponseEntity<ApiResponse<List<NotificationResponse>>> getByRecipient(@PathVariable UUID recipientId) {
-        List<NotificationResponse> notifications = notificationService.getByRecipient(recipientId);
+    public ResponseEntity<ApiResponse<Page<NotificationResponse>>> getByRecipient(@PathVariable UUID recipientId,
+                                                                                   Pageable pageable) {
+        Page<NotificationResponse> notifications = notificationService.getByRecipient(recipientId, pageable);
         return ResponseEntity.ok(ApiResponse.success(notifications));
     }
 
@@ -58,8 +61,9 @@ public class NotificationController {
     }
 
     @GetMapping("/unread/{recipientId}")
-    public ResponseEntity<ApiResponse<List<NotificationResponse>>> getUnread(@PathVariable UUID recipientId) {
-        List<NotificationResponse> notifications = notificationService.getUnreadByRecipient(recipientId);
+    public ResponseEntity<ApiResponse<Page<NotificationResponse>>> getUnread(@PathVariable UUID recipientId,
+                                                                              Pageable pageable) {
+        Page<NotificationResponse> notifications = notificationService.getUnreadByRecipient(recipientId, pageable);
         return ResponseEntity.ok(ApiResponse.success(notifications));
     }
 }

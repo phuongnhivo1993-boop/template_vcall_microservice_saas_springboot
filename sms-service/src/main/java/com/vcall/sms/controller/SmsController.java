@@ -6,6 +6,8 @@ import com.vcall.sms.dto.SmsResponse;
 import com.vcall.sms.service.SmsService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,20 +51,22 @@ public class SmsController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SmsResponse>>> getAllSms(
+    public ResponseEntity<ApiResponse<Page<SmsResponse>>> getAllSms(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
-        List<SmsResponse> responses = smsService.getSmsHistory(null, null, startDate, endDate);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            Pageable pageable) {
+        Page<SmsResponse> responses = smsService.getSmsHistory(null, null, startDate, endDate, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping("/history")
-    public ResponseEntity<ApiResponse<List<SmsResponse>>> getSmsHistory(
+    public ResponseEntity<ApiResponse<Page<SmsResponse>>> getSmsHistory(
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
-        List<SmsResponse> responses = smsService.getSmsHistory(from, to, startDate, endDate);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            Pageable pageable) {
+        Page<SmsResponse> responses = smsService.getSmsHistory(from, to, startDate, endDate, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 }

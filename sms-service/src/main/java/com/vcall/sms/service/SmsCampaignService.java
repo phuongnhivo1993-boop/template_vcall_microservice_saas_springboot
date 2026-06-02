@@ -13,13 +13,14 @@ import com.vcall.sms.repository.SmsCampaignRepository;
 import com.vcall.sms.repository.SmsTemplateRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -61,10 +62,9 @@ public class SmsCampaignService {
         return toResponse(campaign);
     }
 
-    public List<SmsCampaignResponse> getAllCampaigns() {
-        return smsCampaignRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<SmsCampaignResponse> getAllCampaigns(Pageable pageable) {
+        return smsCampaignRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     @Transactional
@@ -170,10 +170,9 @@ public class SmsCampaignService {
         }
     }
 
-    public List<SmsCampaignResponse> getCampaignsByStatus(SmsCampaign.CampaignStatus status) {
-        return smsCampaignRepository.findByStatus(status).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<SmsCampaignResponse> getCampaignsByStatus(SmsCampaign.CampaignStatus status, Pageable pageable) {
+        return smsCampaignRepository.findByStatus(status, pageable)
+                .map(this::toResponse);
     }
 
     private List<String> parseRecipients(String recipientList) {

@@ -9,6 +9,8 @@ import com.vcall.notification.entity.NotificationTemplate;
 import com.vcall.notification.repository.NotificationTemplateRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,8 +50,8 @@ public class NotificationTemplateService {
     }
 
     @Transactional(readOnly = true)
-    public List<NotificationTemplateResponse> getAll() {
-        return templateRepository.findAll().stream().map(this::toResponse).toList();
+    public Page<NotificationTemplateResponse> getAll(Pageable pageable) {
+        return templateRepository.findAll(pageable).map(this::toResponse);
     }
 
     @Transactional

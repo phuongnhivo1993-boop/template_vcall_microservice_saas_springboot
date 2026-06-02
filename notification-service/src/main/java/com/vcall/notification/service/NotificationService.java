@@ -11,6 +11,8 @@ import com.vcall.notification.entity.NotificationType;
 import com.vcall.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -90,11 +92,9 @@ public class NotificationService {
     }
 
     @Transactional(readOnly = true)
-    public List<NotificationResponse> getNotifications(UUID recipientId) {
-        return notificationRepository.findByRecipientIdOrderBySentAtDesc(recipientId)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<NotificationResponse> getNotifications(UUID recipientId, Pageable pageable) {
+        return notificationRepository.findByRecipientIdOrderBySentAtDesc(recipientId, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional
@@ -108,17 +108,14 @@ public class NotificationService {
     }
 
     @Transactional(readOnly = true)
-    public List<NotificationResponse> getByRecipient(UUID recipientId) {
-        return getNotifications(recipientId);
+    public Page<NotificationResponse> getByRecipient(UUID recipientId, Pageable pageable) {
+        return getNotifications(recipientId, pageable);
     }
 
     @Transactional(readOnly = true)
-    public List<NotificationResponse> getUnreadByRecipient(UUID recipientId) {
-        return notificationRepository.findByRecipientIdOrderBySentAtDesc(recipientId)
-                .stream()
-                .filter(n -> n.getStatus() != NotificationStatus.READ)
-                .map(this::toResponse)
-                .toList();
+    public Page<NotificationResponse> getUnreadByRecipient(UUID recipientId, Pageable pageable) {
+        return notificationRepository.findByRecipientIdAndStatusNotOrderBySentAtDesc(recipientId, NotificationStatus.READ, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

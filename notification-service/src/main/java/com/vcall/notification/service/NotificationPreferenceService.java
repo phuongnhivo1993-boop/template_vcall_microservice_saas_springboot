@@ -7,10 +7,11 @@ import com.vcall.notification.entity.NotificationPreference;
 import com.vcall.notification.entity.NotificationType;
 import com.vcall.notification.repository.NotificationPreferenceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -20,8 +21,8 @@ public class NotificationPreferenceService {
     private final NotificationPreferenceRepository preferenceRepository;
 
     @Transactional(readOnly = true)
-    public List<NotificationPreference> getPreferences(UUID userId) {
-        return preferenceRepository.findByUserId(userId);
+    public Page<NotificationPreference> getPreferences(UUID userId, Pageable pageable) {
+        return preferenceRepository.findByUserId(userId, pageable);
     }
 
     @Transactional

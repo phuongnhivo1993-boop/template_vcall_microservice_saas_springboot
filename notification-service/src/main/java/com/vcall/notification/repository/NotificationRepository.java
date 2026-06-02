@@ -4,6 +4,8 @@ import com.vcall.notification.entity.Notification;
 import com.vcall.notification.entity.NotificationChannel;
 import com.vcall.notification.entity.NotificationStatus;
 import com.vcall.notification.entity.NotificationType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -15,6 +17,7 @@ import java.util.UUID;
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
     List<Notification> findByRecipientIdOrderBySentAtDesc(UUID recipientId);
+    Page<Notification> findByRecipientIdOrderBySentAtDesc(UUID recipientId, Pageable pageable);
 
     List<Notification> findByStatus(NotificationStatus status);
 
@@ -23,4 +26,6 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     List<Notification> findByRecipientIdAndType(UUID recipientId, NotificationType type);
 
     List<Notification> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+
+    Page<Notification> findByRecipientIdAndStatusNotOrderBySentAtDesc(UUID recipientId, NotificationStatus status, Pageable pageable);
 }

@@ -8,11 +8,12 @@ import com.vcall.sms.entity.SmsProvider;
 import com.vcall.sms.repository.SmsProviderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -52,22 +53,21 @@ public class SmsProviderService {
         return toResponse(provider);
     }
 
-    public List<SmsProviderResponse> getAllProviders() {
-        return smsProviderRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<SmsProviderResponse> getAllProviders(Pageable pageable) {
+        return smsProviderRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     public List<SmsProviderResponse> getActiveProviders() {
         return smsProviderRepository.findByIsActiveTrue().stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<SmsProviderResponse> getProvidersByType(String providerType) {
         return smsProviderRepository.findByProviderType(SmsProvider.ProviderType.valueOf(providerType)).stream()
                 .map(this::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public SmsProviderResponse getDefaultProvider() {

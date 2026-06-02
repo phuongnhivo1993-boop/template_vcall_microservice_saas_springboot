@@ -6,6 +6,8 @@ import com.vcall.notification.dto.NotificationTemplateResponse;
 import com.vcall.notification.service.NotificationTemplateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,8 +18,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/notification-templates")
@@ -33,8 +33,8 @@ public class NotificationTemplateController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<NotificationTemplateResponse>>> getAll() {
-        List<NotificationTemplateResponse> templates = templateService.getAll();
+    public ResponseEntity<ApiResponse<Page<NotificationTemplateResponse>>> getAll(Pageable pageable) {
+        Page<NotificationTemplateResponse> templates = templateService.getAll(pageable);
         return ResponseEntity.ok(ApiResponse.success(templates));
     }
 

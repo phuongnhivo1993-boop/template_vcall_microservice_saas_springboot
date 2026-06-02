@@ -7,10 +7,11 @@ import com.vcall.notification.dto.PushDeviceResponse;
 import com.vcall.notification.entity.PushDevice;
 import com.vcall.notification.repository.PushDeviceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,12 +46,9 @@ public class PushDeviceService {
     }
 
     @Transactional(readOnly = true)
-    public List<PushDeviceResponse> getActiveDevices(UUID userId) {
-        return pushDeviceRepository.findByUserId(userId)
-                .stream()
-                .filter(d -> Boolean.TRUE.equals(d.getIsActive()))
-                .map(this::toResponse)
-                .toList();
+    public Page<PushDeviceResponse> getActiveDevices(UUID userId, Pageable pageable) {
+        return pushDeviceRepository.findByUserIdAndIsActiveTrue(userId, pageable)
+                .map(this::toResponse);
     }
 
     private PushDeviceResponse toResponse(PushDevice device) {
