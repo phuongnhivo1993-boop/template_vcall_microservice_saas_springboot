@@ -10,6 +10,8 @@ import com.vcall.agent.service.AgentStatusService;
 import com.vcall.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -43,8 +45,8 @@ public class AgentController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<AgentResponse>>> getAllAgents() {
-        List<AgentResponse> agents = agentService.getAllAgents();
+    public ResponseEntity<ApiResponse<Page<AgentResponse>>> getAllAgents(Pageable pageable) {
+        Page<AgentResponse> agents = agentService.getAllAgents(pageable);
         return ResponseEntity.ok(ApiResponse.success(agents));
     }
 

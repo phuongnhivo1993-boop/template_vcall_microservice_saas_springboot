@@ -13,9 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @RequiredArgsConstructor
@@ -46,18 +47,13 @@ public class TicketCommentService {
     }
 
     @Transactional(readOnly = true)
-    public List<TicketCommentResponse> getComments(UUID ticketId) {
-        return commentRepository.findByTicketIdOrderByCreatedAtAsc(ticketId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<TicketCommentResponse> getComments(UUID ticketId, Pageable pageable) {
+        return commentRepository.findByTicketId(ticketId, pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<TicketCommentResponse> getInternalComments(UUID ticketId) {
-        return commentRepository.findByTicketIdOrderByCreatedAtAsc(ticketId).stream()
-                .filter(TicketComment::getIsInternal)
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<TicketCommentResponse> getInternalComments(UUID ticketId, Pageable pageable) {
+        return commentRepository.findByTicketIdAndIsInternal(ticketId, true, pageable).map(this::toResponse);
     }
 
     private TicketCommentResponse toResponse(TicketComment comment) {

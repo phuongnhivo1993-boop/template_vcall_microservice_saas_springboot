@@ -14,8 +14,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Slf4j
 @Service
@@ -44,22 +46,16 @@ public class OpportunityService {
         return mapToResponse(opportunity);
     }
 
-    public List<OpportunityResponse> getAllOpportunities() {
-        return opportunityRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .toList();
+    public Page<OpportunityResponse> getAllOpportunities(Pageable pageable) {
+        return opportunityRepository.findAll(pageable).map(this::mapToResponse);
     }
 
-    public List<OpportunityResponse> getOpportunitiesByLeadId(UUID leadId) {
-        return opportunityRepository.findByLeadId(leadId).stream()
-                .map(this::mapToResponse)
-                .toList();
+    public Page<OpportunityResponse> getOpportunitiesByLeadId(UUID leadId, Pageable pageable) {
+        return opportunityRepository.findByLeadId(leadId, pageable).map(this::mapToResponse);
     }
 
-    public List<OpportunityResponse> getOpportunitiesByStage(OpportunityStage stage) {
-        return opportunityRepository.findByStage(stage).stream()
-                .map(this::mapToResponse)
-                .toList();
+    public Page<OpportunityResponse> getOpportunitiesByStage(OpportunityStage stage, Pageable pageable) {
+        return opportunityRepository.findByStage(stage, pageable).map(this::mapToResponse);
     }
 
     @Transactional

@@ -6,6 +6,8 @@ import com.vcall.crm.dto.CustomerNoteResponse;
 import com.vcall.crm.service.CustomerNoteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -40,14 +41,15 @@ public class CustomerNoteController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CustomerNoteResponse>>> getAllNotes() {
-        List<CustomerNoteResponse> responses = customerNoteService.getAllNotes();
+    public ResponseEntity<ApiResponse<Page<CustomerNoteResponse>>> getAllNotes(Pageable pageable) {
+        Page<CustomerNoteResponse> responses = customerNoteService.getAllNotes(pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<ApiResponse<List<CustomerNoteResponse>>> getNotesByCustomer(@PathVariable UUID customerId) {
-        List<CustomerNoteResponse> responses = customerNoteService.getNotesByCustomer(customerId);
+    public ResponseEntity<ApiResponse<Page<CustomerNoteResponse>>> getNotesByCustomer(
+            @PathVariable UUID customerId, Pageable pageable) {
+        Page<CustomerNoteResponse> responses = customerNoteService.getNotesByCustomer(customerId, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 

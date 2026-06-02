@@ -9,6 +9,8 @@ import com.vcall.call.service.CallService;
 import com.vcall.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -55,17 +56,19 @@ public class CallController {
     }
 
     @GetMapping("/agent/{agentId}")
-    public ResponseEntity<List<CallResponse>> getAgentActiveCalls(@PathVariable UUID agentId) {
-        return ResponseEntity.ok(callService.getAgentActiveCalls(agentId));
+    public ResponseEntity<Page<CallResponse>> getAgentActiveCalls(
+            @PathVariable UUID agentId, Pageable pageable) {
+        return ResponseEntity.ok(callService.getAgentActiveCalls(agentId, pageable));
     }
 
     @GetMapping("/active")
-    public ResponseEntity<List<CallResponse>> getActiveCalls(
+    public ResponseEntity<Page<CallResponse>> getActiveCalls(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
+            Pageable pageable) {
         if (start == null) start = LocalDateTime.now().minusHours(24);
         if (end == null) end = LocalDateTime.now();
-        return ResponseEntity.ok(callService.getCallsByDateRange(Call.CallStatus.IN_PROGRESS, start, end));
+        return ResponseEntity.ok(callService.getCallsByDateRange(Call.CallStatus.IN_PROGRESS, start, end, pageable));
     }
 
     @PostMapping("/{id}/transfer")

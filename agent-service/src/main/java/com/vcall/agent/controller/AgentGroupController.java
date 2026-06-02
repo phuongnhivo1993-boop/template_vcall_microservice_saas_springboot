@@ -6,6 +6,8 @@ import com.vcall.agent.service.AgentGroupService;
 import com.vcall.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -35,8 +36,8 @@ public class AgentGroupController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<AgentGroupResponse>>> getAllGroups() {
-        List<AgentGroupResponse> groups = agentGroupService.getAllGroups();
+    public ResponseEntity<ApiResponse<Page<AgentGroupResponse>>> getAllGroups(Pageable pageable) {
+        Page<AgentGroupResponse> groups = agentGroupService.getAllGroups(pageable);
         return ResponseEntity.ok(ApiResponse.success(groups));
     }
 

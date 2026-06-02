@@ -7,6 +7,8 @@ import com.vcall.crm.entity.OpportunityStage;
 import com.vcall.crm.service.OpportunityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -43,16 +44,17 @@ public class OpportunityController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<OpportunityResponse>>> getAllOpportunities(
+    public ResponseEntity<ApiResponse<Page<OpportunityResponse>>> getAllOpportunities(
             @RequestParam(required = false) UUID leadId,
-            @RequestParam(required = false) OpportunityStage stage) {
-        List<OpportunityResponse> responses;
+            @RequestParam(required = false) OpportunityStage stage,
+            Pageable pageable) {
+        Page<OpportunityResponse> responses;
         if (leadId != null) {
-            responses = opportunityService.getOpportunitiesByLeadId(leadId);
+            responses = opportunityService.getOpportunitiesByLeadId(leadId, pageable);
         } else if (stage != null) {
-            responses = opportunityService.getOpportunitiesByStage(stage);
+            responses = opportunityService.getOpportunitiesByStage(stage, pageable);
         } else {
-            responses = opportunityService.getAllOpportunities();
+            responses = opportunityService.getAllOpportunities(pageable);
         }
         return ResponseEntity.ok(ApiResponse.success(responses));
     }

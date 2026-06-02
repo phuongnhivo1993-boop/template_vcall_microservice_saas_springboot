@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 @Service
 @RequiredArgsConstructor
 public class AgentGroupService {
@@ -42,10 +45,8 @@ public class AgentGroupService {
     }
 
     @Transactional(readOnly = true)
-    public List<AgentGroupResponse> getAllGroups() {
-        return agentGroupRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<AgentGroupResponse> getAllGroups(Pageable pageable) {
+        return agentGroupRepository.findAll(pageable).map(this::toResponse);
     }
 
     @Transactional

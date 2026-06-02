@@ -11,8 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Slf4j
 @Service
@@ -35,28 +37,20 @@ public class ActivityService {
         return mapToResponse(activity);
     }
 
-    public List<ActivityResponse> getAllActivities() {
-        return activityRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .toList();
+    public Page<ActivityResponse> getAllActivities(Pageable pageable) {
+        return activityRepository.findAll(pageable).map(this::mapToResponse);
     }
 
-    public List<ActivityResponse> getActivitiesByCustomer(UUID customerId) {
-        return activityRepository.findByCustomerId(customerId).stream()
-                .map(this::mapToResponse)
-                .toList();
+    public Page<ActivityResponse> getActivitiesByCustomer(UUID customerId, Pageable pageable) {
+        return activityRepository.findByCustomerId(customerId, pageable).map(this::mapToResponse);
     }
 
-    public List<ActivityResponse> getActivitiesByLead(UUID leadId) {
-        return activityRepository.findByLeadId(leadId).stream()
-                .map(this::mapToResponse)
-                .toList();
+    public Page<ActivityResponse> getActivitiesByLead(UUID leadId, Pageable pageable) {
+        return activityRepository.findByLeadId(leadId, pageable).map(this::mapToResponse);
     }
 
-    public List<ActivityResponse> getActivitiesByDateRange(UUID assignedTo, LocalDateTime start, LocalDateTime end) {
-        return activityRepository.findByAssignedToAndActivityDateBetween(assignedTo, start, end).stream()
-                .map(this::mapToResponse)
-                .toList();
+    public Page<ActivityResponse> getActivitiesByDateRange(UUID assignedTo, LocalDateTime start, LocalDateTime end, Pageable pageable) {
+        return activityRepository.findByAssignedToAndActivityDateBetween(assignedTo, start, end, pageable).map(this::mapToResponse);
     }
 
     @Transactional

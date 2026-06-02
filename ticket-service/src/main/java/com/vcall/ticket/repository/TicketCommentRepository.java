@@ -1,6 +1,8 @@
 package com.vcall.ticket.repository;
 
 import com.vcall.ticket.entity.TicketComment;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,6 +13,10 @@ import java.util.UUID;
 public interface TicketCommentRepository extends JpaRepository<TicketComment, Long> {
 
     List<TicketComment> findByTicketIdOrderByCreatedAtAsc(UUID ticketId);
+
+    Page<TicketComment> findByTicketId(UUID ticketId, Pageable pageable);
+
+    Page<TicketComment> findByTicketIdAndIsInternal(UUID ticketId, boolean isInternal, Pageable pageable);
 
     List<TicketComment> findByAuthorId(UUID authorId);
 }

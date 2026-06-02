@@ -6,6 +6,8 @@ import com.vcall.crm.dto.ActivityResponse;
 import com.vcall.crm.service.ActivityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -42,22 +43,24 @@ public class ActivityController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ActivityResponse>>> getAllActivities(
+    public ResponseEntity<ApiResponse<Page<ActivityResponse>>> getAllActivities(
             @RequestParam(required = false) UUID assignedTo,
             @RequestParam(required = false) LocalDateTime startDate,
-            @RequestParam(required = false) LocalDateTime endDate) {
-        List<ActivityResponse> responses;
+            @RequestParam(required = false) LocalDateTime endDate,
+            Pageable pageable) {
+        Page<ActivityResponse> responses;
         if (assignedTo != null && startDate != null && endDate != null) {
-            responses = activityService.getActivitiesByDateRange(assignedTo, startDate, endDate);
+            responses = activityService.getActivitiesByDateRange(assignedTo, startDate, endDate, pageable);
         } else {
-            responses = activityService.getAllActivities();
+            responses = activityService.getAllActivities(pageable);
         }
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<ApiResponse<List<ActivityResponse>>> getActivitiesByCustomer(@PathVariable UUID customerId) {
-        List<ActivityResponse> responses = activityService.getActivitiesByCustomer(customerId);
+    public ResponseEntity<ApiResponse<Page<ActivityResponse>>> getActivitiesByCustomer(
+            @PathVariable UUID customerId, Pageable pageable) {
+        Page<ActivityResponse> responses = activityService.getActivitiesByCustomer(customerId, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 

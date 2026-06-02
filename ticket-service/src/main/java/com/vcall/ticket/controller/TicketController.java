@@ -25,10 +25,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/tickets")
@@ -45,8 +43,8 @@ public class TicketController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<TicketResponse>>> getAllTickets() {
-        List<TicketResponse> tickets = ticketService.getAllTickets();
+    public ResponseEntity<ApiResponse<Page<TicketResponse>>> getAllTickets(Pageable pageable) {
+        Page<TicketResponse> tickets = ticketService.getAllTickets(pageable);
         return ResponseEntity.ok(ApiResponse.success(tickets));
     }
 
@@ -111,8 +109,7 @@ public class TicketController {
 
     @GetMapping("/stats/by-status")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStatsByStatus() {
-        Map<String, Long> stats = ticketService.getAllTickets().stream()
-                .collect(Collectors.groupingBy(TicketResponse::getStatus, Collectors.counting()));
+        Map<String, Long> stats = ticketService.getStatsByStatus();
         return ResponseEntity.ok(ApiResponse.success(stats));
     }
 }

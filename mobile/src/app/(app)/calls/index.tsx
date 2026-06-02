@@ -16,7 +16,7 @@ export default function CallsScreen() {
 
   useEffect(() => {
     callsApi.getHistory()
-      .then((res) => setCalls(res.data?.data || res.data || []))
+      .then((res) => setCalls(res.data?.data?.content || res.data?.data || res.data || []))
       .catch(() => setCalls([]))
       .finally(() => setLoading(false));
   }, []);

@@ -10,8 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Slf4j
 @Service
@@ -34,22 +36,16 @@ public class CustomerNoteService {
         return mapToResponse(note);
     }
 
-    public List<CustomerNoteResponse> getAllNotes() {
-        return customerNoteRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .toList();
+    public Page<CustomerNoteResponse> getAllNotes(Pageable pageable) {
+        return customerNoteRepository.findAll(pageable).map(this::mapToResponse);
     }
 
-    public List<CustomerNoteResponse> getNotesByCustomer(UUID customerId) {
-        return customerNoteRepository.findByCustomerId(customerId).stream()
-                .map(this::mapToResponse)
-                .toList();
+    public Page<CustomerNoteResponse> getNotesByCustomer(UUID customerId, Pageable pageable) {
+        return customerNoteRepository.findByCustomerId(customerId, pageable).map(this::mapToResponse);
     }
 
-    public List<CustomerNoteResponse> getNotesByLead(UUID leadId) {
-        return customerNoteRepository.findByLeadId(leadId).stream()
-                .map(this::mapToResponse)
-                .toList();
+    public Page<CustomerNoteResponse> getNotesByLead(UUID leadId, Pageable pageable) {
+        return customerNoteRepository.findByLeadId(leadId, pageable).map(this::mapToResponse);
     }
 
     @Transactional

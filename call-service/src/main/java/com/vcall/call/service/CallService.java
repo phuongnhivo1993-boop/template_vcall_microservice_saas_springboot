@@ -13,9 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 @RequiredArgsConstructor
@@ -85,17 +86,15 @@ public class CallService {
     }
 
     @Transactional(readOnly = true)
-    public List<CallResponse> getAgentActiveCalls(UUID agentId) {
-        return callRepository.findByAgentIdAndStatus(agentId, Call.CallStatus.IN_PROGRESS).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<CallResponse> getAgentActiveCalls(UUID agentId, Pageable pageable) {
+        return callRepository.findByAgentIdAndStatus(agentId, Call.CallStatus.IN_PROGRESS, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<CallResponse> getCallsByDateRange(Call.CallStatus status, LocalDateTime start, LocalDateTime end) {
-        return callRepository.findByStatusAndStartTimeBetween(status, start, end).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<CallResponse> getCallsByDateRange(Call.CallStatus status, LocalDateTime start, LocalDateTime end, Pageable pageable) {
+        return callRepository.findByStatusAndStartTimeBetween(status, start, end, pageable)
+                .map(this::toResponse);
     }
 
     @Transactional

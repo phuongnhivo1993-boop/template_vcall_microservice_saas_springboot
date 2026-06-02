@@ -7,6 +7,8 @@ import com.vcall.ticket.entity.TicketComment.AuthorType;
 import com.vcall.ticket.service.TicketCommentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -41,14 +42,16 @@ public class TicketCommentController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<TicketCommentResponse>>> getComments(@PathVariable UUID ticketId) {
-        List<TicketCommentResponse> comments = commentService.getComments(ticketId);
+    public ResponseEntity<ApiResponse<Page<TicketCommentResponse>>> getComments(
+            @PathVariable UUID ticketId, Pageable pageable) {
+        Page<TicketCommentResponse> comments = commentService.getComments(ticketId, pageable);
         return ResponseEntity.ok(ApiResponse.success(comments));
     }
 
     @GetMapping("/internal")
-    public ResponseEntity<ApiResponse<List<TicketCommentResponse>>> getInternalComments(@PathVariable UUID ticketId) {
-        List<TicketCommentResponse> comments = commentService.getInternalComments(ticketId);
+    public ResponseEntity<ApiResponse<Page<TicketCommentResponse>>> getInternalComments(
+            @PathVariable UUID ticketId, Pageable pageable) {
+        Page<TicketCommentResponse> comments = commentService.getInternalComments(ticketId, pageable);
         return ResponseEntity.ok(ApiResponse.success(comments));
     }
 }

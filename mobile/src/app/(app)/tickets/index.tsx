@@ -45,7 +45,7 @@ export default function TicketsScreen() {
 
   useEffect(() => {
     ticketsApi.getAll()
-      .then((res) => setTickets(res.data?.data || res.data || []))
+      .then((res) => setTickets(res.data?.data?.content || res.data?.data || res.data || []))
       .catch(() => setTickets([]))
       .finally(() => setLoading(false));
   }, []);

@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -80,10 +80,14 @@ public class TicketService {
     }
 
     @Transactional(readOnly = true)
-    public List<TicketResponse> getAllTickets() {
+    public Page<TicketResponse> getAllTickets(Pageable pageable) {
+        return ticketRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getStatsByStatus() {
         return ticketRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+                .collect(Collectors.groupingBy(t -> t.getStatus().name(), Collectors.counting()));
     }
 
     @Transactional

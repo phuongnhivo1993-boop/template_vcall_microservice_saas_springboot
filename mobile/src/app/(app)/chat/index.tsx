@@ -26,7 +26,7 @@ export default function ChatListScreen() {
 
   useEffect(() => {
     chatApi.getConversations()
-      .then((res) => setConversations(res.data?.data || res.data || []))
+      .then((res) => setConversations(res.data?.data?.content || res.data?.data || res.data || []))
       .catch(() => setConversations([]))
       .finally(() => setLoading(false));
   }, []);
