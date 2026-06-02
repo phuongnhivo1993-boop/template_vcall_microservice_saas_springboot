@@ -10,6 +10,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.SQLRestriction;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -18,6 +19,7 @@ import java.util.UUID;
 @SuperBuilder
 @Entity
 @Table(name = "fraud_alerts")
+@SQLRestriction("is_deleted = false")
 public class FraudAlert extends BaseEntity {
 
     @Id

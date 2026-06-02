@@ -76,7 +76,8 @@ public class ReportDefinitionService {
     public void deleteReport(Long id) {
         ReportDefinition report = reportDefinitionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Report definition not found with id: " + id));
-        reportDefinitionRepository.delete(report);
+        report.setIsDeleted(true);
+        reportDefinitionRepository.save(report);
     }
 
     @Transactional

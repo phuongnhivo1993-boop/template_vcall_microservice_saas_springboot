@@ -65,7 +65,8 @@ public class IvrFlowService {
     public void deleteFlow(Long id) {
         IvrFlow flow = ivrFlowRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("IVR flow not found with id: " + id));
-        ivrFlowRepository.delete(flow);
+        flow.setIsDeleted(true);
+        ivrFlowRepository.save(flow);
     }
 
     @Transactional

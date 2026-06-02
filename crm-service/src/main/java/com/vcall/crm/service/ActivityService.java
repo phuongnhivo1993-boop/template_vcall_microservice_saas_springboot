@@ -66,7 +66,8 @@ public class ActivityService {
     public void deleteActivity(Long id) {
         Activity activity = activityRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Activity not found with id: " + id));
-        activityRepository.delete(activity);
+        activity.setIsDeleted(true);
+        activityRepository.save(activity);
     }
 
     private void mapToEntity(ActivityRequest request, Activity activity) {

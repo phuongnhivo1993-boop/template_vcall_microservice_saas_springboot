@@ -18,11 +18,13 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.hibernate.annotations.SQLRestriction;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "opportunities")
+@SQLRestriction("is_deleted = false")
 public class Opportunity extends BaseEntity {
 
     @Id

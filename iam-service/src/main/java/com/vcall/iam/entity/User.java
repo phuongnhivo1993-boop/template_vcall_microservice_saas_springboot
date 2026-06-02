@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import org.hibernate.annotations.SQLRestriction;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -20,6 +21,7 @@ import java.util.UUID;
 @SuperBuilder
 @Entity
 @Table(name = "users")
+@SQLRestriction("is_deleted = false")
 public class User extends BaseEntity {
 
     @Id

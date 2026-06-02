@@ -13,11 +13,13 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.UUID;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "sip_accounts")
 @Getter
 @Setter
+@SQLRestriction("is_deleted = false")
 public class SipAccount extends BaseEntity {
 
     @Id

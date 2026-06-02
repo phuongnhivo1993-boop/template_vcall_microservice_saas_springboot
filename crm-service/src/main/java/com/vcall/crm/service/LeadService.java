@@ -99,7 +99,8 @@ public class LeadService {
     public void deleteLead(UUID id) {
         Lead lead = leadRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + id));
-        leadRepository.delete(lead);
+        lead.setIsDeleted(true);
+        leadRepository.save(lead);
     }
 
     public long getLeadCountByStatus(LeadStatus status) {

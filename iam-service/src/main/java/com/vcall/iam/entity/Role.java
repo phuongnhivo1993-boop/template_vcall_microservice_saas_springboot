@@ -10,6 +10,7 @@ import lombok.experimental.SuperBuilder;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.hibernate.annotations.SQLRestriction;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -18,6 +19,7 @@ import java.util.Set;
 @SuperBuilder
 @Entity
 @Table(name = "roles")
+@SQLRestriction("is_deleted = false")
 public class Role extends BaseEntity {
 
     @Id

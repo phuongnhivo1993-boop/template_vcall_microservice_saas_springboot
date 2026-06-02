@@ -83,7 +83,8 @@ public class PbxQueueService {
         PbxQueue queue = pbxQueueRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Queue not found with id: " + id));
         pbxQueueMemberRepository.deleteAll(pbxQueueMemberRepository.findByQueueId(id));
-        pbxQueueRepository.delete(queue);
+        queue.setIsDeleted(true);
+        pbxQueueRepository.save(queue);
     }
 
     @Transactional

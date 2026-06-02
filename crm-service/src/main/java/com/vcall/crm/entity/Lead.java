@@ -13,11 +13,13 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.UUID;
+import org.hibernate.annotations.SQLRestriction;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "leads")
+@SQLRestriction("is_deleted = false")
 public class Lead extends BaseEntity {
 
     @Id

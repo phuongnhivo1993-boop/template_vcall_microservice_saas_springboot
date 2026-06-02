@@ -16,6 +16,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.SQLRestriction;
 
 @Getter
 @Setter
@@ -23,6 +24,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Entity
 @Table(name = "push_devices")
+@SQLRestriction("is_deleted = false")
 public class PushDevice extends BaseEntity {
 
     @Id

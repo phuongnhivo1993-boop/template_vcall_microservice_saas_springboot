@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.UUID;
+import org.hibernate.annotations.SQLRestriction;
 
 @Getter
 @Setter
@@ -22,6 +23,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Entity
 @Table(name = "notification_preferences")
+@SQLRestriction("is_deleted = false")
 public class NotificationPreference extends BaseEntity {
 
     @Id

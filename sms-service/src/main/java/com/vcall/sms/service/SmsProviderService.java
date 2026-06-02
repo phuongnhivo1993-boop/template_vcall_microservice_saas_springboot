@@ -102,7 +102,8 @@ public class SmsProviderService {
     public void deleteProvider(Long id) {
         SmsProvider provider = smsProviderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Provider not found with id: " + id));
-        smsProviderRepository.delete(provider);
+        provider.setIsDeleted(true);
+        smsProviderRepository.save(provider);
     }
 
     public boolean testProvider(Long id) {

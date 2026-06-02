@@ -103,7 +103,8 @@ public class RecordingService {
         Recording recording = recordingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Recording not found with id: " + id));
         storageService.deleteFile(recording.getFilePath());
-        recordingRepository.delete(recording);
+        recording.setIsDeleted(true);
+        recordingRepository.save(recording);
 
         eventPublisher.publishRecordingDeleted(recording);
     }

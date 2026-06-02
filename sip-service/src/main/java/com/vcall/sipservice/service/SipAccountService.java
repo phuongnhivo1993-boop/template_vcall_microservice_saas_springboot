@@ -88,7 +88,8 @@ public class SipAccountService {
     public void delete(Long id) {
         SipAccount account = sipAccountRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("SipAccount not found: " + id));
-        sipAccountRepository.delete(account);
+        account.setIsDeleted(true);
+        sipAccountRepository.save(account);
     }
 
     @Transactional

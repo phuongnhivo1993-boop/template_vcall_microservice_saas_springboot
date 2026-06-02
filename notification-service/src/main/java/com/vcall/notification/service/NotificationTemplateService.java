@@ -70,7 +70,8 @@ public class NotificationTemplateService {
     public void delete(Long id) {
         NotificationTemplate template = templateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Template not found with id: " + id));
-        templateRepository.delete(template);
+        template.setIsDeleted(true);
+        templateRepository.save(template);
     }
 
     public String renderTemplate(String templateContent, Map<String, String> variables) {

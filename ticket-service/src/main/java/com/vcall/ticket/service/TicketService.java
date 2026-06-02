@@ -110,7 +110,8 @@ public class TicketService {
     public void deleteTicket(UUID id) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
-        ticketRepository.delete(ticket);
+        ticket.setIsDeleted(true);
+        ticketRepository.save(ticket);
     }
 
     @Transactional

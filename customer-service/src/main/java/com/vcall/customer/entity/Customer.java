@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import org.hibernate.annotations.SQLRestriction;
 
 @Getter
 @Setter
@@ -26,6 +27,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Entity
 @Table(name = "customers")
+@SQLRestriction("is_deleted = false")
 public class Customer extends BaseEntity {
 
     @Id

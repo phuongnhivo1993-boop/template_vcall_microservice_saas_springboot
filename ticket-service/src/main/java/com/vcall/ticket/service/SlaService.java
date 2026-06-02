@@ -84,7 +84,8 @@ public class SlaService {
     public void deleteRule(Long id) {
         SlaRule rule = slaRuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("SLA rule not found with id: " + id));
-        slaRuleRepository.delete(rule);
+        rule.setIsDeleted(true);
+        slaRuleRepository.save(rule);
     }
 
     @Transactional(readOnly = true)

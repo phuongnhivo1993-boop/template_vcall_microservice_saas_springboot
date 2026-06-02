@@ -87,7 +87,8 @@ public class OpportunityService {
     public void deleteOpportunity(UUID id) {
         Opportunity opportunity = opportunityRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Opportunity not found with id: " + id));
-        opportunityRepository.delete(opportunity);
+        opportunity.setIsDeleted(true);
+        opportunityRepository.save(opportunity);
     }
 
     private void mapToEntity(OpportunityRequest request, Opportunity opportunity) {

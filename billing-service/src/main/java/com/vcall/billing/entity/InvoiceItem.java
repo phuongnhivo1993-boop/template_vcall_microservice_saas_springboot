@@ -18,6 +18,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "invoice_items")
@@ -25,6 +26,7 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLRestriction("is_deleted = false")
 public class InvoiceItem extends BaseEntity {
 
     @Id

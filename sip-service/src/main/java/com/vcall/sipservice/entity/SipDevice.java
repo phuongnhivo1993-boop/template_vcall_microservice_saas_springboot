@@ -14,11 +14,13 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "sip_devices")
 @Getter
 @Setter
+@SQLRestriction("is_deleted = false")
 public class SipDevice extends BaseEntity {
 
     @Id

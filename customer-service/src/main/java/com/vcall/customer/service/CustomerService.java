@@ -125,7 +125,8 @@ public class CustomerService {
     public void delete(UUID id) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
-        customerRepository.delete(customer);
+        customer.setIsDeleted(true);
+        customerRepository.save(customer);
     }
 
     @Transactional(readOnly = true)

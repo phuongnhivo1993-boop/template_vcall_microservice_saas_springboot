@@ -92,7 +92,8 @@ public class SmsCampaignService {
     public void deleteCampaign(Long id) {
         SmsCampaign campaign = smsCampaignRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));
-        smsCampaignRepository.delete(campaign);
+        campaign.setIsDeleted(true);
+        smsCampaignRepository.save(campaign);
     }
 
     @Transactional

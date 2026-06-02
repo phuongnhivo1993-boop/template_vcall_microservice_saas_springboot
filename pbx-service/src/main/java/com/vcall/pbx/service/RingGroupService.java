@@ -74,7 +74,8 @@ public class RingGroupService {
         RingGroup ringGroup = ringGroupRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ring group not found with id: " + id));
         ringGroupMemberRepository.deleteAll(ringGroupMemberRepository.findByRingGroupIdOrderByPosition(id));
-        ringGroupRepository.delete(ringGroup);
+        ringGroup.setIsDeleted(true);
+        ringGroupRepository.save(ringGroup);
     }
 
     @Transactional

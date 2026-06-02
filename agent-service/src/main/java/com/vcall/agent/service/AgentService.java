@@ -90,7 +90,8 @@ public class AgentService {
     public void deleteAgent(UUID id) {
         Agent agent = agentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Agent not found with id: " + id));
-        agentRepository.delete(agent);
+        agent.setIsDeleted(true);
+        agentRepository.save(agent);
     }
 
     @Transactional(readOnly = true)

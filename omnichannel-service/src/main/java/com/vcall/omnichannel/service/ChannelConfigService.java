@@ -73,7 +73,8 @@ public class ChannelConfigService {
     @Transactional
     public void delete(Long id) {
         ChannelConfig config = findById(id);
-        channelConfigRepository.delete(config);
+        config.setIsDeleted(true);
+        channelConfigRepository.save(config);
     }
 
     private ChannelConfig findById(Long id) {

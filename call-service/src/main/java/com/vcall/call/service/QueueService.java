@@ -72,7 +72,8 @@ public class QueueService {
     public void deleteQueue(Long id) {
         CallQueue queue = queueRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Queue not found with id: " + id));
-        queueRepository.delete(queue);
+        queue.setIsDeleted(true);
+        queueRepository.save(queue);
     }
 
     @Transactional

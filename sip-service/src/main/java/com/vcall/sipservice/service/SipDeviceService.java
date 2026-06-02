@@ -69,7 +69,8 @@ public class SipDeviceService {
     public void delete(Long id) {
         SipDevice device = sipDeviceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("SipDevice not found: " + id));
-        sipDeviceRepository.delete(device);
+        device.setIsDeleted(true);
+        sipDeviceRepository.save(device);
     }
 
     @Transactional(readOnly = true)

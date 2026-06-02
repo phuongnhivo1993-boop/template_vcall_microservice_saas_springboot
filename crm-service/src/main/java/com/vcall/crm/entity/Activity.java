@@ -14,11 +14,13 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.SQLRestriction;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "activities")
+@SQLRestriction("is_deleted = false")
 public class Activity extends BaseEntity {
 
     @Id

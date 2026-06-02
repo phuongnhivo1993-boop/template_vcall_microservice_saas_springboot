@@ -61,7 +61,8 @@ public class CustomerNoteService {
     public void deleteNote(Long id) {
         CustomerNote note = customerNoteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CustomerNote not found with id: " + id));
-        customerNoteRepository.delete(note);
+        note.setIsDeleted(true);
+        customerNoteRepository.save(note);
     }
 
     private void mapToEntity(CustomerNoteRequest request, CustomerNote note) {

@@ -64,7 +64,8 @@ public class AgentGroupService {
         AgentGroup group = agentGroupRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Group not found with id: " + id));
         agentGroupMemberRepository.findByGroupId(id).forEach(agentGroupMemberRepository::delete);
-        agentGroupRepository.delete(group);
+        group.setIsDeleted(true);
+        agentGroupRepository.save(group);
     }
 
     @Transactional

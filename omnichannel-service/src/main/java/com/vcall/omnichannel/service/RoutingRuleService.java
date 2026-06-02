@@ -70,7 +70,8 @@ public class RoutingRuleService {
     @Transactional
     public void delete(Long id) {
         OmnichannelRoutingRule rule = findById(id);
-        routingRuleRepository.delete(rule);
+        rule.setIsDeleted(true);
+        routingRuleRepository.save(rule);
     }
 
     private OmnichannelRoutingRule findById(Long id) {

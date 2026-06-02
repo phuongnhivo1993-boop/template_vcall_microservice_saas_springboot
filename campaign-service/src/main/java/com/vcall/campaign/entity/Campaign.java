@@ -16,6 +16,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "campaigns")
@@ -23,6 +24,7 @@ import java.time.LocalTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLRestriction("is_deleted = false")
 public class Campaign extends BaseEntity {
 
     @Id

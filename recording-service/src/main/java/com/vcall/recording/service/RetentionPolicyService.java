@@ -68,7 +68,8 @@ public class RetentionPolicyService {
     public void deletePolicy(Long id) {
         RetentionPolicy policy = retentionPolicyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Retention policy not found with id: " + id));
-        retentionPolicyRepository.delete(policy);
+        policy.setIsDeleted(true);
+        retentionPolicyRepository.save(policy);
     }
 
     @Transactional

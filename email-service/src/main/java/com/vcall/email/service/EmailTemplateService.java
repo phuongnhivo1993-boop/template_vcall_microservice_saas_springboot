@@ -83,7 +83,8 @@ public class EmailTemplateService {
     public void deleteTemplate(Long id) {
         EmailTemplate template = emailTemplateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Template not found with id: " + id));
-        emailTemplateRepository.delete(template);
+        template.setIsDeleted(true);
+        emailTemplateRepository.save(template);
     }
 
     @Transactional(readOnly = true)

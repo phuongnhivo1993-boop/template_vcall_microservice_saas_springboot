@@ -80,7 +80,8 @@ public class ExtensionService {
     public void deleteExtension(Long id) {
         Extension extension = extensionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Extension not found with id: " + id));
-        extensionRepository.delete(extension);
+        extension.setIsDeleted(true);
+        extensionRepository.save(extension);
     }
 
     @Transactional(readOnly = true)

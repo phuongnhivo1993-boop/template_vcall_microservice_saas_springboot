@@ -51,7 +51,8 @@ public class CustomerTagService {
     public void delete(Long id) {
         CustomerTag tag = customerTagRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tag not found with id: " + id));
-        customerTagRepository.delete(tag);
+        tag.setIsDeleted(true);
+        customerTagRepository.save(tag);
     }
 
     private CustomerTagResponse toResponse(CustomerTag tag) {

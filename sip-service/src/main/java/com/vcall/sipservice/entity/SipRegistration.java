@@ -16,11 +16,13 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "sip_registrations")
 @Getter
 @Setter
+@SQLRestriction("is_deleted = false")
 public class SipRegistration extends BaseEntity {
 
     @Id

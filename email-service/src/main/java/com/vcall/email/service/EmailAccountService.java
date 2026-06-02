@@ -87,7 +87,8 @@ public class EmailAccountService {
     public void deleteAccount(Long id) {
         EmailAccount account = emailAccountRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found with id: " + id));
-        emailAccountRepository.delete(account);
+        account.setIsDeleted(true);
+        emailAccountRepository.save(account);
     }
 
     @Transactional

@@ -110,7 +110,8 @@ public class RoleService {
     public void deleteRole(Long id) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found with id: " + id));
-        roleRepository.delete(role);
+        role.setIsDeleted(true);
+        roleRepository.save(role);
     }
 
     @Transactional

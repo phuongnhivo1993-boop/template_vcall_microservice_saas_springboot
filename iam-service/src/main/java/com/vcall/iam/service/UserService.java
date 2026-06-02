@@ -141,7 +141,8 @@ public class UserService {
     public void deleteUser(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
-        userRepository.delete(user);
+        user.setIsDeleted(true);
+        userRepository.save(user);
     }
 
     @Transactional

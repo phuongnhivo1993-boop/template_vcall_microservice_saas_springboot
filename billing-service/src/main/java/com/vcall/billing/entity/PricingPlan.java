@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "pricing_plans")
@@ -22,6 +23,7 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLRestriction("is_deleted = false")
 public class PricingPlan extends BaseEntity {
 
     @Id

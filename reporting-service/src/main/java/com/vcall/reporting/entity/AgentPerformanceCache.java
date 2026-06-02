@@ -16,6 +16,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "agent_performance_cache")
@@ -23,6 +24,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLRestriction("is_deleted = false")
 public class AgentPerformanceCache extends BaseEntity {
 
     @Id

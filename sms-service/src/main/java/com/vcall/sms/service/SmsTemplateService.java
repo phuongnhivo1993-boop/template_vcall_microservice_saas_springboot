@@ -80,7 +80,8 @@ public class SmsTemplateService {
     public void deleteTemplate(Long id) {
         SmsTemplate template = smsTemplateRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Template not found with id: " + id));
-        smsTemplateRepository.delete(template);
+        template.setIsDeleted(true);
+        smsTemplateRepository.save(template);
     }
 
     public String renderTemplate(Long templateId, Map<String, String> variables) {
