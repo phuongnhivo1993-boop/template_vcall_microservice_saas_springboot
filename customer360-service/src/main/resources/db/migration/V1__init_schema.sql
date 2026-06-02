@@ -1,0 +1,22 @@
+CREATE TABLE customer_profiles (
+    id UUID PRIMARY KEY,
+    customer_id UUID NOT NULL UNIQUE,
+    full_name VARCHAR(255),
+    email VARCHAR(100),
+    phone VARCHAR(20),
+    total_calls INTEGER DEFAULT 0,
+    total_tickets INTEGER DEFAULT 0,
+    total_leads INTEGER DEFAULT 0,
+    total_opportunities INTEGER DEFAULT 0,
+    total_spent DECIMAL(15,2) DEFAULT 0,
+    last_contact_at TIMESTAMP,
+    lifetime_value DECIMAL(15,2) DEFAULT 0,
+    satisfaction_score DECIMAL(3,1),
+    segment VARCHAR(50),
+    notes TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP,
+    created_by VARCHAR(100),
+    updated_by VARCHAR(100),
+    is_deleted BOOLEAN DEFAULT FALSE
+);

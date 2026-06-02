@@ -11,6 +11,10 @@ spring:
       enabled: false
     gateway:
       routes:
+        - id: customer360-service
+          uri: lb://customer360-service
+          predicates:
+            - Path=/api/v1/customer360/**
         - id: iam-service
           uri: lb://iam-service
           predicates:

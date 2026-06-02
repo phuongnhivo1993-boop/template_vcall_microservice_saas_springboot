@@ -162,6 +162,28 @@ public class CallService {
         return toResponse(call);
     }
 
+    @Transactional
+    public CallResponse submitSatisfaction(UUID id, Integer score, String comment) {
+        Call call = callRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found with id: " + id));
+        call.setSatisfactionScore(score);
+        call.setSatisfactionComment(comment);
+        call.setSatisfactionSurveyedAt(LocalDateTime.now());
+        call = callRepository.save(call);
+        eventPublisher.publishEvent("SATISFACTION_SUBMITTED", call);
+        return toResponse(call);
+    }
+
+    @Transactional
+    public CallResponse sendSurvey(UUID id) {
+        Call call = callRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found with id: " + id));
+        call.setSatisfactionSurveySent(true);
+        call = callRepository.save(call);
+        eventPublisher.publishEvent("SURVEY_SENT", call);
+        return toResponse(call);
+    }
+
     private CallResponse toResponse(Call call) {
         return CallResponse.builder()
                 .id(call.getId())
@@ -179,6 +201,10 @@ public class CallService {
                 .queueId(call.getQueueId())
                 .ivrFlowId(call.getIvrFlowId())
                 .recordingId(call.getRecordingId())
+                .satisfactionScore(call.getSatisfactionScore())
+                .satisfactionComment(call.getSatisfactionComment())
+                .satisfactionSurveyedAt(call.getSatisfactionSurveyedAt())
+                .satisfactionSurveySent(call.getSatisfactionSurveySent())
                 .build();
     }
 }

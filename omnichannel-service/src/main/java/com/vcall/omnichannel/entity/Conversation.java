@@ -66,7 +66,7 @@ public class Conversation extends BaseEntity {
     private LocalDateTime assignedAt;
 
     public enum Channel {
-        FACEBOOK, LIVE_CHAT, EMAIL, SMS, CALL
+        FACEBOOK, ZALO, LIVE_CHAT, EMAIL, SMS, CALL
     }
 
     public enum ConversationStatus {

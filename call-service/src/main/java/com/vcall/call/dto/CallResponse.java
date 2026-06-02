@@ -29,4 +29,9 @@ public class CallResponse {
     private Long queueId;
     private Long ivrFlowId;
     private UUID recordingId;
+
+    private Integer satisfactionScore;
+    private String satisfactionComment;
+    private LocalDateTime satisfactionSurveyedAt;
+    private Boolean satisfactionSurveySent;
 }

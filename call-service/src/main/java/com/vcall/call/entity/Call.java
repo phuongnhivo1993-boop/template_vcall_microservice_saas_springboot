@@ -79,6 +79,18 @@ public class Call extends BaseEntity {
     @Column(name = "recording_id", columnDefinition = "UUID")
     private UUID recordingId;
 
+    @Column(name = "satisfaction_score")
+    private Integer satisfactionScore;
+
+    @Column(name = "satisfaction_comment", columnDefinition = "TEXT")
+    private String satisfactionComment;
+
+    @Column(name = "satisfaction_surveyed_at")
+    private LocalDateTime satisfactionSurveyedAt;
+
+    @Column(name = "satisfaction_survey_sent")
+    private Boolean satisfactionSurveySent = false;
+
     public enum CallDirection {
         INBOUND, OUTBOUND
     }

@@ -1,11 +1,15 @@
 package com.vcall.call.controller;
 
+import com.vcall.call.dto.CallEvaluationRequest;
+import com.vcall.call.dto.CallEvaluationResponse;
 import com.vcall.call.dto.CallRequest;
 import com.vcall.call.dto.CallResponse;
 import com.vcall.call.dto.CallStatusRequest;
+import com.vcall.call.dto.SatisfactionRequest;
 import com.vcall.call.dto.TransferRequest;
 import com.vcall.call.entity.Call;
 import com.vcall.call.service.CallService;
+import com.vcall.call.service.EvaluationService;
 import com.vcall.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +36,7 @@ import java.util.UUID;
 public class CallController {
 
     private final CallService callService;
+    private final EvaluationService evaluationService;
 
     @PostMapping
     public ResponseEntity<CallResponse> initiateCall(@Valid @RequestBody CallRequest request) {
@@ -99,5 +104,33 @@ public class CallController {
     public ResponseEntity<ApiResponse<CallResponse>> resumeCall(@PathVariable UUID id) {
         CallResponse response = callService.resumeCall(id);
         return ResponseEntity.ok(ApiResponse.success("Call resumed", response));
+    }
+
+    @PostMapping("/{id}/satisfaction")
+    public ResponseEntity<ApiResponse<CallResponse>> submitSatisfaction(
+            @PathVariable UUID id, @Valid @RequestBody SatisfactionRequest request) {
+        CallResponse response = callService.submitSatisfaction(id, request.getScore(), request.getComment());
+        return ResponseEntity.ok(ApiResponse.success("Satisfaction submitted", response));
+    }
+
+    @PostMapping("/{id}/send-survey")
+    public ResponseEntity<ApiResponse<CallResponse>> sendSurvey(@PathVariable UUID id) {
+        CallResponse response = callService.sendSurvey(id);
+        return ResponseEntity.ok(ApiResponse.success("Survey sent", response));
+    }
+
+    @PostMapping("/{id}/evaluations")
+    public ResponseEntity<CallEvaluationResponse> createEvaluation(
+            @PathVariable UUID id, @Valid @RequestBody CallEvaluationRequest request) {
+        UUID evaluatorId = null;
+        String evaluatorName = null;
+        CallEvaluationResponse response = evaluationService.createEvaluation(id, request, evaluatorId, evaluatorName);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{id}/evaluations")
+    public ResponseEntity<Page<CallEvaluationResponse>> getEvaluations(
+            @PathVariable UUID id, Pageable pageable) {
+        return ResponseEntity.ok(evaluationService.getEvaluationsByCall(id, pageable));
     }
 }

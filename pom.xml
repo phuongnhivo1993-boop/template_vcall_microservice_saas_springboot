@@ -19,6 +19,7 @@
         <module>iam-service</module>
         <module>agent-service</module>
         <module>customer-service</module>
+        <module>customer360-service</module>
         <module>crm-service</module>
         <module>call-service</module>
         <module>sip-service</module>
