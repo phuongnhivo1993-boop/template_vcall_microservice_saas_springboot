@@ -3,6 +3,7 @@ package com.vcall.customer.controller;
 import com.vcall.common.dto.ApiResponse;
 import com.vcall.common.dto.PagedResponse;
 import com.vcall.common.util.CsvExportUtil;
+import com.vcall.common.util.ExcelExportUtil;
 import com.vcall.customer.dto.CustomerAddressRequest;
 import com.vcall.customer.dto.CustomerContactRequest;
 import com.vcall.customer.dto.CustomerRequest;
@@ -51,9 +52,15 @@ public class CustomerController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDir) {
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String gender,
+            @RequestParam(required = false) String company,
+            @RequestParam(required = false) String nationality,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate dateFrom,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate dateTo) {
         Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
-        Page<CustomerResponse> result = customerService.findAll(PageRequest.of(page, size, sort));
+        Page<CustomerResponse> result = customerService.findAll(keyword, gender, company, nationality, dateFrom, dateTo, PageRequest.of(page, size, sort));
         PagedResponse<CustomerResponse> paged = PagedResponse.<CustomerResponse>builder()
                 .content(result.getContent())
                 .page(result.getNumber())
@@ -161,8 +168,22 @@ public class CustomerController {
         } else {
             customers = customerService.findAll(PageRequest.of(0, 10000, Sort.by("createdAt").descending())).getContent();
         }
-        List<String> headers = Arrays.asList("ID", "Full Name", "Email", "Phone", "Company", "Gender", "Status", "Created At");
-        List<List<String>> rows = CsvExportUtil.toRows(customers, Arrays.asList("id", "fullName", "email", "phone", "company", "gender", "status", "createdAt"));
+        List<String> headers = Arrays.asList("ID", "Customer Code", "Full Name", "Email", "Phone", "Company", "Gender", "Created At");
+        List<List<String>> rows = CsvExportUtil.toRows(customers, Arrays.asList("id", "customerCode", "fullName", "email", "phone", "company", "gender", "createdAt"));
         CsvExportUtil.writeCsv(response, "customers.csv", headers, rows);
+    }
+
+    @GetMapping("/export/excel")
+    public void exportExcel(@RequestParam(defaultValue = "") String keyword,
+                            HttpServletResponse response) throws IOException {
+        List<CustomerResponse> customers;
+        if (!keyword.isEmpty()) {
+            customers = customerService.search(keyword, PageRequest.of(0, 10000)).getContent();
+        } else {
+            customers = customerService.findAll(PageRequest.of(0, 10000, Sort.by("createdAt").descending())).getContent();
+        }
+        List<String> headers = Arrays.asList("ID", "Customer Code", "Full Name", "Email", "Phone", "Company", "Gender", "Created At");
+        ExcelExportUtil.writeExcel(response, "customers.xlsx", headers, customers,
+                Arrays.asList("id", "customerCode", "fullName", "email", "phone", "company", "gender", "createdAt"));
     }
 }

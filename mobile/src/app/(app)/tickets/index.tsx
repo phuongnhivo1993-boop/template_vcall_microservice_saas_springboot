@@ -42,13 +42,18 @@ export default function TicketsScreen() {
   const [activeFilter, setActiveFilter] = useState<TicketStatus | 'all'>('all');
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchTickets = () => {
+    setLoading(true);
+    setError(null);
     ticketsApi.getAll()
       .then((res) => setTickets(res.data?.data?.content || res.data?.data || res.data || []))
-      .catch(() => setTickets([]))
+      .catch((err) => setError(err?.message || 'Failed to load tickets'))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { fetchTickets(); }, []);
 
   const filtered = activeFilter === 'all'
     ? tickets
@@ -104,8 +109,26 @@ export default function TicketsScreen() {
         data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={renderTicket}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, filtered.length === 0 && styles.listEmpty]}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={() => {
+          if (error) return (
+            <View style={styles.centerContainer}>
+              <Ionicons name="bug-outline" size={48} color={Colors.textSecondary} />
+              <Text style={styles.emptyText}>{error}</Text>
+              <TouchableOpacity style={styles.retryBtn} onPress={fetchTickets}>
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          );
+          return (
+            <View style={styles.centerContainer}>
+              <Ionicons name="ticket-outline" size={48} color={Colors.textSecondary} />
+              <Text style={styles.emptyText}>No tickets found</Text>
+              <Text style={styles.emptySubtext}>Create a new ticket to get started</Text>
+            </View>
+          );
+        }}
       />
       )}
     </View>
@@ -202,5 +225,39 @@ const styles = StyleSheet.create({
   ticketDate: {
     fontSize: 12,
     color: Colors.textSecondary,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 32,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 4,
+    textAlign: 'center',
+    opacity: 0.7,
+  },
+  retryBtn: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: Colors.white,
+    fontWeight: '600',
+  },
+  listEmpty: {
+    flexGrow: 1,
   },
 });

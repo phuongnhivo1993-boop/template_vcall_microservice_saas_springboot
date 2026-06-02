@@ -23,13 +23,18 @@ export default function ChatListScreen() {
   const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchConversations = () => {
+    setLoading(true);
+    setError(null);
     chatApi.getConversations()
       .then((res) => setConversations(res.data?.data?.content || res.data?.data || res.data || []))
-      .catch(() => setConversations([]))
+      .catch((err) => setError(err?.message || 'Failed to load conversations'))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { fetchConversations(); }, []);
 
   const renderItem = useCallback(({ item }: { item: Conversation }) => (
     <TouchableOpacity
@@ -59,6 +64,26 @@ export default function ChatListScreen() {
     </TouchableOpacity>
   ), []);
 
+  const renderEmpty = () => {
+    if (loading) return null;
+    if (error) return (
+      <View style={styles.centerContainer}>
+        <Ionicons name="chatbox-ellipses-outline" size={48} color={Colors.textSecondary} />
+        <Text style={styles.emptyText}>{error}</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={fetchConversations}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+    return (
+      <View style={styles.centerContainer}>
+        <Ionicons name="chatbubbles-outline" size={48} color={Colors.textSecondary} />
+        <Text style={styles.emptyText}>No conversations yet</Text>
+        <Text style={styles.emptySubtext}>Start a new chat to begin messaging</Text>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -73,8 +98,9 @@ export default function ChatListScreen() {
         data={conversations}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, conversations.length === 0 && styles.listEmpty]}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={renderEmpty}
       />
       )}
     </View>
@@ -152,5 +178,39 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     marginTop: 2,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 32,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 4,
+    textAlign: 'center',
+    opacity: 0.7,
+  },
+  retryBtn: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: Colors.white,
+    fontWeight: '600',
+  },
+  listEmpty: {
+    flexGrow: 1,
   },
 });

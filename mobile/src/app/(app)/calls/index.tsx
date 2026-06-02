@@ -13,17 +13,65 @@ export default function CallsScreen() {
   const router = useRouter();
   const [calls, setCalls] = useState<Call[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const PAGE_SIZE = 20;
 
-  useEffect(() => {
-    callsApi.getHistory()
-      .then((res) => setCalls(res.data?.data?.content || res.data?.data || res.data || []))
-      .catch(() => setCalls([]))
-      .finally(() => setLoading(false));
-  }, []);
+  const fetchCalls = async (pageNum: number, isRefresh = false) => {
+    try {
+      if (isRefresh) setRefreshing(true);
+      else if (pageNum === 0) setLoading(true);
+      setError(null);
+      const res = await callsApi.getHistory({ page: pageNum, size: PAGE_SIZE });
+      const newCalls = res.data?.data?.content || res.data?.data || res.data || [];
+      if (pageNum === 0) {
+        setCalls(newCalls);
+      } else {
+        setCalls(prev => [...prev, ...newCalls]);
+      }
+      setHasMore(newCalls.length === PAGE_SIZE);
+      setPage(pageNum);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load calls');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => { fetchCalls(0); }, []);
+
+  const handleLoadMore = () => {
+    if (!loading && hasMore) fetchCalls(page + 1);
+  };
+
+  const handleRefresh = () => fetchCalls(0, true);
 
   const renderItem = useCallback(({ item }: { item: Call }) => (
     <CallCard call={item} onPress={() => router.push(`/calls/${item.id}`)} />
   ), []);
+
+  const renderEmpty = () => {
+    if (loading) return null;
+    if (error) return (
+      <View style={styles.centerContainer}>
+        <Ionicons name="cloud-offline-outline" size={48} color={Colors.textSecondary} />
+        <Text style={styles.emptyText}>{error}</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => fetchCalls(0)}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+    return (
+      <View style={styles.centerContainer}>
+        <Ionicons name="call-outline" size={48} color={Colors.textSecondary} />
+        <Text style={styles.emptyText}>No call history</Text>
+        <Text style={styles.emptySubtext}>Make your first call to get started</Text>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -35,15 +83,21 @@ export default function CallsScreen() {
         </TouchableOpacity>
       </View>
 
-      {loading ? (
+      {loading && calls.length === 0 ? (
         <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
       ) : (
       <FlatList
         data={calls}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, calls.length === 0 && styles.listEmpty]}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={renderEmpty}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
+        ListFooterComponent={loading && calls.length > 0 ? <ActivityIndicator style={{ padding: 16 }} /> : null}
       />
       )}
 
@@ -103,5 +157,39 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 8,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingHorizontal: 32,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 4,
+    textAlign: 'center',
+    opacity: 0.7,
+  },
+  retryBtn: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+  },
+  retryText: {
+    color: Colors.white,
+    fontWeight: '600',
+  },
+  listEmpty: {
+    flexGrow: 1,
   },
 });

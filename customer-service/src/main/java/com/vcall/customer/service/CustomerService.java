@@ -13,12 +13,15 @@ import com.vcall.customer.entity.CustomerTagMapping;
 import com.vcall.customer.repository.CustomerRepository;
 import com.vcall.customer.repository.CustomerTagMappingRepository;
 import com.vcall.customer.repository.CustomerTagRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,6 +40,43 @@ public class CustomerService {
     @Transactional(readOnly = true)
     public Page<CustomerResponse> findAll(Pageable pageable) {
         return customerRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CustomerResponse> findAll(String keyword, String gender, String company,
+                                           String nationality, LocalDate dateFrom, LocalDate dateTo,
+                                           Pageable pageable) {
+        return customerRepository.findAll((root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (keyword != null && !keyword.isEmpty()) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("fullName")), pattern),
+                        cb.like(cb.lower(root.get("email")), pattern),
+                        cb.like(root.get("phone"), pattern),
+                        cb.like(cb.lower(root.get("company")), pattern),
+                        cb.like(root.get("customerCode"), pattern)
+                ));
+            }
+            if (gender != null && !gender.isEmpty()) {
+                predicates.add(cb.equal(root.get("gender"), gender));
+            }
+            if (company != null && !company.isEmpty()) {
+                predicates.add(cb.like(cb.lower(root.get("company")), "%" + company.toLowerCase() + "%"));
+            }
+            if (nationality != null && !nationality.isEmpty()) {
+                predicates.add(cb.like(cb.lower(root.get("nationality")), "%" + nationality.toLowerCase() + "%"));
+            }
+            if (dateFrom != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), dateFrom.atStartOfDay()));
+            }
+            if (dateTo != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), dateTo.atTime(23, 59, 59)));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        }, pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

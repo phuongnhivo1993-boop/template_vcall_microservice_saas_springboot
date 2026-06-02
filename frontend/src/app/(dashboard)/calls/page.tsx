@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Table, Card, Input, Select, DatePicker, Row, Col, Tag, Space, Typography } from 'antd';
-import { SearchOutlined, PhoneOutlined } from '@ant-design/icons';
+import { useState, useEffect } from 'react';
+import { Table, Card, Input, Select, DatePicker, Row, Col, Tag, Space, Typography, Button, message } from 'antd';
+import { SearchOutlined, PhoneOutlined, DownloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 const { Title } = Typography;
@@ -41,8 +41,18 @@ export default function CallsPage() {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
   const [agentFilter, setAgentFilter] = useState<string | undefined>();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<CallRecord[]>([]);
 
-  const filtered = callData.filter((call) => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setData(callData);
+      setLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const filtered = data.filter((call) => {
     const matchesSearch =
       call.caller.includes(searchText) ||
       call.callee.includes(searchText) ||
@@ -51,6 +61,24 @@ export default function CallsPage() {
     const matchesAgent = !agentFilter || call.agent === agentFilter;
     return matchesSearch && matchesStatus && matchesAgent;
   });
+
+  const handleExport = () => {
+    try {
+      const headers = ['Call ID', 'Caller', 'Callee', 'Direction', 'Status', 'Duration (s)', 'Agent', 'Time'];
+      const csvContent = [headers.join(','), ...filtered.map(r =>
+        [r.id, r.caller, r.callee, r.direction, r.status, r.duration, r.agent, r.time].map(v => `"${v}"`).join(',')
+      )].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `calls_export_${dayjs().format('YYYYMMDD_HHmmss')}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+      message.success('Calls exported successfully');
+    } catch {
+      message.error('Export failed');
+    }
+  };
 
   const columns = [
     {
@@ -159,11 +187,18 @@ export default function CallsPage() {
             <RangePicker style={{ width: '100%' }} />
           </Col>
         </Row>
+        <div style={{ textAlign: 'right', marginBottom: 16 }}>
+          <Button icon={<DownloadOutlined />} onClick={handleExport} loading={loading}>
+            Export CSV
+          </Button>
+        </div>
         <Table
           dataSource={filtered}
           columns={columns}
           rowKey="id"
+          loading={loading}
           pagination={{ pageSize: 10, showSizeChanger: true }}
+          locale={{ emptyText: loading ? 'Loading...' : 'No call records found' }}
         />
       </Card>
     </div>

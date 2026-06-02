@@ -7,7 +7,8 @@ import {
 } from 'antd';
 import {
   PlusOutlined, TeamOutlined, DollarOutlined, PhoneOutlined,
-  EditOutlined, DeleteOutlined, SwapOutlined, CheckCircleOutlined
+  EditOutlined, DeleteOutlined, SwapOutlined, CheckCircleOutlined,
+  SearchOutlined
 } from '@ant-design/icons';
 import { crmApi } from '@/lib/api';
 
@@ -36,6 +37,10 @@ export default function CrmPage() {
   const [activities, setActivities] = useState<any[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState({ leads: false, opportunities: false, activities: false, notes: false });
+  const [leadSearch, setLeadSearch] = useState('');
+  const [oppSearch, setOppSearch] = useState('');
+  const [activitySearch, setActivitySearch] = useState('');
+  const [noteSearch, setNoteSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'lead' | 'opportunity' | 'activity' | 'note'>('lead');
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -253,6 +258,33 @@ export default function CrmPage() {
     );
   };
 
+  const filteredLeads = leads.filter(l =>
+    !leadSearch ||
+    (l.firstName || '').toLowerCase().includes(leadSearch.toLowerCase()) ||
+    (l.lastName || '').toLowerCase().includes(leadSearch.toLowerCase()) ||
+    (l.email || '').toLowerCase().includes(leadSearch.toLowerCase()) ||
+    (l.company || '').toLowerCase().includes(leadSearch.toLowerCase()) ||
+    (l.phone || '').includes(leadSearch)
+  );
+
+  const filteredOpps = opportunities.filter(o =>
+    !oppSearch ||
+    (o.title || '').toLowerCase().includes(oppSearch.toLowerCase()) ||
+    (o.stage || '').toLowerCase().includes(oppSearch.toLowerCase())
+  );
+
+  const filteredActivities = activities.filter(a =>
+    !activitySearch ||
+    (a.subject || '').toLowerCase().includes(activitySearch.toLowerCase()) ||
+    (a.type || '').toLowerCase().includes(activitySearch.toLowerCase())
+  );
+
+  const filteredNotes = notes.filter(n =>
+    !noteSearch ||
+    (n.title || '').toLowerCase().includes(noteSearch.toLowerCase()) ||
+    (n.content || '').toLowerCase().includes(noteSearch.toLowerCase())
+  );
+
   const stats = {
     totalLeads: leads.length,
     qualifiedLeads: leads.filter(l => l.status === 'QUALIFIED' || l.status === 'PROPOSAL' || l.status === 'NEGOTIATION').length,
@@ -273,15 +305,27 @@ export default function CrmPage() {
       <Card>
         <Tabs activeKey={activeTab} onChange={setActiveTab} tabBarExtraContent={
           <Space>
+            {activeTab === 'leads' && (
+              <Input prefix={<SearchOutlined />} placeholder="Search leads..." value={leadSearch} onChange={e => setLeadSearch(e.target.value)} style={{ width: 200 }} allowClear />
+            )}
+            {activeTab === 'opportunities' && (
+              <Input prefix={<SearchOutlined />} placeholder="Search opportunities..." value={oppSearch} onChange={e => setOppSearch(e.target.value)} style={{ width: 200 }} allowClear />
+            )}
+            {activeTab === 'activities' && (
+              <Input prefix={<SearchOutlined />} placeholder="Search activities..." value={activitySearch} onChange={e => setActivitySearch(e.target.value)} style={{ width: 200 }} allowClear />
+            )}
+            {activeTab === 'notes' && (
+              <Input prefix={<SearchOutlined />} placeholder="Search notes..." value={noteSearch} onChange={e => setNoteSearch(e.target.value)} style={{ width: 200 }} allowClear />
+            )}
             <Button type="primary" icon={<PlusOutlined />} onClick={() => handleCreate(activeTab === 'leads' ? 'lead' : activeTab === 'opportunities' ? 'opportunity' : activeTab === 'activities' ? 'activity' : 'note')}>
               Add {activeTab === 'leads' ? 'Lead' : activeTab === 'opportunities' ? 'Opportunity' : activeTab === 'activities' ? 'Activity' : 'Note'}
             </Button>
           </Space>
         } items={[
-          { key: 'leads', label: `Leads (${leads.length})`, children: <Table rowKey="id" columns={leadColumns} dataSource={leads} loading={loading.leads} pagination={{ pageSize: 10 }} /> },
-          { key: 'opportunities', label: `Opportunities (${opportunities.length})`, children: <Table rowKey="id" columns={oppColumns} dataSource={opportunities} loading={loading.opportunities} pagination={{ pageSize: 10 }} /> },
-          { key: 'activities', label: `Activities (${activities.length})`, children: <Table rowKey="id" columns={activityColumns} dataSource={activities} loading={loading.activities} pagination={{ pageSize: 10 }} /> },
-          { key: 'notes', label: `Notes (${notes.length})`, children: <Table rowKey="id" columns={noteColumns} dataSource={notes} loading={loading.notes} pagination={{ pageSize: 10 }} /> },
+          { key: 'leads', label: `Leads (${filteredLeads.length})`, children: <Table rowKey="id" columns={leadColumns} dataSource={filteredLeads} loading={loading.leads} pagination={{ pageSize: 10 }} /> },
+          { key: 'opportunities', label: `Opportunities (${filteredOpps.length})`, children: <Table rowKey="id" columns={oppColumns} dataSource={filteredOpps} loading={loading.opportunities} pagination={{ pageSize: 10 }} /> },
+          { key: 'activities', label: `Activities (${filteredActivities.length})`, children: <Table rowKey="id" columns={activityColumns} dataSource={filteredActivities} loading={loading.activities} pagination={{ pageSize: 10 }} /> },
+          { key: 'notes', label: `Notes (${filteredNotes.length})`, children: <Table rowKey="id" columns={noteColumns} dataSource={filteredNotes} loading={loading.notes} pagination={{ pageSize: 10 }} /> },
         ]} />
       </Card>
 
