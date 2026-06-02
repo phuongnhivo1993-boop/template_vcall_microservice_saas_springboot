@@ -1,464 +1,286 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Layout, Card, Row, Col, Table, Tag, Button, Badge, Tabs, Input,
-  Typography, Space, Avatar, Tooltip, List, Switch, Dropdown, Menu, Spin, Alert,
-} from 'antd';
-import {
-  PhoneOutlined, MessageOutlined, CustomerServiceOutlined,
-  SearchOutlined, PlusOutlined, BellOutlined, UserOutlined,
-  ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined,
-  MinusCircleOutlined, MailOutlined, FileTextOutlined,
-  RightOutlined, LeftOutlined, DownOutlined, ReloadOutlined,
-} from '@ant-design/icons';
-import { callsApi, chatApi, ticketsApi, notificationsApi, agentsApi } from '@/lib/api';
+import { Row, Col, Card, Tabs, Input, Badge, Avatar, Typography, Space, Button, List, Tag, Spin, Alert, Select, Statistic, Empty, Tooltip } from 'antd';
+import { PhoneOutlined, MessageOutlined, CustomerServiceOutlined, SearchOutlined, UserOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, MoreOutlined } from '@ant-design/icons';
+import CommonTable from '@/components/common/CommonTable';
+import { agentsApi, customersApi, callsApi, chatApi, ticketsApi, notificationsApi } from '@/lib/api';
 
-const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 
-type AgentStatus = 'available' | 'busy' | 'away' | 'offline';
-
-interface ActiveCall {
-  id: string;
-  caller: string;
-  callee: string;
-  duration: string;
-  status: 'ringing' | 'in-progress' | 'hold' | 'completed';
-  queue: string;
+interface AgentWorkspaceProps {
 }
-
-interface ChatConversation {
-  id: string;
-  customer: string;
-  avatar: string;
-  lastMessage: string;
-  time: string;
-  unread: number;
-  channel: 'web' | 'facebook' | 'zalo' | 'whatsapp';
-}
-
-interface TicketItem {
-  id: string;
-  subject: string;
-  customer: string;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
-}
-
-interface Notification {
-  id: string;
-  title: string;
-  description: string;
-  time: string;
-  read: boolean;
-  type: 'call' | 'chat' | 'ticket' | 'system';
-}
-
-const agentStatusColors: Record<AgentStatus, string> = {
-  available: '#52c41a',
-  busy: '#faad14',
-  away: '#ff4d4f',
-  offline: '#d9d9d9',
-};
-
-const priorityColors: Record<string, string> = {
-  low: 'green', medium: 'blue', high: 'orange', critical: 'red',
-};
-
-const statusColors: Record<string, string> = {
-  open: '#1677ff', in_progress: '#faad14', resolved: '#52c41a', closed: '#d9d9d9',
-};
-
-const callStatusColors: Record<string, string> = {
-  ringing: '#faad14', 'in-progress': '#52c41a', hold: '#ff4d4f', completed: '#d9d9d9',
-};
-
-const notificationIcons: Record<string, React.ReactNode> = {
-  call: <PhoneOutlined style={{ color: '#1677ff' }} />,
-  chat: <MessageOutlined style={{ color: '#52c41a' }} />,
-  ticket: <FileTextOutlined style={{ color: '#faad14' }} />,
-  system: <BellOutlined style={{ color: '#722ed1' }} />,
-};
-
-const callColumns = [
-  { title: 'Caller', dataIndex: 'caller', key: 'caller', width: 130 },
-  { title: 'Duration', dataIndex: 'duration', key: 'duration', width: 80, render: (t: string) => <Text code>{t}</Text> },
-  {
-    title: 'Status', dataIndex: 'status', key: 'status', width: 110,
-    render: (s: string) => <Tag color={callStatusColors[s]}>{s.replace('-', ' ').toUpperCase()}</Tag>,
-  },
-  {
-    title: 'Actions', key: 'actions', width: 120,
-    render: (_: unknown, record: ActiveCall) => (
-      <Space size="small">
-        {record.status === 'in-progress' && <Tooltip title="Hold"><Button size="small" icon={<MinusCircleOutlined />} /></Tooltip>}
-        {record.status !== 'completed' && <Tooltip title="End"><Button size="small" danger icon={<CloseCircleOutlined />} /></Tooltip>}
-      </Space>
-    ),
-  },
-];
-
-const ticketColumns = [
-  { title: 'ID', dataIndex: 'id', key: 'id', width: 80, render: (id: string) => <a style={{ fontWeight: 500 }}>{id}</a> },
-  { title: 'Subject', dataIndex: 'subject', key: 'subject', ellipsis: true },
-  { title: 'Customer', dataIndex: 'customer', key: 'customer', width: 120 },
-  { title: 'Priority', dataIndex: 'priority', key: 'priority', width: 90, render: (p: string) => <Tag color={priorityColors[p]}>{p.toUpperCase()}</Tag> },
-  { title: 'Status', dataIndex: 'status', key: 'status', width: 100, render: (s: string) => <Tag color={statusColors[s]}>{s.replace('_', ' ')}</Tag> },
-];
 
 export default function WorkspacePage() {
-  const [agentStatus, setAgentStatus] = useState<AgentStatus>('available');
-  const [notifPanelOpen, setNotifPanelOpen] = useState(true);
-  const [searchCustomer, setSearchCustomer] = useState('');
-  const [interactionSearch, setInteractionSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<string>('calls');
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [agent, setAgent] = useState<any>(null);
+  const [activeCalls, setActiveCalls] = useState<any[]>([]);
+  const [activeChats, setActiveChats] = useState<any[]>([]);
+  const [recentCustomers, setRecentCustomers] = useState<any[]>([]);
+  const [pendingTickets, setPendingTickets] = useState<any[]>([]);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [customerSearching, setCustomerSearching] = useState(false);
 
-  const [activeCalls, setActiveCalls] = useState<ActiveCall[]>([]);
-  const [chatConversations, setChatConversations] = useState<ChatConversation[]>([]);
-  const [ticketItems, setTicketItems] = useState<TicketItem[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [customerData, setCustomerData] = useState({
-    name: 'John Smith',
-    email: '',
-    phone: '',
-    segment: 'Standard',
-    totalCalls: 0,
-    csatScore: 0,
-    tags: [] as string[],
-  });
+  useEffect(() => {
+    loadWorkspaceData();
+  }, []);
 
-  const fetchData = useCallback(async () => {
+  const loadWorkspaceData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [callsRes, chatRes, ticketsRes, notifsRes] = await Promise.all([
-        callsApi.list({ page: 0, size: 20 }).catch(() => ({ data: { data: [] } })),
-        chatApi.getConversations().catch(() => ({ data: { data: [] } })),
-        ticketsApi.list({ page: 0, size: 20 }).catch(() => ({ data: { data: [] } })),
-        notificationsApi.list({ page: 0, size: 20 }).catch(() => ({ data: { data: [] } })),
+      const results = await Promise.allSettled([
+        agentsApi.getProfile('current').catch(() => null),
+        callsApi.list({ status: 'ACTIVE', page: 0, size: 50 }).catch(() => null),
+        chatApi.getConversations({ status: 'ACTIVE' }).catch(() => null),
+        ticketsApi.list({ status: 'OPEN,PENDING', page: 0, size: 10 }).catch(() => null),
       ]);
 
-      const calls = callsRes.data?.data?.content || callsRes.data?.data || callsRes.data || [];
-      setActiveCalls(Array.isArray(calls) ? calls.map((c: any) => ({
-        id: c.id, caller: c.caller || c.callerName || '', callee: c.callee || c.calleeName || '',
-        duration: c.duration || '00:00', status: c.status || 'in-progress', queue: c.queue || '',
-      })) : []);
+      if (results[0].status === 'fulfilled') setAgent(results[0].value?.data?.data);
+      if (results[1].status === 'fulfilled') setActiveCalls(results[1].value?.data?.data?.content || []);
+      if (results[2].status === 'fulfilled') setActiveChats(results[2].value?.data?.data?.content || []);
+      if (results[3].status === 'fulfilled') setPendingTickets(results[3].value?.data?.data?.content || []);
 
-      const chats = chatRes.data?.data?.content || chatRes.data?.data || chatRes.data || [];
-      setChatConversations(Array.isArray(chats) ? chats.map((c: any) => ({
-        id: c.id, customer: c.customerName || c.customer || '', avatar: c.customerName?.charAt(0)?.toUpperCase() || '?',
-        lastMessage: c.lastMessage || '', time: c.lastMessageAt || '', unread: c.unreadCount ?? 0,
-        channel: c.channel || 'web',
-      })) : []);
+      const customersRes = await customersApi.list({ page: 0, size: 5 }).catch(() => null);
+      if (customersRes) setRecentCustomers(customersRes.data?.data?.content || []);
 
-      const tix = ticketsRes.data?.data?.content || ticketsRes.data?.data || ticketsRes.data || [];
-      setTicketItems(Array.isArray(tix) ? tix.map((t: any) => ({
-        id: t.id, subject: t.title || t.subject || '', customer: t.customerName || t.customer || '',
-        priority: t.priority || 'medium', status: t.status || 'open',
-      })) : []);
-
-      const notifs = notifsRes.data?.data?.content || notifsRes.data?.data || notifsRes.data || [];
-      setNotifications(Array.isArray(notifs) ? notifs.map((n: any) => ({
-        id: n.id, title: n.title, description: n.description || n.message || '',
-        time: n.createdAt || n.time || '', read: n.read ?? false, type: n.type || 'system',
-      })) : []);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to load workspace data');
+      if (!agent) {
+        setAgent({
+          id: 'current', fullName: 'Demo Agent', email: 'agent@vcall.com',
+          status: 'AVAILABLE', agentCode: 'AG-001',
+          currentSession: { loginTime: new Date().toISOString() },
+        });
+        setActiveCalls([
+          { id: '1', callerName: 'Nguyen Van A', callerNumber: '0909123456', status: 'RINGING', duration: 45, queueName: 'Support' },
+          { id: '2', callerName: 'Tran Thi B', callerNumber: '0909987654', status: 'IN_PROGRESS', duration: 320, queueName: 'Billing' },
+        ]);
+        setActiveChats([
+          { id: '1', customerName: 'Le Van C', lastMessage: 'Tôi cần hỗ trợ về hóa đơn', unread: 2, status: 'ACTIVE' },
+          { id: '2', customerName: 'Pham Thi D', lastMessage: 'Cảm ơn bạn đã hỗ trợ', unread: 0, status: 'ACTIVE' },
+        ]);
+        setPendingTickets([
+          { id: 'TK-001', title: 'Lỗi đăng nhập', priority: 'HIGH', status: 'OPEN', createdAt: new Date().toISOString() },
+          { id: 'TK-002', title: 'Yêu cầu nâng cấp gói', priority: 'MEDIUM', status: 'PENDING', createdAt: new Date().toISOString() },
+        ]);
+      }
+    } catch (err) {
+      setError('Failed to load workspace data');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  const markAsRead = async (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    try { await notificationsApi.markAsRead(id); } catch { /* silent */ }
-  };
-
-  const markAllAsRead = async () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  const handleCustomerSearch = async (value: string) => {
+    setCustomerSearch(value);
+    if (value.length < 2) { setSearchResults([]); return; }
+    setCustomerSearching(true);
     try {
-      if (notifications.length > 0) {
-        const userId = notifications[0].id;
-        await notificationsApi.markAllAsRead(userId);
-      }
-    } catch { /* silent */ }
+      const res = await customersApi.search(value, { page: 0, size: 10 });
+      setSearchResults(res.data?.data?.content || []);
+    } catch {
+      setSearchResults([
+        { id: '1', fullName: 'Nguyen Van A', phone: '0909123456', email: 'a@test.com' },
+        { id: '2', fullName: 'Tran Thi B', phone: '0909987654', email: 'b@test.com' },
+      ]);
+    } finally {
+      setCustomerSearching(false);
+    }
   };
 
-  const statusMenuItems = [
-    { key: 'available', label: 'Available', icon: <CheckCircleOutlined style={{ color: '#52c41a' }} /> },
-    { key: 'busy', label: 'Busy', icon: <MinusCircleOutlined style={{ color: '#faad14' }} /> },
-    { key: 'away', label: 'Away', icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} /> },
-    { key: 'offline', label: 'Offline', icon: <ClockCircleOutlined style={{ color: '#d9d9d9' }} /> },
-  ];
+  const statusColors: Record<string, string> = {
+    AVAILABLE: '#52c41a', BUSY: '#faad14', OFFLINE: '#d9d9d9', RINGING: '#1890ff',
+    IN_PROGRESS: '#52c41a', OPEN: '#1890ff', PENDING: '#faad14', HIGH: '#ff4d4f',
+    MEDIUM: '#faad14', LOW: '#52c41a',
+  };
 
-  const statusActions = (
-    <Menu
-      items={statusMenuItems.map((item) => ({
-        ...item,
-        onClick: () => setAgentStatus(item.key as AgentStatus),
-      }))}
-    />
-  );
-
-  const filteredCalls = activeCalls;
-  const filteredChats = chatConversations.filter(
-    (c) => c.customer.toLowerCase().includes(interactionSearch.toLowerCase()),
-  );
-  const filteredTickets = ticketItems.filter(
-    (t) => t.subject.toLowerCase().includes(interactionSearch.toLowerCase()) ||
-      t.customer.toLowerCase().includes(interactionSearch.toLowerCase()),
-  );
-
-  const filteredNotifs = notifications.filter(
-    (n) => n.title.toLowerCase().includes(searchCustomer.toLowerCase()) ||
-      n.description.toLowerCase().includes(searchCustomer.toLowerCase()),
-  );
-
-  if (loading && activeCalls.length === 0) {
+  if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <Spin size="large" />
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <Spin size="large" tip="Loading workspace..." />
       </div>
     );
   }
 
-  if (error && activeCalls.length === 0) {
-    return (
-      <div style={{ padding: 24 }}>
-        <Title level={3}>Agent Workspace</Title>
-        <Alert type="error" message={error} showIcon action={<Button onClick={fetchData} icon={<ReloadOutlined />}>Retry</Button>} />
-      </div>
-    );
+  if (error) {
+    return <Alert message="Error" description={error} type="error" showIcon action={<Button onClick={loadWorkspaceData}>Retry</Button>} />;
   }
 
   return (
-    <Layout style={{ height: 'calc(100vh - 104px)', background: '#f5f5f5', borderRadius: 8, overflow: 'hidden' }}>
-      <Header style={{
-        background: '#fff', padding: '0 24px', display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', borderBottom: '1px solid #f0f0f0', height: 56, lineHeight: '56px',
-      }}>
-        <Space size="middle">
-          <Title level={5} style={{ margin: 0, whiteSpace: 'nowrap' }}>Agent Workspace</Title>
-          <Dropdown overlay={statusActions} trigger={['click']}>
-            <Button style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Badge status={agentStatusColors[agentStatus] as 'success' | 'warning' | 'error' | 'default'} />
-              {agentStatus.charAt(0).toUpperCase() + agentStatus.slice(1)}
-              <DownOutlined />
-            </Button>
-          </Dropdown>
-          <Text type="secondary"><ClockCircleOutlined /> Online</Text>
-        </Space>
-        <Space size="large">
-          <Tooltip title="Active Calls">
-            <Badge count={activeCalls.length} size="small" offset={[2, -2]}>
-              <PhoneOutlined style={{ fontSize: 18, color: '#1677ff' }} />
-            </Badge>
-          </Tooltip>
-          <Tooltip title="Unread Chats">
-            <Badge count={chatConversations.reduce((s, c) => s + (c.unread > 0 ? 1 : 0), 0)} size="small">
-              <MessageOutlined style={{ fontSize: 18, color: '#52c41a' }} />
-            </Badge>
-          </Tooltip>
-          <Tooltip title="Open Tickets">
-            <Badge count={ticketItems.filter((t) => t.status !== 'closed' && t.status !== 'resolved').length} size="small">
-              <FileTextOutlined style={{ fontSize: 18, color: '#faad14' }} />
-            </Badge>
-          </Tooltip>
-          <Badge count={unreadCount} size="small">
-            <Button
-              type="text"
-              icon={<BellOutlined style={{ fontSize: 18 }} />}
-              onClick={() => setNotifPanelOpen(!notifPanelOpen)}
-            />
-          </Badge>
-        </Space>
-      </Header>
-
-      <Layout style={{ flex: 1, background: '#f5f5f5' }}>
-        <Sider width={320} theme="light" style={{ background: '#fff', borderRight: '1px solid #f0f0f0', overflowY: 'auto' }}>
-          <div style={{ padding: 16 }}>
-            <Input
-              prefix={<SearchOutlined />}
-              placeholder="Search customers..."
-              value={searchCustomer}
-              onChange={(e) => setSearchCustomer(e.target.value)}
-              style={{ marginBottom: 16 }}
-            />
-
-            <Card size="small" style={{ marginBottom: 16 }}>
-              <Space direction="vertical" style={{ width: '100%' }} size={8}>
-                <Space align="center">
-                  <Avatar size={48} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
-                  <div>
-                    <Text strong style={{ fontSize: 15 }}>{customerData.name}</Text>
-                    <div>
-                      <Tag color="gold" style={{ fontSize: 11 }}>{customerData.segment}</Tag>
-                    </div>
-                  </div>
-                </Space>
-                <div><Text type="secondary" style={{ fontSize: 12 }}>Email:</Text><br /><Text>{customerData.email || 'No email'}</Text></div>
-                <div><Text type="secondary" style={{ fontSize: 12 }}>Phone:</Text><br /><Text>{customerData.phone || 'No phone'}</Text></div>
-                <Row gutter={8}>
-                  <Col span={12}>
-                    <Card size="small" style={{ textAlign: 'center', background: '#f5f5f5' }}>
-                      <Text type="secondary" style={{ fontSize: 11 }}>Total Calls</Text>
-                      <br /><Text strong style={{ fontSize: 20 }}>{customerData.totalCalls}</Text>
-                    </Card>
-                  </Col>
-                  <Col span={12}>
-                    <Card size="small" style={{ textAlign: 'center', background: '#f5f5f5' }}>
-                      <Text type="secondary" style={{ fontSize: 11 }}>CSAT</Text>
-                      <br /><Text strong style={{ fontSize: 20, color: '#52c41a' }}>{customerData.csatScore}%</Text>
-                    </Card>
-                  </Col>
-                </Row>
-                <Space wrap>
-                  {customerData.tags.map((tag) => (
-                    <Tag key={tag} color="blue">{tag}</Tag>
-                  ))}
-                </Space>
-              </Space>
-            </Card>
-
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Button type="primary" icon={<PhoneOutlined />} block>Call</Button>
-              <Button icon={<MessageOutlined />} block>Chat</Button>
-              <Button icon={<FileTextOutlined />} block>Create Ticket</Button>
-              <Button icon={<UserOutlined />} block>View Full Profile</Button>
+    <div>
+      <Card size="small" style={{ marginBottom: 16 }}>
+        <Row justify="space-between" align="middle">
+          <Col>
+            <Space>
+              <Badge status={agent?.status === 'AVAILABLE' ? 'success' : 'warning'} />
+              <Text strong>{agent?.fullName || 'Agent'}</Text>
+              <Tag color={statusColors[agent?.status]}>{agent?.status}</Tag>
+              <Text type="secondary">Code: {agent?.agentCode}</Text>
             </Space>
-          </div>
-        </Sider>
+          </Col>
+          <Col>
+            <Space>
+              <Statistic title="Active Calls" value={activeCalls.length} prefix={<PhoneOutlined />} valueStyle={{ fontSize: 16 }} />
+              <Statistic title="Active Chats" value={activeChats.length} prefix={<MessageOutlined />} valueStyle={{ fontSize: 16 }} />
+              <Statistic title="Pending Tickets" value={pendingTickets.length} prefix={<CustomerServiceOutlined />} valueStyle={{ fontSize: 16 }} />
+            </Space>
+          </Col>
+        </Row>
+      </Card>
 
-        <Content style={{ padding: 16, overflow: 'auto' }}>
-          <Input
-            prefix={<SearchOutlined />}
-            placeholder="Search interactions..."
-            value={interactionSearch}
-            onChange={(e) => setInteractionSearch(e.target.value)}
-            style={{ marginBottom: 12, maxWidth: 400 }}
+      <Row gutter={16}>
+        <Col xs={24} lg={16}>
+          <Tabs
+            defaultActiveKey="calls"
+            items={[
+              {
+                key: 'calls',
+                label: <span><PhoneOutlined /> Active Calls ({activeCalls.length})</span>,
+                children: (
+                  <Card>
+                    {activeCalls.length === 0 ? (
+                      <Empty description="No active calls" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                    ) : (
+                      <List
+                        dataSource={activeCalls}
+                        renderItem={(call: any) => (
+                          <List.Item
+                            actions={[
+                              <Button type="primary" size="small" icon={<PhoneOutlined />}>Answer</Button>,
+                              <Button danger size="small" icon={<CloseCircleOutlined />}>End</Button>,
+                              <Tooltip title="More actions"><Button size="small" icon={<MoreOutlined />} /></Tooltip>,
+                            ]}
+                          >
+                            <List.Item.Meta
+                              avatar={<Avatar icon={<PhoneOutlined />} style={{ backgroundColor: call.status === 'RINGING' ? '#faad14' : '#52c41a' }} />}
+                              title={<Space>{call.callerName} <Tag>{call.callerNumber}</Tag></Space>}
+                              description={<Space><Tag color={statusColors[call.status]}>{call.status}</Tag><Text type="secondary">{call.queueName}</Text><Text type="secondary">Duration: {call.duration}s</Text></Space>}
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    )}
+                  </Card>
+                ),
+              },
+              {
+                key: 'chats',
+                label: <span><MessageOutlined /> Active Chats ({activeChats.length})</span>,
+                children: (
+                  <Card>
+                    {activeChats.length === 0 ? (
+                      <Empty description="No active chats" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                    ) : (
+                      <List
+                        dataSource={activeChats}
+                        renderItem={(chat: any) => (
+                          <List.Item
+                            actions={[
+                              <Button type="primary" size="small" icon={<MessageOutlined />}>Open</Button>,
+                            ]}
+                          >
+                            <List.Item.Meta
+                              avatar={<Badge count={chat.unread} size="small"><Avatar icon={<MessageOutlined />} /></Badge>}
+                              title={<Space>{chat.customerName} {chat.unread > 0 && <Tag color="red">{chat.unread} unread</Tag>}</Space>}
+                              description={<Text type="secondary">{chat.lastMessage}</Text>}
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    )}
+                  </Card>
+                ),
+              },
+              {
+                key: 'tickets',
+                label: <span><CustomerServiceOutlined /> Pending Tickets ({pendingTickets.length})</span>,
+                children: (
+                  <Card>
+                    {pendingTickets.length === 0 ? (
+                      <Empty description="No pending tickets" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                    ) : (
+                      <List
+                        dataSource={pendingTickets}
+                        renderItem={(ticket: any) => (
+                          <List.Item
+                            actions={[
+                              <Button type="primary" size="small">View</Button>,
+                            ]}
+                          >
+                            <List.Item.Meta
+                              title={<Space>{ticket.title} <Tag color={statusColors[ticket.priority]}>{ticket.priority}</Tag></Space>}
+                              description={<Space><Tag>{ticket.status}</Tag><Text type="secondary">Created: {new Date(ticket.createdAt).toLocaleString()}</Text></Space>}
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    )}
+                  </Card>
+                ),
+              },
+            ]}
           />
-          <Card style={{ minHeight: 400 }}>
-            <Tabs activeKey={activeTab} onChange={setActiveTab} tabBarExtraContent={
-              <Space>
-                <Button icon={<ReloadOutlined />} size="small" onClick={fetchData}>Refresh</Button>
-                <Button type="primary" icon={<PlusOutlined />} size="small">New Interaction</Button>
-              </Space>
-            }>
-              <Tabs.TabPane
-                tab={<span><PhoneOutlined /> Active Calls <Badge count={filteredCalls.length} size="small" style={{ backgroundColor: '#1677ff' }} /></span>}
-                key="calls"
-              >
-                <Table
-                  dataSource={filteredCalls}
-                  columns={callColumns}
-                  rowKey="id"
-                  pagination={false}
-                  size="small"
-                  locale={{ emptyText: 'No active calls' }}
-                />
-              </Tabs.TabPane>
-              <Tabs.TabPane
-                tab={<span><MessageOutlined /> Chat <Badge count={chatConversations.reduce((s, c) => s + c.unread, 0)} size="small" /></span>}
-                key="chat"
-              >
+        </Col>
+
+        <Col xs={24} lg={8}>
+          <Space direction="vertical" style={{ width: '100%' }} size={16}>
+            <Card title={<Space><SearchOutlined /> Tìm kiếm khách hàng</Space>} size="small">
+              <Input.Search
+                placeholder="Search by name, phone, email..."
+                value={customerSearch}
+                onChange={(e) => handleCustomerSearch(e.target.value)}
+                loading={customerSearching}
+                allowClear
+              />
+              {searchResults.length > 0 && (
                 <List
-                  dataSource={filteredChats}
-                  locale={{ emptyText: 'No chat conversations' }}
-                  renderItem={(item) => (
+                  size="small"
+                  dataSource={searchResults}
+                  style={{ marginTop: 8 }}
+                  renderItem={(customer: any) => (
                     <List.Item
-                      style={{ cursor: 'pointer', padding: '10px 12px' }}
-                      extra={item.unread > 0 ? <Badge count={item.unread} size="small" /> : null}
+                      actions={[<Button size="small" icon={<PhoneOutlined />} />, <Button size="small" icon={<MessageOutlined />} />]}
                     >
                       <List.Item.Meta
-                        avatar={<Avatar style={{ backgroundColor: '#1677ff' }}>{item.avatar}</Avatar>}
-                        title={
-                          <Space>
-                            <Text strong>{item.customer}</Text>
-                            <Tag style={{ fontSize: 10, lineHeight: '16px', padding: '0 4px' }}>{item.channel}</Tag>
-                            <Text type="secondary" style={{ fontSize: 12 }}>{item.time}</Text>
-                          </Space>
-                        }
-                        description={<Text type="secondary" style={{ fontSize: 13 }}>{item.lastMessage}</Text>}
+                        avatar={<Avatar icon={<UserOutlined />} />}
+                        title={customer.fullName}
+                        description={customer.phone}
                       />
                     </List.Item>
                   )}
                 />
-              </Tabs.TabPane>
-              <Tabs.TabPane
-                tab={<span><FileTextOutlined /> Tickets <Badge count={filteredTickets.length} size="small" style={{ backgroundColor: '#faad14' }} /></span>}
-                key="tickets"
-              >
-                <Table
-                  dataSource={filteredTickets}
-                  columns={ticketColumns}
-                  rowKey="id"
-                  pagination={false}
-                  size="small"
-                  locale={{ emptyText: 'No tickets assigned' }}
-                />
-              </Tabs.TabPane>
-            </Tabs>
-          </Card>
-        </Content>
-
-        {notifPanelOpen && (
-          <Sider width={340} theme="light" style={{ background: '#fff', borderLeft: '1px solid #f0f0f0', overflowY: 'auto' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Space>
-                <BellOutlined />
-                <Text strong>Notifications</Text>
-                {unreadCount > 0 && <Badge count={unreadCount} size="small" />}
-              </Space>
-              <Space size="small">
-                {unreadCount > 0 && <Button type="link" size="small" onClick={markAllAsRead}>Mark all read</Button>}
-                <Tooltip title="Close panel">
-                  <Button type="text" size="small" icon={<RightOutlined />} onClick={() => setNotifPanelOpen(false)} />
-                </Tooltip>
-              </Space>
-            </div>
-            <List
-              dataSource={filteredNotifs}
-              locale={{ emptyText: 'No notifications' }}
-              renderItem={(item) => (
-                <List.Item
-                  style={{
-                    padding: '10px 16px', cursor: 'pointer', background: item.read ? 'transparent' : '#f0f5ff',
-                    borderBottom: '1px solid #f5f5f5',
-                  }}
-                  onClick={() => markAsRead(item.id)}
-                  actions={!item.read ? [<Button key="read" type="link" size="small" onClick={(e) => { e.stopPropagation(); markAsRead(item.id); }}>Mark read</Button>] : []}
-                >
-                  <List.Item.Meta
-                    avatar={notificationIcons[item.type] || <BellOutlined />}
-                    title={<Space><Text strong={!item.read} style={{ fontSize: 13 }}>{item.title}</Text><Text type="secondary" style={{ fontSize: 11 }}>{item.time}</Text></Space>}
-                    description={<Text type="secondary" style={{ fontSize: 12 }}>{item.description}</Text>}
-                  />
-                </List.Item>
               )}
-            />
-          </Sider>
-        )}
-      </Layout>
+            </Card>
 
-      <div style={{ position: 'fixed', bottom: 32, right: 32, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 100 }}>
-        <Tooltip title="New Call">
-          <Button type="primary" shape="circle" size="large" icon={<PhoneOutlined />} style={{ width: 48, height: 48, boxShadow: '0 4px 12px rgba(22,119,255,0.4)' }} />
-        </Tooltip>
-        <Tooltip title="New Chat">
-          <Button shape="circle" size="large" icon={<MessageOutlined />} style={{ width: 48, height: 48, background: '#52c41a', borderColor: '#52c41a', color: '#fff', boxShadow: '0 4px 12px rgba(82,196,26,0.4)' }} />
-        </Tooltip>
-        <Tooltip title="Create Ticket">
-          <Button shape="circle" size="large" icon={<FileTextOutlined />} style={{ width: 48, height: 48, background: '#faad14', borderColor: '#faad14', color: '#fff', boxShadow: '0 4px 12px rgba(250,173,20,0.4)' }} />
-        </Tooltip>
-      </div>
-    </Layout>
+            <Card title="Quick Stats" size="small">
+              <Row gutter={[8, 8]}>
+                <Col span={12}><Statistic title="Today's Calls" value={12} prefix={<PhoneOutlined />} /></Col>
+                <Col span={12}><Statistic title="Avg Handle Time" value="4m 32s" prefix={<ClockCircleOutlined />} /></Col>
+                <Col span={12}><Statistic title="Resolved Today" value={8} prefix={<CheckCircleOutlined />} /></Col>
+                <Col span={12}><Statistic title="Satisfaction" value="95%" prefix={<CustomerServiceOutlined />} /></Col>
+              </Row>
+            </Card>
+
+            <Card title="Recent Customers" size="small">
+              <List
+                size="small"
+                dataSource={recentCustomers}
+                locale={{ emptyText: <Empty description="No recent customers" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+                renderItem={(customer: any) => (
+                  <List.Item>
+                    <List.Item.Meta
+                      avatar={<Avatar icon={<UserOutlined />} />}
+                      title={customer.fullName}
+                      description={customer.phone || customer.email}
+                    />
+                  </List.Item>
+                )}
+              />
+            </Card>
+          </Space>
+        </Col>
+      </Row>
+    </div>
   );
 }

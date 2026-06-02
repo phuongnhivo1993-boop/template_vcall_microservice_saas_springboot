@@ -30,4 +30,5 @@ export const menuItems: MenuItem[] = [
   { key: 'settings', label: 'Settings', icon: <SettingOutlined />, path: '/settings', permission: Permissions.SETTINGS_VIEW },
   { key: 'supervisor', label: 'Supervisor', icon: <CustomerServiceOutlined />, path: '/supervisor', permission: Permissions.ADMIN_ACCESS },
   { key: 'workspace', label: 'Workspace', icon: <CustomerServiceOutlined />, path: '/workspace', permission: Permissions.CALL_MANAGE },
+  { key: 'wallboard', label: 'Wallboard', icon: <BarChartOutlined />, path: '/wallboard', permission: Permissions.ADMIN_ACCESS },
 ];

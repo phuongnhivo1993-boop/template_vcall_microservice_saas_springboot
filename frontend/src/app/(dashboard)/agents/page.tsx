@@ -7,6 +7,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-de
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import CommonSearch from '@/components/common/CommonSearch';
+import SavedFilters from '@/components/common/SavedFilters';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { Can } from '@/components/common/Can';
 import { Permissions } from '@/lib/permissions';
@@ -263,12 +264,22 @@ export default function AgentsPage() {
           </Button>
         </Can>
       </div>
-      <CommonSearch
-        fields={searchFields}
-        onSearch={handleSearch}
-        onReset={handleReset}
-        loading={loading}
-      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <CommonSearch
+          fields={searchFields}
+          onSearch={handleSearch}
+          onReset={handleReset}
+          loading={loading}
+        />
+        <SavedFilters
+          currentValues={filters}
+          onApply={(values) => {
+            setFilters(values);
+            fetchAgents(1, pagination.pageSize, values);
+          }}
+          storageKey="vcall-saved-filters-agents"
+        />
+      </div>
       <CommonTable<Agent>
         columns={columns}
         dataSource={agents}

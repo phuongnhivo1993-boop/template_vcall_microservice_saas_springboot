@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import CommonSearch from '@/components/common/CommonSearch';
+import SavedFilters from '@/components/common/SavedFilters';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { Can } from '@/components/common/Can';
 import { Permissions } from '@/lib/permissions';
@@ -332,12 +333,32 @@ export default function TicketsPage() {
           </Button>
         </Can>
       </div>
-      <CommonSearch
-        fields={searchFields}
-        onSearch={handleSearch}
-        onReset={handleReset}
-        loading={loading}
-      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <CommonSearch
+          fields={searchFields}
+          onSearch={handleSearch}
+          onReset={handleReset}
+          loading={loading}
+        />
+        <SavedFilters
+          currentValues={filters}
+          onApply={(values) => {
+            setFilters(values);
+            if (useMock) {
+              let filtered = [...mockTickets];
+              if (values.status) filtered = filtered.filter((t) => t.status === values.status);
+              if (values.priority) filtered = filtered.filter((t) => t.priority === values.priority);
+              if (values.category) filtered = filtered.filter((t) => t.category === values.category);
+              if (values.subject) filtered = filtered.filter((t) => t.subject.toLowerCase().includes(values.subject.toLowerCase()));
+              setTickets(filtered);
+              setPagination((prev) => ({ ...prev, total: filtered.length }));
+            } else {
+              fetchTickets(1, pagination.pageSize, values);
+            }
+          }}
+          storageKey="vcall-saved-filters-tickets"
+        />
+      </div>
       <CommonTable<Ticket>
         columns={columns}
         dataSource={tickets}

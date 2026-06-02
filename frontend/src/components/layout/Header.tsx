@@ -1,10 +1,11 @@
 'use client';
 
 import { Layout, Avatar, Badge, Dropdown, Space, Typography, Button } from 'antd';
-import { MenuOutlined, LogoutOutlined, UserOutlined, SettingOutlined } from '@ant-design/icons';
+import { MenuOutlined, LogoutOutlined, UserOutlined, SettingOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import NotificationBadge from './NotificationBadge';
+import { useTheme } from '@/lib/theme';
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;
@@ -18,6 +19,7 @@ interface HeaderProps {
 export default function Header({ onToggle, isMobile }: HeaderProps) {
   const { data: session } = useSession();
   const router = useRouter();
+  const { mode, toggleTheme } = useTheme();
 
   const userMenuItems = [
     {
@@ -66,6 +68,12 @@ export default function Header({ onToggle, isMobile }: HeaderProps) {
         />
       )}
       <Space size={24}>
+        <Button
+          type="text"
+          icon={mode === 'dark' ? <SunOutlined /> : <MoonOutlined />}
+          onClick={toggleTheme}
+          style={{ color: 'inherit' }}
+        />
         <NotificationBadge />
         <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
           <Space style={{ cursor: 'pointer' }}>
