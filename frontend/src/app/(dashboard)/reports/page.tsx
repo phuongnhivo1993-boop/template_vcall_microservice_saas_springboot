@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Select, DatePicker, Row, Col, Typography, Tabs, Space, message } from 'antd';
+import { Card, Select, DatePicker, Row, Col, Typography, Tabs, Space, message, Button, Modal, Form, Input, Radio, Tag } from 'antd';
+import { ScheduleOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import {
   BarChart,
   Bar,
@@ -55,12 +56,28 @@ const topCustomers = [
   { rank: 5, name: 'PrimeCare Group', calls: 245, avgDuration: 5.5 },
 ];
 
+const frequencyOptions = [
+  { value: 'DAILY', label: 'Daily' },
+  { value: 'WEEKLY', label: 'Weekly' },
+  { value: 'MONTHLY', label: 'Monthly' },
+  { value: 'CRON', label: 'Cron Expression' },
+];
+
+const deliveryOptions = [
+  { value: 'EMAIL', label: 'Email' },
+  { value: 'EXPORT', label: 'Export (Server)' },
+];
+
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState('charts');
   const [reportDefinitions, setReportDefinitions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reportType, setReportType] = useState('callVolume');
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [scheduleForm] = Form.useForm();
+  const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
+  const [selectedFrequency, setSelectedFrequency] = useState('DAILY');
 
   const fetchDefinitions = useCallback(async () => {
     setLoading(true);
@@ -118,6 +135,27 @@ export default function ReportsPage() {
   const handleReset = () => {
     if (activeTab === 'definitions') {
       fetchDefinitions();
+    }
+  };
+
+  const handleScheduleSubmit = async (values: any) => {
+    setScheduleSubmitting(true);
+    try {
+      await reportsApi.createSchedule({
+        reportDefinitionId: values.reportDefinitionId,
+        frequency: values.frequency,
+        cronExpression: values.frequency === 'CRON' ? values.cronExpression : undefined,
+        deliveryMethod: values.deliveryMethod,
+        recipients: values.recipients?.split(',').map((e: string) => e.trim()).filter(Boolean) || [],
+        active: true,
+      });
+      message.success('Report scheduled successfully');
+      setScheduleModalOpen(false);
+      scheduleForm.resetFields();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to create schedule');
+    } finally {
+      setScheduleSubmitting(false);
     }
   };
 
@@ -222,6 +260,11 @@ export default function ReportsPage() {
           onRefresh={fetchDefinitions}
           onExportCsv={handleExportCsv}
           onExportExcel={handleExportExcel}
+          extra={
+            <Button type="primary" icon={<ScheduleOutlined />} onClick={() => setScheduleModalOpen(true)}>
+              Schedule Report
+            </Button>
+          }
         />
       ),
     },
@@ -269,6 +312,78 @@ export default function ReportsPage() {
       )}
 
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+
+      <Modal
+        title="Schedule Report"
+        open={scheduleModalOpen}
+        onCancel={() => { setScheduleModalOpen(false); scheduleForm.resetFields(); }}
+        onOk={() => scheduleForm.submit()}
+        confirmLoading={scheduleSubmitting}
+        width={600}
+        destroyOnClose
+      >
+        <Form
+          form={scheduleForm}
+          layout="vertical"
+          onFinish={handleScheduleSubmit}
+          initialValues={{ frequency: 'DAILY', deliveryMethod: 'EMAIL' }}
+        >
+          <Form.Item
+            name="reportDefinitionId"
+            label="Report Definition"
+            rules={[{ required: true, message: 'Please select a report' }]}
+          >
+            <Select
+              showSearch
+              placeholder="Select a report definition"
+              optionFilterProp="label"
+              options={reportDefinitions.map((d: any) => ({
+                value: d.id,
+                label: `${d.name} (${d.reportType || 'N/A'})`,
+              }))}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="frequency"
+            label="Frequency"
+            rules={[{ required: true, message: 'Please select frequency' }]}
+          >
+            <Radio.Group
+              options={frequencyOptions}
+              onChange={(e) => setSelectedFrequency(e.target.value)}
+            />
+          </Form.Item>
+
+          {selectedFrequency === 'CRON' && (
+            <Form.Item
+              name="cronExpression"
+              label="Cron Expression"
+              rules={[{ required: true, message: 'Please enter cron expression' }]}
+              extra={<span style={{ fontSize: 12 }}>e.g. <Tag>0 0 * * *</Tag> (daily at midnight)</span>}
+            >
+              <Input placeholder="0 0 * * *" />
+            </Form.Item>
+          )}
+
+          <Form.Item
+            name="deliveryMethod"
+            label="Delivery Method"
+            rules={[{ required: true, message: 'Please select delivery method' }]}
+          >
+            <Radio.Group options={deliveryOptions} />
+          </Form.Item>
+
+          <Form.Item
+            name="recipients"
+            label="Recipient Emails"
+            rules={[{ required: true, message: 'Please enter at least one email' }]}
+            extra="Separate multiple emails with commas"
+          >
+            <Input.TextArea rows={2} placeholder="user@example.com, admin@example.com" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

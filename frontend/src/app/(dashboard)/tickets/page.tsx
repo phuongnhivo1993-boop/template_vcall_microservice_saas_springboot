@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button, Tag, Space, Typography, Form, Input, Select, message, Badge, Progress } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ClockCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
 import dayjs from 'dayjs';
@@ -10,6 +11,8 @@ import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import CommonSearch from '@/components/common/CommonSearch';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
+import { Can } from '@/components/common/Can';
+import { Permissions } from '@/lib/permissions';
 import { ticketsApi } from '@/lib/api';
 
 const { Title } = Typography;
@@ -65,6 +68,7 @@ const categoryOptions = [
 ];
 
 export default function TicketsPage() {
+  const router = useRouter();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -275,12 +279,19 @@ export default function TicketsPage() {
       key: 'actions',
       render: (_: unknown, record: Ticket) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
-            Edit
+          <Button type="link" icon={<EyeOutlined />} onClick={() => router.push(`/tickets/${record.id}`)}>
+            View
           </Button>
-          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)}>
-            Delete
-          </Button>
+          <Can I={Permissions.TICKET_EDIT}>
+            <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+              Edit
+            </Button>
+          </Can>
+          <Can I={Permissions.TICKET_DELETE}>
+            <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)}>
+              Delete
+            </Button>
+          </Can>
         </Space>
       ),
     },
@@ -315,9 +326,11 @@ export default function TicketsPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <Title level={3} style={{ margin: 0 }}>Tickets</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          Create Ticket
-        </Button>
+        <Can I={Permissions.TICKET_CREATE}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+            Create Ticket
+          </Button>
+        </Can>
       </div>
       <CommonSearch
         fields={searchFields}

@@ -195,6 +195,14 @@ export const reportsApi = {
   exportExcel: (params?: Record<string, unknown>) =>
     apiClient.get('/reports/export/excel', { params, responseType: 'blob' }),
   getStats: () => apiClient.get('/reports/stats'),
+  getSchedules: (params?: Record<string, unknown>) =>
+    apiClient.get('/reports/schedules', { params }),
+  createSchedule: (data: Record<string, unknown>) =>
+    apiClient.post('/reports/schedules', data),
+  updateSchedule: (id: number, data: Record<string, unknown>) =>
+    apiClient.put(`/reports/schedules/${id}`, data),
+  deleteSchedule: (id: number) =>
+    apiClient.delete(`/reports/schedules/${id}`),
 };
 
 export const campaignsApi = {

@@ -3,50 +3,93 @@
 import { useState } from 'react';
 import { Layout, Menu } from 'antd';
 import { usePathname, useRouter } from 'next/navigation';
-import {
-  DashboardOutlined,
-  PhoneOutlined,
-  TeamOutlined,
-  UsergroupAddOutlined,
-  AppstoreOutlined,
-  FileTextOutlined,
-  BulbOutlined,
-  DollarOutlined,
-  BarChartOutlined,
-  SettingOutlined,
-  AuditOutlined,
-  BellOutlined,
-} from '@ant-design/icons';
+import { useSession } from 'next-auth/react';
+import { hasPermission } from '@/lib/permissions';
+import { menuItems as allMenuItems, type MenuItem } from './menuConfig';
 
 const { Sider } = Layout;
 
-const menuItems = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
-  { key: '/calls', icon: <PhoneOutlined />, label: 'Calls' },
-  { key: '/agents', icon: <TeamOutlined />, label: 'Agents' },
-  { key: '/customers', icon: <UsergroupAddOutlined />, label: 'Customers' },
-  { key: '/crm', icon: <AppstoreOutlined />, label: 'CRM' },
-  { key: '/tickets', icon: <FileTextOutlined />, label: 'Tickets' },
-  { key: '/campaigns', icon: <BulbOutlined />, label: 'Campaigns' },
-  { key: '/billing', icon: <DollarOutlined />, label: 'Billing' },
-  { key: '/reports', icon: <BarChartOutlined />, label: 'Reports' },
-  { key: '/notifications', icon: <BellOutlined />, label: 'Notifications' },
-  { key: '/settings', icon: <SettingOutlined />, label: 'Settings' },
-  { key: '/audit', icon: <AuditOutlined />, label: 'Audit' },
-];
+function filterMenuItems(items: MenuItem[], role: string | undefined): MenuItem[] {
+  return items.filter((item) => {
+    if (item.permission && !hasPermission(role, item.permission as any)) {
+      return false;
+    }
+    if (item.children) {
+      item.children = filterMenuItems(item.children, role);
+      return item.children.length > 0;
+    }
+    return true;
+  });
+}
 
-export default function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+interface SidebarProps {
+  collapsed?: boolean;
+  onCollapse?: (collapsed: boolean) => void;
+  inDrawer?: boolean;
+  onItemClick?: () => void;
+}
+
+export default function Sidebar({ collapsed, onCollapse, inDrawer, onItemClick }: SidebarProps) {
+  const [localCollapsed, setLocalCollapsed] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session } = useSession();
 
-  const selectedKey = '/' + pathname.split('/')[1];
+  const isCollapsed = collapsed ?? localCollapsed;
+  const handleCollapse = onCollapse || setLocalCollapsed;
+
+  const role = session?.user?.role;
+  const visibleItems = filterMenuItems(allMenuItems, role);
+
+  const selectedKey = pathname.split('/')[1] || 'dashboard';
+
+  const menuElement = (
+    <>
+      <div
+        style={{
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderBottom: '1px solid #f0f0f0',
+        }}
+      >
+        {isCollapsed ? (
+          <img src="/logo.svg" alt="VCall" style={{ height: 32 }} />
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <img src="/logo.svg" alt="VCall" style={{ height: 32 }} />
+            <span style={{ fontSize: 18, fontWeight: 700, color: '#1677ff' }}>VCall</span>
+          </div>
+        )}
+      </div>
+      <Menu
+        mode="inline"
+        selectedKeys={[selectedKey]}
+        items={visibleItems.map((item) => ({
+          key: item.key,
+          icon: item.icon,
+          label: item.label,
+        }))}
+        onClick={({ key }) => {
+          const menuItem = allMenuItems.find((m) => m.key === key);
+          if (menuItem?.path) router.push(menuItem.path);
+          onItemClick?.();
+        }}
+        style={{ borderRight: 0, marginTop: 8 }}
+      />
+    </>
+  );
+
+  if (inDrawer) {
+    return <>{menuElement}</>;
+  }
 
   return (
     <Sider
       collapsible
-      collapsed={collapsed}
-      onCollapse={setCollapsed}
+      collapsed={isCollapsed}
+      onCollapse={handleCollapse}
       theme="light"
       width={240}
       style={{
@@ -59,31 +102,7 @@ export default function Sidebar() {
         zIndex: 100,
       }}
     >
-      <div
-        style={{
-          height: 64,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderBottom: '1px solid #f0f0f0',
-        }}
-      >
-        {collapsed ? (
-          <img src="/logo.svg" alt="VCall" style={{ height: 32 }} />
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <img src="/logo.svg" alt="VCall" style={{ height: 32 }} />
-            <span style={{ fontSize: 18, fontWeight: 700, color: '#1677ff' }}>VCall</span>
-          </div>
-        )}
-      </div>
-      <Menu
-        mode="inline"
-        selectedKeys={[selectedKey]}
-        items={menuItems}
-        onClick={({ key }) => router.push(key)}
-        style={{ borderRight: 0, marginTop: 8 }}
-      />
+      {menuElement}
     </Sider>
   );
 }

@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button, Tag, Space, Typography, Form, Input, Select, message } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import CommonSearch from '@/components/common/CommonSearch';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
+import { Can } from '@/components/common/Can';
+import { Permissions } from '@/lib/permissions';
 import { customersApi } from '@/lib/api';
 
 const { Title } = Typography;
@@ -46,6 +49,7 @@ const planOptions = [
 ];
 
 export default function CustomersPage() {
+  const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -214,12 +218,19 @@ export default function CustomersPage() {
       key: 'actions',
       render: (_: unknown, record: Customer) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
-            Edit
+          <Button type="link" icon={<EyeOutlined />} onClick={() => router.push(`/customers/${record.id}`)}>
+            View
           </Button>
-          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)}>
-            Delete
-          </Button>
+          <Can I={Permissions.CUSTOMER_EDIT}>
+            <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+              Edit
+            </Button>
+          </Can>
+          <Can I={Permissions.CUSTOMER_DELETE}>
+            <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)}>
+              Delete
+            </Button>
+          </Can>
         </Space>
       ),
     },
@@ -251,9 +262,11 @@ export default function CustomersPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <Title level={3} style={{ margin: 0 }}>Customers</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          Add Customer
-        </Button>
+        <Can I={Permissions.CUSTOMER_CREATE}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+            Add Customer
+          </Button>
+        </Can>
       </div>
       <CommonSearch
         fields={searchFields}

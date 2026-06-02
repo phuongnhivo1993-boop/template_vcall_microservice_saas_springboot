@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button, Tag, Space, Badge, Form, Input, Select, message, Typography } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import CommonSearch from '@/components/common/CommonSearch';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
+import { Can } from '@/components/common/Can';
+import { Permissions } from '@/lib/permissions';
 import { agentsApi } from '@/lib/api';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
@@ -41,6 +44,7 @@ const statusOptions = [
 ];
 
 export default function AgentsPage() {
+  const router = useRouter();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -209,12 +213,19 @@ export default function AgentsPage() {
       key: 'actions',
       render: (_: unknown, record: Agent) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
-            Edit
+          <Button type="link" icon={<EyeOutlined />} onClick={() => router.push(`/agents/${record.id}`)}>
+            View
           </Button>
-          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)}>
-            Delete
-          </Button>
+          <Can I={Permissions.AGENT_EDIT}>
+            <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+              Edit
+            </Button>
+          </Can>
+          <Can I={Permissions.AGENT_DELETE}>
+            <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)}>
+              Delete
+            </Button>
+          </Can>
         </Space>
       ),
     },
@@ -246,9 +257,11 @@ export default function AgentsPage() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <Title level={3} style={{ margin: 0 }}>Agents</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-          Add Agent
-        </Button>
+        <Can I={Permissions.AGENT_CREATE}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+            Add Agent
+          </Button>
+        </Can>
       </div>
       <CommonSearch
         fields={searchFields}

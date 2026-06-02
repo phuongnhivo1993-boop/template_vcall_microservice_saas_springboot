@@ -24,6 +24,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -56,6 +57,7 @@ public class AgentController {
     private final AgentStatusService agentStatusService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AgentResponse>> createAgent(@Valid @RequestBody AgentRequest request) {
         AgentResponse response = agentService.createAgent(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -63,18 +65,21 @@ public class AgentController {
     }
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<AgentResponse>>> getAllAgents(Pageable pageable) {
         Page<AgentResponse> agents = agentService.getAllAgents(pageable);
         return ResponseEntity.ok(ApiResponse.success(agents));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<AgentResponse>> getAgent(@PathVariable UUID id) {
         AgentResponse response = agentService.getAgent(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AgentResponse>> updateAgent(@PathVariable UUID id,
                                                                    @Valid @RequestBody AgentRequest request) {
         AgentResponse response = agentService.updateAgent(id, request);
@@ -82,6 +87,7 @@ public class AgentController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteAgent(@PathVariable UUID id) {
         agentService.deleteAgent(id);
         return ResponseEntity.ok(ApiResponse.success("Agent deleted successfully", null));
@@ -114,6 +120,7 @@ public class AgentController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<AgentResponse>>> searchAgents(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,

@@ -1,16 +1,18 @@
 'use client';
 
 import { Table, Card, Space, Button, Typography, Alert } from 'antd';
-import { DownloadOutlined, FileExcelOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined, FileExcelOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
+import { Can } from './Can';
+import type { Permission } from '@/lib/permissions';
 
 interface CommonTableProps<T> {
   columns: ColumnsType<T>;
   dataSource: T[];
   loading?: boolean;
   error?: string | null;
-  rowKey?: string;
+  rowKey?: string | ((record: T) => string);
   pagination?: TablePaginationConfig | false;
   onRefresh?: () => void;
   onExportCsv?: () => void;
@@ -20,6 +22,9 @@ interface CommonTableProps<T> {
   onTableChange?: (pagination: TablePaginationConfig, filters: any, sorter: SorterResult<T> | SorterResult<T>[]) => void;
   rowSelection?: object;
   scroll?: { x?: number | string; y?: number | string };
+  onCreateNew?: () => void;
+  createLabel?: string;
+  createPermission?: Permission;
 }
 
 export default function CommonTable<T extends object>({
@@ -37,6 +42,9 @@ export default function CommonTable<T extends object>({
   onTableChange,
   rowSelection,
   scroll = { x: 'max-content' },
+  onCreateNew,
+  createLabel = 'Add New',
+  createPermission,
 }: CommonTableProps<T>) {
   if (error) {
     return (
@@ -58,11 +66,20 @@ export default function CommonTable<T extends object>({
     );
   }
 
+  const createButton = onCreateNew ? (
+    <Can I={createPermission!} fallback={null}>
+      <Button type="primary" icon={<PlusOutlined />} onClick={onCreateNew}>
+        {createLabel}
+      </Button>
+    </Can>
+  ) : null;
+
   return (
     <Card
       title={title}
       extra={
         <Space>
+          {createButton}
           {extra}
           {onExportCsv && (
             <Button icon={<DownloadOutlined />} onClick={onExportCsv}>
