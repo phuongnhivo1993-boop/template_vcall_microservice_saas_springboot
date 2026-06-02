@@ -1,84 +1,77 @@
 'use client';
 
-import { Timeline, Typography, Tag, Empty, Spin } from 'antd';
-import { PhoneOutlined, MessageOutlined, MailOutlined, FileTextOutlined, CustomerServiceOutlined } from '@ant-design/icons';
+import { Timeline, Typography, Tag, Space } from 'antd';
+import { PhoneOutlined, MessageOutlined, MailOutlined, FileTextOutlined, CheckCircleOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
 interface TimelineEvent {
   id: string;
-  type: 'call' | 'chat' | 'email' | 'ticket' | 'note' | 'system';
+  type: string;
   title: string;
   description?: string;
   timestamp: string;
-  status?: string;
-  agent?: string;
 }
 
 interface CustomerTimelineProps {
   events: TimelineEvent[];
-  loading?: boolean;
-  height?: number;
+  height?: number | string;
 }
 
-const eventConfig: Record<string, { color: string; icon: React.ReactNode }> = {
-  call: { color: '#1890ff', icon: <PhoneOutlined /> },
-  chat: { color: '#52c41a', icon: <MessageOutlined /> },
-  email: { color: '#722ed1', icon: <MailOutlined /> },
-  ticket: { color: '#faad14', icon: <FileTextOutlined /> },
-  note: { color: '#13c2c2', icon: <CustomerServiceOutlined /> },
-  system: { color: '#888', icon: null },
+const eventIcons: Record<string, React.ReactNode> = {
+  call: <PhoneOutlined />,
+  chat: <MessageOutlined />,
+  email: <MailOutlined />,
+  ticket: <FileTextOutlined />,
+  note: <FileTextOutlined />,
+  resolved: <CheckCircleOutlined />,
 };
 
-const statusColors: Record<string, string> = {
-  COMPLETED: 'green', MISSED: 'red', OPEN: 'blue', RESOLVED: 'green',
-  PENDING: 'orange', SENT: 'purple', ACTIVE: 'green',
+const eventColors: Record<string, string> = {
+  call: '#52c41a',
+  chat: '#1890ff',
+  email: '#722ed1',
+  ticket: '#faad14',
+  note: '#d9d9d9',
+  resolved: '#52c41a',
 };
 
-export default function CustomerTimeline({ events, loading = false, height }: CustomerTimelineProps) {
-  if (loading) {
-    return <div style={{ textAlign: 'center', padding: 40 }}><Spin /></div>;
-  }
-
+export default function CustomerTimeline({ events, height }: CustomerTimelineProps) {
   if (!events || events.length === 0) {
-    return <Empty description="No activity history" image={Empty.PRESENTED_IMAGE_SIMPLE} />;
+    return (
+      <div style={{ textAlign: 'center', padding: 16 }}>
+        <Text type="secondary">No recent activity</Text>
+      </div>
+    );
   }
-
-  const sortedEvents = [...events].sort((a, b) =>
-    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-  );
 
   return (
-    <div style={{ maxHeight: height, overflow: 'auto', padding: 16 }}>
+    <div style={{ overflow: 'auto', height: height || 'auto', padding: '8px 0' }}>
       <Timeline
-        items={sortedEvents.map((event) => {
-          const config = eventConfig[event.type] || eventConfig.system;
-          return {
-            color: config.color,
-            dot: config.icon,
-            children: (
+        items={events.map((event) => ({
+          color: eventColors[event.type] || '#1890ff',
+          dot: eventIcons[event.type] || undefined,
+          children: (
+            <div>
+              <Space>
+                <Tag color={eventColors[event.type]} style={{ fontSize: 10, lineHeight: '16px', padding: '0 4px' }}>
+                  {event.type.toUpperCase()}
+                </Tag>
+                <Text strong style={{ fontSize: 13 }}>{event.title}</Text>
+              </Space>
+              {event.description && (
+                <div>
+                  <Text type="secondary" style={{ fontSize: 12 }}>{event.description}</Text>
+                </div>
+              )}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text strong style={{ textTransform: 'capitalize' }}>
-                    {event.title}
-                  </Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {new Date(event.timestamp).toLocaleString()}
-                  </Text>
-                </div>
-                {event.description && (
-                  <div style={{ marginTop: 4 }}>
-                    <Text>{event.description}</Text>
-                  </div>
-                )}
-                <div style={{ marginTop: 4 }}>
-                  {event.status && <Tag color={statusColors[event.status]}>{event.status}</Tag>}
-                  {event.agent && <Tag>{event.agent}</Tag>}
-                </div>
+                <Text type="secondary" style={{ fontSize: 11 }}>
+                  {new Date(event.timestamp).toLocaleString('vi-VN')}
+                </Text>
               </div>
-            ),
-          };
-        })}
+            </div>
+          ),
+        }))}
       />
     </div>
   );

@@ -3,6 +3,7 @@ import {
   PhoneOutlined, FileTextOutlined, ApiOutlined,
   BarChartOutlined, DollarOutlined, BellOutlined,
   SafetyOutlined, SettingOutlined, CustomerServiceOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { Permissions } from '@/lib/permissions';
 
@@ -29,6 +30,7 @@ export const menuItems: MenuItem[] = [
   { key: 'audit', label: 'Audit', icon: <SafetyOutlined />, path: '/audit', permission: Permissions.AUDIT_VIEW },
   { key: 'settings', label: 'Settings', icon: <SettingOutlined />, path: '/settings', permission: Permissions.SETTINGS_VIEW },
   { key: 'supervisor', label: 'Supervisor', icon: <CustomerServiceOutlined />, path: '/supervisor', permission: Permissions.ADMIN_ACCESS },
+  { key: 'inbox', label: 'Inbox', icon: <MessageOutlined />, path: '/inbox', permission: Permissions.CALL_MANAGE },
   { key: 'workspace', label: 'Workspace', icon: <CustomerServiceOutlined />, path: '/workspace', permission: Permissions.CALL_MANAGE },
   { key: 'wallboard', label: 'Wallboard', icon: <BarChartOutlined />, path: '/wallboard', permission: Permissions.ADMIN_ACCESS },
 ];

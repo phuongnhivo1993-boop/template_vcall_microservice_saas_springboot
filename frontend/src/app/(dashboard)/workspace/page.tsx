@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Row, Col, Card, Tabs, Input, Badge, Avatar, Typography, Space, Button, List, Tag, Spin, Alert, Select, Statistic, Empty, Tooltip } from 'antd';
 import { PhoneOutlined, MessageOutlined, CustomerServiceOutlined, SearchOutlined, UserOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, MoreOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
+import ScreenPop from '@/components/common/ScreenPop';
 import { agentsApi, customersApi, callsApi, chatApi, ticketsApi, notificationsApi } from '@/lib/api';
 
 const { Title, Text } = Typography;
@@ -22,10 +23,38 @@ export default function WorkspacePage() {
   const [customerSearch, setCustomerSearch] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [customerSearching, setCustomerSearching] = useState(false);
+  const [screenPopVisible, setScreenPopVisible] = useState(false);
+  const [incomingCallData, setIncomingCallData] = useState<any>(null);
 
   useEffect(() => {
     loadWorkspaceData();
   }, []);
+
+  useEffect(() => {
+    const ringing = activeCalls.find((c: any) => c.status === 'RINGING');
+    if (ringing) {
+      setIncomingCallData({
+        callerNumber: ringing.callerNumber,
+        callerName: ringing.callerName,
+        customer: {
+          id: 'demo-customer-1',
+          fullName: ringing.callerName,
+          phone: ringing.callerNumber,
+          email: `${ringing.callerName?.toLowerCase().replace(/\s+/g, '.')}@email.com` || 'unknown@email.com',
+          company: 'VCall Customer',
+          totalCalls: 5,
+          totalTickets: 2,
+          satisfactionScore: 88,
+          tags: ['vip', 'support'],
+        },
+        recentActivity: [
+          { id: 'a1', type: 'call', title: 'Previous call - Billing inquiry', description: 'Duration: 3m 42s', timestamp: new Date(Date.now() - 86400000).toISOString() },
+          { id: 'a2', type: 'ticket', title: 'Ticket TK-102 opened', description: 'Network issue - In progress', timestamp: new Date(Date.now() - 172800000).toISOString() },
+        ],
+      });
+      setScreenPopVisible(true);
+    }
+  }, [activeCalls]);
 
   const loadWorkspaceData = useCallback(async () => {
     setLoading(true);
@@ -88,6 +117,16 @@ export default function WorkspacePage() {
       setCustomerSearching(false);
     }
   };
+
+  const handleAnswerCall = useCallback(() => {
+    setScreenPopVisible(false);
+    setIncomingCallData(null);
+  }, []);
+
+  const handleRejectCall = useCallback(() => {
+    setScreenPopVisible(false);
+    setIncomingCallData(null);
+  }, []);
 
   const statusColors: Record<string, string> = {
     AVAILABLE: '#52c41a', BUSY: '#faad14', OFFLINE: '#d9d9d9', RINGING: '#1890ff',
@@ -281,6 +320,14 @@ export default function WorkspacePage() {
           </Space>
         </Col>
       </Row>
+
+      <ScreenPop
+        visible={screenPopVisible}
+        data={incomingCallData}
+        onClose={handleRejectCall}
+        onAnswer={handleAnswerCall}
+        onReject={handleRejectCall}
+      />
     </div>
   );
 }
