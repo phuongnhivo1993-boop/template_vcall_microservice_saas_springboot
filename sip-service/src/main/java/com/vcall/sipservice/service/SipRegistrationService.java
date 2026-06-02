@@ -6,12 +6,19 @@ import com.vcall.sipservice.entity.SipAccount;
 import com.vcall.sipservice.entity.SipRegistration;
 import com.vcall.sipservice.repository.SipAccountRepository;
 import com.vcall.sipservice.repository.SipRegistrationRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -93,6 +100,42 @@ public class SipRegistrationService {
         return sipRegistrationRepository.findBySipAccountId(sipAccountId).stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SipRegistrationResponse> findAll(Pageable pageable) {
+        return sipRegistrationRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SipRegistrationResponse> search(String keyword, String status, Pageable pageable) {
+        Specification<SipRegistration> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (keyword != null && !keyword.isEmpty()) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("ipAddress")), pattern),
+                        cb.like(cb.lower(root.get("userAgent")), pattern),
+                        cb.like(cb.lower(root.get("contactUri")), pattern)
+                ));
+            }
+            if (status != null && !status.isEmpty()) {
+                predicates.add(cb.equal(root.get("status"), SipRegistration.RegistrationStatus.valueOf(status.toUpperCase())));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return sipRegistrationRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getStats() {
+        List<SipRegistration> all = sipRegistrationRepository.findAll();
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", (long) all.size());
+        stats.put("registered", all.stream().filter(r -> r.getStatus() == SipRegistration.RegistrationStatus.REGISTERED).count());
+        stats.put("expired", all.stream().filter(r -> r.getStatus() == SipRegistration.RegistrationStatus.EXPIRED).count());
+        stats.put("unregistered", all.stream().filter(r -> r.getStatus() == SipRegistration.RegistrationStatus.UNREGISTERED).count());
+        return stats;
     }
 
     private SipRegistrationResponse toResponse(SipRegistration registration) {

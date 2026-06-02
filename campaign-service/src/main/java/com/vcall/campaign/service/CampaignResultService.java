@@ -10,13 +10,18 @@ import com.vcall.campaign.repository.CampaignMemberRepository;
 import com.vcall.campaign.repository.CampaignRepository;
 import com.vcall.campaign.repository.CampaignResultRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -78,6 +83,37 @@ public class CampaignResultService {
         return campaignResultRepository.findByResultType(type).stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CampaignResultResponse> search(Long campaignId, String keyword, String resultType, Pageable pageable) {
+        Specification<CampaignResult> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("campaign").get("id"), campaignId));
+            if (keyword != null && !keyword.isEmpty()) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("disposition")), pattern),
+                        cb.like(cb.lower(root.get("notes")), pattern)
+                ));
+            }
+            if (resultType != null && !resultType.isEmpty()) {
+                predicates.add(cb.equal(root.get("resultType"), ResultType.valueOf(resultType.toUpperCase())));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return campaignResultRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getStats(Long campaignId) {
+        List<CampaignResult> results = campaignResultRepository.findByCampaignId(campaignId);
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", (long) results.size());
+        for (ResultType t : ResultType.values()) {
+            stats.put(t.name().toLowerCase(), results.stream().filter(r -> r.getResultType() == t).count());
+        }
+        return stats;
     }
 
     private CampaignResultResponse toResponse(CampaignResult result) {

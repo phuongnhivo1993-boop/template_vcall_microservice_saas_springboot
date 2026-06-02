@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -86,5 +87,20 @@ public class AuditLogController {
             Pageable pageable) {
         Page<AuditLogResponse> responses = auditLogService.getByResource(resourceType, resourceId, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteLog(@PathVariable UUID id) {
+        auditLogService.deleteLog(id);
+        return ResponseEntity.ok(ApiResponse.success("Audit log deleted successfully", null));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/cleanup")
+    public ResponseEntity<ApiResponse<Void>> cleanupLogs(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime before) {
+        auditLogService.cleanupLogs(before);
+        return ResponseEntity.ok(ApiResponse.success("Audit logs cleaned up successfully", null));
     }
 }

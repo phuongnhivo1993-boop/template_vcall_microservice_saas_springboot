@@ -1,13 +1,19 @@
 package com.vcall.iam.controller;
 
 import com.vcall.common.dto.ApiResponse;
+import com.vcall.common.util.CsvExportUtil;
+import com.vcall.common.util.ExcelExportUtil;
 import com.vcall.iam.dto.RoleRequest;
 import com.vcall.iam.dto.RoleResponse;
 import com.vcall.iam.service.RoleService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,8 +23,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -69,8 +80,72 @@ public class RoleController {
 
     @DeleteMapping("/{roleId}/users/{userId}")
     public ResponseEntity<ApiResponse<Void>> removeRoleFromUser(@PathVariable Long roleId,
-                                                                @PathVariable UUID userId) {
+                                                                 @PathVariable UUID userId) {
         roleService.removeRoleFromUser(roleId, userId);
         return ResponseEntity.ok(ApiResponse.success("Role removed from user successfully", null));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<RoleResponse>>> searchRoles(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status,
+            Pageable pageable) {
+        Specification<com.vcall.iam.entity.Role> spec = Specification.where(null);
+        if (keyword != null && !keyword.isEmpty()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.or(
+                            cb.like(cb.lower(root.get("name").as(String.class)), "%" + keyword.toLowerCase() + "%"),
+                            cb.like(cb.lower(root.get("description")), "%" + keyword.toLowerCase() + "%")
+                    ));
+        }
+        Page<RoleResponse> response = roleService.searchRoles(spec, pageable);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/export/csv")
+    public void exportRolesCsv(@RequestParam(required = false) String keyword,
+                               HttpServletResponse response) throws IOException {
+        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Page<RoleResponse> roles;
+        if (keyword != null && !keyword.isEmpty()) {
+            Specification<com.vcall.iam.entity.Role> spec = (root, query, cb) ->
+                    cb.or(
+                            cb.like(cb.lower(root.get("name").as(String.class)), "%" + keyword.toLowerCase() + "%"),
+                            cb.like(cb.lower(root.get("description")), "%" + keyword.toLowerCase() + "%")
+                    );
+            roles = roleService.searchRoles(spec, pageable);
+        } else {
+            roles = roleService.getAllRoles(pageable);
+        }
+        List<String> headers = Arrays.asList("ID", "Name", "Description");
+        List<List<String>> rows = CsvExportUtil.toRows(roles.getContent(),
+                Arrays.asList("id", "name", "description"));
+        CsvExportUtil.writeCsv(response, "roles.csv", headers, rows);
+    }
+
+    @GetMapping("/export/excel")
+    public void exportRolesExcel(@RequestParam(required = false) String keyword,
+                                 HttpServletResponse response) throws IOException {
+        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Page<RoleResponse> roles;
+        if (keyword != null && !keyword.isEmpty()) {
+            Specification<com.vcall.iam.entity.Role> spec = (root, query, cb) ->
+                    cb.or(
+                            cb.like(cb.lower(root.get("name").as(String.class)), "%" + keyword.toLowerCase() + "%"),
+                            cb.like(cb.lower(root.get("description")), "%" + keyword.toLowerCase() + "%")
+                    );
+            roles = roleService.searchRoles(spec, pageable);
+        } else {
+            roles = roleService.getAllRoles(pageable);
+        }
+        List<String> headers = Arrays.asList("ID", "Name", "Description");
+        ExcelExportUtil.writeExcel(response, "roles.xlsx", headers, roles.getContent(),
+                Arrays.asList("id", "name", "description"));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
+        Map<String, Object> stats = roleService.getRoleStats();
+        return ResponseEntity.ok(ApiResponse.success(stats));
     }
 }

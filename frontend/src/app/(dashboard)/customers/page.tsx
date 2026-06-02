@@ -1,8 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { Table, Card, Input, Button, Space, Typography, Modal, Form, Select, message, Tag } from 'antd';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { useState, useEffect, useCallback } from 'react';
+import { Button, Tag, Space, Typography, Form, Input, Select, message } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
+import type { SorterResult } from 'antd/es/table/interface';
+import CommonTable from '@/components/common/CommonTable';
+import CommonForm from '@/components/common/CommonForm';
+import CommonSearch from '@/components/common/CommonSearch';
+import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
+import { customersApi } from '@/lib/api';
 
 const { Title } = Typography;
 
@@ -17,7 +24,7 @@ interface Customer {
   lastContact: string;
 }
 
-const customersData: Customer[] = [
+const mockCustomers: Customer[] = [
   { id: 'C-001', name: 'John Smith', email: 'john@example.com', phone: '+1 (555) 123-4567', status: 'active', plan: 'Premium', totalCalls: 45, lastContact: '2026-06-01' },
   { id: 'C-002', name: 'Alice Brown', email: 'alice@example.com', phone: '+1 (555) 234-5678', status: 'active', plan: 'Enterprise', totalCalls: 128, lastContact: '2026-06-01' },
   { id: 'C-003', name: 'Bob Wilson', email: 'bob@example.com', phone: '+1 (555) 345-6789', status: 'inactive', plan: 'Basic', totalCalls: 12, lastContact: '2026-05-28' },
@@ -26,27 +33,169 @@ const customersData: Customer[] = [
   { id: 'C-006', name: 'Diana Clark', email: 'diana@example.com', phone: '+1 (555) 678-9012', status: 'active', plan: 'Enterprise', totalCalls: 203, lastContact: '2026-06-01' },
 ];
 
+const statusColors: Record<string, string> = {
+  active: 'green',
+  inactive: 'orange',
+  blocked: 'red',
+};
+
+const planOptions = [
+  { value: 'Basic', label: 'Basic' },
+  { value: 'Premium', label: 'Premium' },
+  { value: 'Enterprise', label: 'Enterprise' },
+];
+
 export default function CustomersPage() {
-  const [search, setSearch] = useState('');
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
   const [modalOpen, setModalOpen] = useState(false);
-  const [form] = Form.useForm();
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [filters, setFilters] = useState<Record<string, any>>({});
+  const [useMock, setUseMock] = useState(false);
 
-  const filtered = customersData.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.email.toLowerCase().includes(search.toLowerCase()) ||
-    c.phone.includes(search)
-  );
+  const fetchCustomers = useCallback(async (page = 1, size = 10, params?: Record<string, any>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await customersApi.list({ page: page - 1, size, ...params });
+      const data = res.data;
+      if (data.content) {
+        setCustomers(data.content);
+        setPagination((prev) => ({
+          ...prev,
+          current: data.page + 1,
+          pageSize: data.size,
+          total: data.totalElements,
+        }));
+      } else if (Array.isArray(data)) {
+        setCustomers(data);
+      } else if (data.data) {
+        setCustomers(Array.isArray(data.data) ? data.data : []);
+      }
+      setUseMock(false);
+    } catch (err: any) {
+      if (!useMock) {
+        setUseMock(true);
+        const filtered = mockCustomers.filter((c) => {
+          if (!params) return true;
+          if (params.name && !c.name.toLowerCase().includes(params.name.toLowerCase())) return false;
+          if (params.status && c.status !== params.status) return false;
+          if (params.plan && c.plan !== params.plan) return false;
+          return true;
+        });
+        setCustomers(filtered);
+        setPagination((prev) => ({ ...prev, total: filtered.length }));
+      } else {
+        setError(err?.response?.data?.message || err?.message || 'Failed to load customers');
+        setCustomers([]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [useMock]);
 
-  const handleAddCustomer = () => {
-    form.validateFields().then((values) => {
-      message.success(`Customer ${values.name} added successfully`);
-      form.resetFields();
-      setModalOpen(false);
+  useEffect(() => {
+    fetchCustomers(1, pagination.pageSize);
+  }, []);
+
+  const handleTableChange = (
+    pag: TablePaginationConfig,
+    _filters: any,
+    _sorter: SorterResult<Customer> | SorterResult<Customer>[],
+  ) => {
+    fetchCustomers(pag.current, pag.pageSize, filters);
+  };
+
+  const handleSearch = (values: any) => {
+    const cleaned: Record<string, any> = {};
+    Object.entries(values).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') {
+        cleaned[key] = val;
+      }
+    });
+    setFilters(cleaned);
+    if (useMock) {
+      const filtered = mockCustomers.filter((c) => {
+        if (cleaned.name && !c.name.toLowerCase().includes(cleaned.name.toLowerCase())) return false;
+        if (cleaned.status && c.status !== cleaned.status) return false;
+        if (cleaned.plan && c.plan !== cleaned.plan) return false;
+        return true;
+      });
+      setCustomers(filtered);
+      setPagination((prev) => ({ ...prev, total: filtered.length }));
+    } else {
+      fetchCustomers(1, pagination.pageSize, cleaned);
+    }
+  };
+
+  const handleReset = () => {
+    setFilters({});
+    if (useMock) {
+      setCustomers(mockCustomers);
+      setPagination((prev) => ({ ...prev, total: mockCustomers.length }));
+    } else {
+      fetchCustomers(1, pagination.pageSize);
+    }
+  };
+
+  const handleCreate = () => {
+    setEditingCustomer(null);
+    setModalOpen(true);
+  };
+
+  const handleEdit = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setModalOpen(true);
+  };
+
+  const handleDelete = (customer: Customer) => {
+    showDeleteConfirm({
+      title: 'Delete Customer',
+      content: `Are you sure you want to delete ${customer.name}? This action cannot be undone.`,
+      onOk: async () => {
+        try {
+          await customersApi.delete(customer.id);
+          message.success('Deleted successfully');
+        } catch {
+          if (useMock) message.success('Deleted successfully (mock)');
+          else throw new Error('Delete failed');
+        }
+        fetchCustomers(pagination.current, pagination.pageSize, filters);
+      },
     });
   };
 
-  const columns = [
-    { title: 'Name', dataIndex: 'name', key: 'name', render: (name: string) => <a>{name}</a> },
+  const handleFormSubmit = async (values: any) => {
+    if (editingCustomer) {
+      await customersApi.update(editingCustomer.id, values);
+    } else {
+      await customersApi.create(values);
+    }
+    fetchCustomers(pagination.current, pagination.pageSize, filters);
+  };
+
+  const handleExportCsv = () => {
+    message.info('CSV export triggered');
+  };
+
+  const handleExportExcel = () => {
+    message.info('Excel export triggered');
+  };
+
+  const columns: ColumnsType<Customer> = [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+      sorter: true,
+      render: (name: string) => <span style={{ fontWeight: 500 }}>{name}</span>,
+    },
     { title: 'Email', dataIndex: 'email', key: 'email' },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
     {
@@ -54,64 +203,104 @@ export default function CustomersPage() {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag color={status === 'active' ? 'green' : status === 'inactive' ? 'orange' : 'red'}>
-          {status.toUpperCase()}
-        </Tag>
+        <Tag color={statusColors[status] || 'default'}>{status.toUpperCase()}</Tag>
       ),
     },
     { title: 'Plan', dataIndex: 'plan', key: 'plan' },
     { title: 'Total Calls', dataIndex: 'totalCalls', key: 'totalCalls' },
     { title: 'Last Contact', dataIndex: 'lastContact', key: 'lastContact' },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_: unknown, record: Customer) => (
+        <Space>
+          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+            Edit
+          </Button>
+          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)}>
+            Delete
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
+  const searchFields = [
+    { name: 'name', label: 'Name', type: 'input' as const, placeholder: 'Search by name' },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      placeholder: 'Filter by status',
+      options: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' },
+        { value: 'blocked', label: 'Blocked' },
+      ],
+    },
+    {
+      name: 'plan',
+      label: 'Plan',
+      type: 'select' as const,
+      placeholder: 'Filter by plan',
+      options: planOptions,
+    },
   ];
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <Title level={3} style={{ margin: 0 }}>Customers</Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           Add Customer
         </Button>
       </div>
-      <Card>
-        <Space style={{ marginBottom: 16 }}>
-          <Input
-            placeholder="Search customers..."
-            prefix={<SearchOutlined />}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            allowClear
-            style={{ width: 300 }}
-          />
-        </Space>
-        <Table dataSource={filtered} columns={columns} rowKey="id" pagination={{ pageSize: 10 }} />
-      </Card>
-
-      <Modal
-        title="Add Customer"
+      <CommonSearch
+        fields={searchFields}
+        onSearch={handleSearch}
+        onReset={handleReset}
+        loading={loading}
+      />
+      <CommonTable<Customer>
+        columns={columns}
+        dataSource={customers}
+        loading={loading}
+        error={error}
+        rowKey="id"
+        pagination={pagination}
+        onRefresh={() => fetchCustomers(pagination.current, pagination.pageSize, filters)}
+        onExportCsv={handleExportCsv}
+        onExportExcel={handleExportExcel}
+        onTableChange={handleTableChange}
+      />
+      <CommonForm
         open={modalOpen}
-        onOk={handleAddCustomer}
-        onCancel={() => { setModalOpen(false); form.resetFields(); }}
-        okText="Add"
+        title={editingCustomer ? 'Edit Customer' : 'Add Customer'}
+        onClose={() => { setModalOpen(false); setEditingCustomer(null); }}
+        onSubmit={handleFormSubmit}
+        initialValues={editingCustomer}
+        width={600}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="Name" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="phone" label="Phone" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="plan" label="Plan" rules={[{ required: true }]}>
-            <Select options={[
-              { value: 'Basic', label: 'Basic' },
-              { value: 'Premium', label: 'Premium' },
-              { value: 'Enterprise', label: 'Enterprise' },
-            ]} />
-          </Form.Item>
-        </Form>
-      </Modal>
+        <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Please enter name' }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Please enter a valid email' }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="phone" label="Phone" rules={[{ required: true, message: 'Please enter phone' }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="plan" label="Plan" rules={[{ required: true, message: 'Please select plan' }]}>
+          <Select options={planOptions} />
+        </Form.Item>
+        <Form.Item name="status" label="Status" initialValue="active">
+          <Select options={[
+            { value: 'active', label: 'Active' },
+            { value: 'inactive', label: 'Inactive' },
+            { value: 'blocked', label: 'Blocked' },
+          ]} />
+        </Form.Item>
+      </CommonForm>
     </div>
   );
 }

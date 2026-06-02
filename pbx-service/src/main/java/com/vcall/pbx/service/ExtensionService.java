@@ -9,11 +9,18 @@ import com.vcall.pbx.entity.Extension.ExtensionStatus;
 import com.vcall.pbx.entity.Extension.ExtensionType;
 import com.vcall.pbx.kafka.PbxEventPublisher;
 import com.vcall.pbx.repository.ExtensionRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -105,6 +112,40 @@ public class ExtensionService {
 
         eventPublisher.publishExtensionStatusChanged(extension);
         return toResponse(extension);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ExtensionResponse> search(String keyword, String status, String type, Pageable pageable) {
+        Specification<Extension> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (keyword != null && !keyword.isEmpty()) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("extensionNumber")), pattern),
+                        cb.like(cb.lower(root.get("displayName")), pattern),
+                        cb.like(cb.lower(root.get("outboundCallerId")), pattern)
+                ));
+            }
+            if (status != null && !status.isEmpty()) {
+                predicates.add(cb.equal(root.get("status"), ExtensionStatus.valueOf(status.toUpperCase())));
+            }
+            if (type != null && !type.isEmpty()) {
+                predicates.add(cb.equal(root.get("type"), ExtensionType.valueOf(type.toUpperCase())));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return extensionRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getStats() {
+        List<Extension> all = extensionRepository.findAll();
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", (long) all.size());
+        stats.put("active", all.stream().filter(e -> e.getStatus() == ExtensionStatus.ACTIVE).count());
+        stats.put("inactive", all.stream().filter(e -> e.getStatus() == ExtensionStatus.INACTIVE).count());
+        stats.put("busy", all.stream().filter(e -> e.getStatus() == ExtensionStatus.BUSY).count());
+        return stats;
     }
 
     @Transactional

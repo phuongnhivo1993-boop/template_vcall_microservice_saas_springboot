@@ -1,13 +1,18 @@
 package com.vcall.sipservice.controller;
 
 import com.vcall.common.dto.ApiResponse;
+import com.vcall.common.util.CsvExportUtil;
+import com.vcall.common.util.ExcelExportUtil;
 import com.vcall.sipservice.dto.SipDeviceRequest;
 import com.vcall.sipservice.dto.SipDeviceResponse;
 import com.vcall.sipservice.service.SipDeviceService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -19,6 +24,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/sip/devices")
@@ -61,8 +71,53 @@ public class SipDeviceController {
 
     @GetMapping("/account/{accountId}")
     public ResponseEntity<ApiResponse<Page<SipDeviceResponse>>> getByAccountId(@PathVariable Long accountId,
-                                                                                Pageable pageable) {
+                                                                                 Pageable pageable) {
         Page<SipDeviceResponse> devices = sipDeviceService.findByAccountId(accountId, pageable);
         return ResponseEntity.ok(ApiResponse.success(devices));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<SipDeviceResponse>>> search(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String deviceType,
+            Pageable pageable) {
+        Page<SipDeviceResponse> result = sipDeviceService.search(keyword, deviceType, pageable);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @GetMapping("/export/csv")
+    public void exportCsv(@RequestParam(required = false) String keyword,
+                           HttpServletResponse response) throws IOException {
+        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Page<SipDeviceResponse> items;
+        if (keyword != null && !keyword.isEmpty()) {
+            items = sipDeviceService.search(keyword, null, pageable);
+        } else {
+            items = sipDeviceService.findAll(pageable);
+        }
+        List<String> headers = Arrays.asList("ID", "Name", "Device Type", "User Agent", "IP Address", "MAC Address", "Firmware");
+        List<List<String>> rows = CsvExportUtil.toRows(items.getContent(),
+                Arrays.asList("id", "name", "deviceType", "userAgent", "ipAddress", "macAddress", "firmwareVersion"));
+        CsvExportUtil.writeCsv(response, "sip-devices.csv", headers, rows);
+    }
+
+    @GetMapping("/export/excel")
+    public void exportExcel(@RequestParam(required = false) String keyword,
+                            HttpServletResponse response) throws IOException {
+        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Page<SipDeviceResponse> items;
+        if (keyword != null && !keyword.isEmpty()) {
+            items = sipDeviceService.search(keyword, null, pageable);
+        } else {
+            items = sipDeviceService.findAll(pageable);
+        }
+        List<String> headers = Arrays.asList("ID", "Name", "Device Type", "User Agent", "IP Address", "MAC Address", "Firmware");
+        ExcelExportUtil.writeExcel(response, "sip-devices.xlsx", headers, items.getContent(),
+                Arrays.asList("id", "name", "deviceType", "userAgent", "ipAddress", "macAddress", "firmwareVersion"));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
+        return ResponseEntity.ok(ApiResponse.success(sipDeviceService.getStats()));
     }
 }

@@ -1,14 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator,
+  View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
 import { ticketsApi } from '../../../lib/api';
 import type { Ticket, TicketStatus, TicketPriority } from '../../../types';
-
-const MOCK_TICKETS: Ticket[] = [];
+import SearchBar from '../../../components/SearchBar';
+import EmptyView from '../../../components/EmptyView';
 
 const FILTERS: { label: string; value: TicketStatus | 'all' }[] = [
   { label: 'All', value: 'all' },
@@ -43,21 +43,39 @@ export default function TicketsScreen() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
 
-  const fetchTickets = () => {
-    setLoading(true);
+  const fetchTickets = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     setError(null);
-    ticketsApi.getAll()
-      .then((res) => setTickets(res.data?.data?.content || res.data?.data || res.data || []))
-      .catch((err) => setError(err?.message || 'Failed to load tickets'))
-      .finally(() => setLoading(false));
-  };
+    try {
+      const params: Record<string, any> = {};
+      if (activeFilter !== 'all') params.status = activeFilter;
+      const res = await ticketsApi.getAll(params);
+      setTickets(res.data?.data?.content || res.data?.data || res.data || []);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load tickets');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [activeFilter]);
 
-  useEffect(() => { fetchTickets(); }, []);
+  useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
-  const filtered = activeFilter === 'all'
+  const filteredByStatus = activeFilter === 'all'
     ? tickets
     : tickets.filter((t) => t.status === activeFilter);
+
+  const filtered = search
+    ? filteredByStatus.filter(
+        (t) =>
+          t.title.toLowerCase().includes(search.toLowerCase()) ||
+          t.customerName.toLowerCase().includes(search.toLowerCase()),
+      )
+    : filteredByStatus;
 
   const renderTicket = useCallback(({ item }: { item: Ticket }) => (
     <TouchableOpacity
@@ -102,6 +120,8 @@ export default function TicketsScreen() {
         )}
       />
 
+      <SearchBar value={search} onChangeText={setSearch} placeholder="Search tickets..." />
+
       {loading ? (
         <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
       ) : (
@@ -116,19 +136,22 @@ export default function TicketsScreen() {
             <View style={styles.centerContainer}>
               <Ionicons name="bug-outline" size={48} color={Colors.textSecondary} />
               <Text style={styles.emptyText}>{error}</Text>
-              <TouchableOpacity style={styles.retryBtn} onPress={fetchTickets}>
+              <TouchableOpacity style={styles.retryBtn} onPress={() => fetchTickets()}>
                 <Text style={styles.retryText}>Retry</Text>
               </TouchableOpacity>
             </View>
           );
           return (
-            <View style={styles.centerContainer}>
-              <Ionicons name="ticket-outline" size={48} color={Colors.textSecondary} />
-              <Text style={styles.emptyText}>No tickets found</Text>
-              <Text style={styles.emptySubtext}>Create a new ticket to get started</Text>
-            </View>
+            <EmptyView
+              icon="ticket-outline"
+              title={search ? 'No tickets match your search' : 'No tickets found'}
+              subtitle={search ? 'Try a different search term' : 'Create a new ticket to get started'}
+            />
           );
         }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => fetchTickets(true)} colors={[Colors.primary]} />
+        }
       />
       )}
     </View>

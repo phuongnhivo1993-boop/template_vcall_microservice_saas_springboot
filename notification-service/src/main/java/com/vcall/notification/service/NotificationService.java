@@ -118,6 +118,24 @@ public class NotificationService {
                 .map(this::toResponse);
     }
 
+    @Transactional
+    public void deleteNotification(UUID id) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + id));
+        notification.setIsDeleted(true);
+        notificationRepository.save(notification);
+    }
+
+    @Transactional
+    public void clearReadNotifications(UUID recipientId) {
+        List<Notification> readNotifications = notificationRepository
+                .findByRecipientIdAndStatus(recipientId, NotificationStatus.READ);
+        for (Notification notification : readNotifications) {
+            notification.setIsDeleted(true);
+        }
+        notificationRepository.saveAll(readNotifications);
+    }
+
     @Transactional(readOnly = true)
     public NotificationResponse getById(UUID id) {
         Notification notification = notificationRepository.findById(id)

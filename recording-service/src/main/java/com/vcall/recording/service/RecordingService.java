@@ -1,6 +1,7 @@
 package com.vcall.recording.service;
 
 import com.vcall.common.exception.ResourceNotFoundException;
+import com.vcall.recording.dto.RecordingRequest;
 import com.vcall.recording.dto.RecordingResponse;
 import com.vcall.recording.dto.RecordingSearchRequest;
 import com.vcall.recording.entity.Recording;
@@ -29,6 +30,23 @@ public class RecordingService {
     private final RecordingEventPublisher eventPublisher;
 
     @Transactional
+    public RecordingResponse createRecording(RecordingRequest request) {
+        Recording recording = new Recording();
+        recording.setCallId(request.getCallId());
+        recording.setAgentId(request.getAgentId());
+        recording.setCustomerNumber(request.getCustomerNumber());
+        recording.setFormat(Recording.RecordingFormat.valueOf(request.getFormat().toUpperCase()));
+        recording.setStatus(Recording.RecordingStatus.RECORDING);
+        recording.setStartedAt(LocalDateTime.now());
+        recording.setFileName(request.getCallId() + "_" + System.currentTimeMillis() + "." + request.getFormat().toLowerCase());
+        recording.setFilePath("recordings/" + recording.getFileName());
+        recording = recordingRepository.save(recording);
+
+        eventPublisher.publishCallRecorded(recording);
+        return toResponse(recording);
+    }
+
+    @Transactional
     public RecordingResponse startRecording(UUID callId, UUID agentId, String customerNumber, String format) {
         Recording recording = new Recording();
         recording.setCallId(callId);
@@ -54,6 +72,20 @@ public class RecordingService {
         recording = recordingRepository.save(recording);
 
         eventPublisher.publishRecordingCompleted(recording);
+        return toResponse(recording);
+    }
+
+    @Transactional
+    public RecordingResponse updateRecording(UUID id, RecordingRequest request) {
+        Recording recording = recordingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Recording not found with id: " + id));
+        if (request.getCallId() != null) recording.setCallId(request.getCallId());
+        if (request.getAgentId() != null) recording.setAgentId(request.getAgentId());
+        if (request.getCustomerNumber() != null) recording.setCustomerNumber(request.getCustomerNumber());
+        if (request.getFormat() != null) recording.setFormat(Recording.RecordingFormat.valueOf(request.getFormat().toUpperCase()));
+        recording = recordingRepository.save(recording);
+
+        eventPublisher.publishRecordingUpdated(recording);
         return toResponse(recording);
     }
 

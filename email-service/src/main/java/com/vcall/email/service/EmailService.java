@@ -64,6 +64,16 @@ public class EmailService {
         return toResponse(email);
     }
 
+    @Transactional
+    public void deleteEmail(UUID id) {
+        EmailMessage email = emailMessageRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Email not found with id: " + id));
+        email.setIsDeleted(true);
+        emailMessageRepository.save(email);
+
+        eventPublisher.publishEmailDeleted(email);
+    }
+
     @Transactional(readOnly = true)
     public EmailResponse getEmail(UUID id) {
         EmailMessage email = emailMessageRepository.findById(id)

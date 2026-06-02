@@ -101,6 +101,23 @@ public class AuditLogService {
                 .toList();
     }
 
+    @Transactional
+    public void deleteLog(UUID id) {
+        AuditLog auditLog = auditLogRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("AuditLog not found with id: " + id));
+        auditLog.setIsDeleted(true);
+        auditLogRepository.save(auditLog);
+    }
+
+    @Transactional
+    public void cleanupLogs(LocalDateTime beforeDate) {
+        List<AuditLog> oldLogs = auditLogRepository.findByTimestampBefore(beforeDate);
+        for (AuditLog log : oldLogs) {
+            log.setIsDeleted(true);
+        }
+        auditLogRepository.saveAll(oldLogs);
+    }
+
     private AuditLogResponse toResponse(AuditLog log) {
         return AuditLogResponse.builder()
                 .id(log.getId())

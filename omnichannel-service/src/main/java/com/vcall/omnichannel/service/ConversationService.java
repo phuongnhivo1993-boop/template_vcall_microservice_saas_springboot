@@ -3,6 +3,7 @@ package com.vcall.omnichannel.service;
 import com.vcall.omnichannel.dto.request.ConversationAssignRequest;
 import com.vcall.omnichannel.dto.request.ConversationRequest;
 import com.vcall.omnichannel.dto.request.ConversationStatusRequest;
+import com.vcall.omnichannel.dto.request.ConversationUpdateRequest;
 import com.vcall.omnichannel.dto.response.ConversationResponse;
 import com.vcall.omnichannel.entity.Conversation;
 import com.vcall.omnichannel.entity.Conversation.Channel;
@@ -26,6 +27,26 @@ public class ConversationService {
     private final ConversationRepository conversationRepository;
     private final MessageService messageService;
     private final OmnichannelEventPublisher eventPublisher;
+
+    @Transactional
+    public ConversationResponse updateConversation(UUID conversationId, ConversationUpdateRequest request) {
+        Conversation conversation = findById(conversationId);
+        if (request.getSubject() != null) conversation.setSubject(request.getSubject());
+        if (request.getPriority() != null) conversation.setPriority(request.getPriority());
+        conversation = conversationRepository.save(conversation);
+
+        eventPublisher.publishConversationUpdated(conversation);
+        return toResponse(conversation);
+    }
+
+    @Transactional
+    public void deleteConversation(UUID conversationId) {
+        Conversation conversation = findById(conversationId);
+        conversation.setIsDeleted(true);
+        conversationRepository.save(conversation);
+
+        eventPublisher.publishConversationDeleted(conversation);
+    }
 
     @Transactional
     public ConversationResponse createConversation(ConversationRequest request) {

@@ -6,6 +6,8 @@ import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
 import CallCard from '../../../components/CallCard';
+import SearchBar from '../../../components/SearchBar';
+import EmptyView from '../../../components/EmptyView';
 import { callsApi } from '../../../lib/api';
 import type { Call } from '../../../types';
 
@@ -17,6 +19,7 @@ export default function CallsScreen() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
   const PAGE_SIZE = 20;
 
   const fetchCalls = async (pageNum: number, isRefresh = false) => {
@@ -24,7 +27,9 @@ export default function CallsScreen() {
       if (isRefresh) setRefreshing(true);
       else if (pageNum === 0) setLoading(true);
       setError(null);
-      const res = await callsApi.getHistory({ page: pageNum, size: PAGE_SIZE });
+      const params: Record<string, any> = { page: pageNum, size: PAGE_SIZE };
+      if (search) params.q = search;
+      const res = await callsApi.getHistory(params);
       const newCalls = res.data?.data?.content || res.data?.data || res.data || [];
       if (pageNum === 0) {
         setCalls(newCalls);
@@ -41,13 +46,21 @@ export default function CallsScreen() {
     }
   };
 
-  useEffect(() => { fetchCalls(0); }, []);
+  useEffect(() => { fetchCalls(0); }, [search]);
 
   const handleLoadMore = () => {
     if (!loading && hasMore) fetchCalls(page + 1);
   };
 
   const handleRefresh = () => fetchCalls(0, true);
+
+  const filtered = search && calls.length > 0
+    ? calls.filter(
+        (c) =>
+          (c.callerName || c.callerNumber || '').toLowerCase().includes(search.toLowerCase()) ||
+          (c.calleeName || c.calleeNumber || '').toLowerCase().includes(search.toLowerCase()),
+      )
+    : calls;
 
   const renderItem = useCallback(({ item }: { item: Call }) => (
     <CallCard call={item} onPress={() => router.push(`/calls/${item.id}`)} />
@@ -65,11 +78,11 @@ export default function CallsScreen() {
       </View>
     );
     return (
-      <View style={styles.centerContainer}>
-        <Ionicons name="call-outline" size={48} color={Colors.textSecondary} />
-        <Text style={styles.emptyText}>No call history</Text>
-        <Text style={styles.emptySubtext}>Make your first call to get started</Text>
-      </View>
+      <EmptyView
+        icon="call-outline"
+        title={search ? 'No calls match your search' : 'No call history'}
+        subtitle={search ? 'Try a different search term' : 'Make your first call to get started'}
+      />
     );
   };
 
@@ -83,14 +96,16 @@ export default function CallsScreen() {
         </TouchableOpacity>
       </View>
 
+      <SearchBar value={search} onChangeText={setSearch} placeholder="Search calls..." />
+
       {loading && calls.length === 0 ? (
         <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
       ) : (
       <FlatList
-        data={calls}
+        data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={[styles.list, calls.length === 0 && styles.listEmpty]}
+        contentContainerStyle={[styles.list, filtered.length === 0 && styles.listEmpty]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmpty}
         onEndReached={handleLoadMore}

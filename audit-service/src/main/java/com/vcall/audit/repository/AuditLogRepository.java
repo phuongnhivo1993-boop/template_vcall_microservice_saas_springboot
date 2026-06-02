@@ -26,6 +26,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID>, JpaSp
     List<AuditLog> findByTimestampBetween(LocalDateTime start, LocalDateTime end);
     Page<AuditLog> findByTimestampBetween(LocalDateTime start, LocalDateTime end, Pageable pageable);
 
+    List<AuditLog> findByTimestampBefore(LocalDateTime beforeDate);
+
     List<AuditLog> findByStatus(AuditLog.AuditStatus status);
     Page<AuditLog> findByStatus(AuditLog.AuditStatus status, Pageable pageable);
 }

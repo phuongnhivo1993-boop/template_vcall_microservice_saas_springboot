@@ -2,13 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Table, Card, Tabs, Tag, Typography, Space, Button, Modal, Form,
-  Input, Select, message, Row, Col, Statistic, Tooltip, Popconfirm, Upload, Descriptions
+  Card, Tabs, Tag, Typography, Space, Button, Modal, Form,
+  Input, Select, message, Row, Col, Statistic, Tooltip, Upload, Descriptions
 } from 'antd';
 import {
   PlusOutlined, PlayCircleOutlined, PauseCircleOutlined, StopOutlined,
-  UploadOutlined, TeamOutlined, BarChartOutlined
+  UploadOutlined, TeamOutlined, BarChartOutlined, EditOutlined, DeleteOutlined
 } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
+import CommonTable from '@/components/common/CommonTable';
+import CommonForm from '@/components/common/CommonForm';
+import CommonSearch from '@/components/common/CommonSearch';
+import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { campaignsApi } from '@/lib/api';
 
 const { Title, Text } = Typography;
@@ -23,6 +28,9 @@ const memberStatusColors: Record<string, string> = {
   NOT_CONTACTED: 'orange', FAILED: 'red', COMPLETED: 'green',
 };
 
+const campaignTypeOptions = ['OUTBOUND', 'INBOUND', 'PREVIEW', 'PREDICTIVE', 'PROGRESSIVE'].map(t => ({ value: t, label: t }));
+const strategyOptions = ['SEQUENTIAL', 'RANDOM', 'PRIORITY'].map(s => ({ value: s, label: s }));
+
 export default function CampaignsPage() {
   const [activeTab, setActiveTab] = useState('campaigns');
   const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -31,18 +39,24 @@ export default function CampaignsPage() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [campaignModalOpen, setCampaignModalOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<any>(null);
   const [memberModalOpen, setMemberModalOpen] = useState(false);
-  const [form] = Form.useForm();
+  const [filters, setFilters] = useState<Record<string, any>>({});
 
-  const fetchCampaigns = useCallback(async () => {
+  const fetchCampaigns = useCallback(async (params?: Record<string, any>) => {
     setLoading(true);
+    setError(null);
     try {
-      const res = await campaignsApi.list({ page: 0, size: 100 });
-      setCampaigns(res.data?.data?.content || res.data?.content || []);
-    } catch { message.error('Failed to load campaigns'); }
-    finally { setLoading(false); }
+      const res = await campaignsApi.list({ page: 0, size: 100, ...params });
+      const data = res.data?.data?.content || res.data?.content || [];
+      setCampaigns(data);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to load campaigns');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
@@ -57,39 +71,42 @@ export default function CampaignsPage() {
       ]);
       setMembers(membersRes.data?.data?.content || membersRes.data?.content || []);
       setResults(resultsRes.data?.data?.content || resultsRes.data?.content || []);
-    } catch { message.error('Failed to load campaign details'); }
-    finally { setDetailLoading(false); }
+    } catch {
+      message.error('Failed to load campaign details');
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const handleCreate = () => {
     setEditingCampaign(null);
-    form.resetFields();
-    setModalOpen(true);
+    setCampaignModalOpen(true);
   };
 
   const handleEdit = (campaign: any) => {
     setEditingCampaign(campaign);
-    form.setFieldsValue(campaign);
-    setModalOpen(true);
+    setCampaignModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await campaignsApi.delete(id);
-      message.success('Campaign deleted');
-      fetchCampaigns();
-    } catch { message.error('Delete failed'); }
+  const handleDelete = (campaign: any) => {
+    showDeleteConfirm({
+      title: 'Delete Campaign',
+      content: `Are you sure you want to delete ${campaign.name}? This action cannot be undone.`,
+      onOk: async () => {
+        await campaignsApi.delete(campaign.id);
+        fetchCampaigns(filters);
+      },
+    });
   };
 
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      if (editingCampaign) await campaignsApi.update(editingCampaign.id, values);
-      else await campaignsApi.create(values);
-      message.success('Campaign saved');
-      setModalOpen(false);
-      fetchCampaigns();
-    } catch { message.error('Validation failed'); }
+  const handleFormSubmit = async (values: any) => {
+    if (editingCampaign) {
+      await campaignsApi.update(editingCampaign.id, values);
+    } else {
+      await campaignsApi.create(values);
+    }
+    setCampaignModalOpen(false);
+    fetchCampaigns(filters);
   };
 
   const handleStatusAction = async (id: string, action: 'start' | 'pause' | 'stop') => {
@@ -98,8 +115,10 @@ export default function CampaignsPage() {
       else if (action === 'pause') await campaignsApi.pause(id);
       else await campaignsApi.stop(id);
       message.success(`Campaign ${action}ed`);
-      fetchCampaigns();
-    } catch { message.error(`Failed to ${action} campaign`); }
+      fetchCampaigns(filters);
+    } catch {
+      message.error(`Failed to ${action} campaign`);
+    }
   };
 
   const handleImport = async (file: File) => {
@@ -110,62 +129,155 @@ export default function CampaignsPage() {
       await campaignsApi.importMembers(selectedCampaign.id, formData);
       message.success('Members imported');
       fetchCampaignDetail(selectedCampaign);
-    } catch { message.error('Import failed'); }
+    } catch {
+      message.error('Import failed');
+    }
   };
 
-  const campaignColumns = [
-    { title: 'Name', dataIndex: 'name', key: 'name', render: (n: string, r: any) => <a onClick={() => { setActiveTab('detail'); fetchCampaignDetail(r); }}>{n}</a> },
-    { title: 'Type', dataIndex: 'type', key: 'type' },
-    { title: 'Status', dataIndex: 'status', key: 'status',
-      render: (s: string) => <Tag color={campaignStatusColors[s] || 'default'}>{s}</Tag> },
-    { title: 'Strategy', dataIndex: 'strategy', key: 'strategy' },
-    { title: 'Start', dataIndex: 'scheduleStart', key: 'scheduleStart',
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
-    { title: 'End', dataIndex: 'scheduleEnd', key: 'scheduleEnd',
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
+  const handleAddMember = async (values: any) => {
+    if (!selectedCampaign) return;
+    await campaignsApi.addMember(selectedCampaign.id, values);
+    setMemberModalOpen(false);
+    message.success('Member added');
+    fetchCampaignDetail(selectedCampaign);
+  };
+
+  const handleSearch = (values: any) => {
+    const cleaned: Record<string, any> = {};
+    Object.entries(values).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') cleaned[key] = val;
+    });
+    setFilters(cleaned);
+    fetchCampaigns(cleaned);
+  };
+
+  const handleReset = () => {
+    setFilters({});
+    fetchCampaigns();
+  };
+
+  const handleExportCsv = () => message.info('CSV export triggered');
+  const handleExportExcel = () => message.info('Excel export triggered');
+
+  const campaignColumns: ColumnsType<any> = [
     {
-      title: 'Actions', key: 'actions',
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+      render: (n: string, r: any) => (
+        <a onClick={() => { setActiveTab('detail'); fetchCampaignDetail(r); }} style={{ fontWeight: 500 }}>{n}</a>
+      ),
+    },
+    { title: 'Type', dataIndex: 'type', key: 'type' },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (s: string) => <Tag color={campaignStatusColors[s] || 'default'}>{s}</Tag>,
+    },
+    { title: 'Strategy', dataIndex: 'strategy', key: 'strategy' },
+    {
+      title: 'Start',
+      dataIndex: 'scheduleStart',
+      key: 'scheduleStart',
+      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-',
+    },
+    {
+      title: 'End',
+      dataIndex: 'scheduleEnd',
+      key: 'scheduleEnd',
+      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
       render: (_: any, r: any) => (
         <Space>
-          {r.status === 'DRAFT' || r.status === 'PAUSED' ? (
-            <Tooltip title="Start"><Button size="small" type="primary" icon={<PlayCircleOutlined />} onClick={() => handleStatusAction(r.id, 'start')} /></Tooltip>
-          ) : null}
-          {r.status === 'RUNNING' ? (
+          {(r.status === 'DRAFT' || r.status === 'PAUSED') && (
+            <Tooltip title="Start">
+              <Button size="small" type="primary" icon={<PlayCircleOutlined />} onClick={() => handleStatusAction(r.id, 'start')} />
+            </Tooltip>
+          )}
+          {r.status === 'RUNNING' && (
             <>
-              <Tooltip title="Pause"><Button size="small" icon={<PauseCircleOutlined />} onClick={() => handleStatusAction(r.id, 'pause')} /></Tooltip>
-              <Tooltip title="Stop"><Button size="small" danger icon={<StopOutlined />} onClick={() => handleStatusAction(r.id, 'stop')} /></Tooltip>
+              <Tooltip title="Pause">
+                <Button size="small" icon={<PauseCircleOutlined />} onClick={() => handleStatusAction(r.id, 'pause')} />
+              </Tooltip>
+              <Tooltip title="Stop">
+                <Button size="small" danger icon={<StopOutlined />} onClick={() => handleStatusAction(r.id, 'stop')} />
+              </Tooltip>
             </>
-          ) : null}
-          <Tooltip title="Edit"><Button size="small" onClick={() => handleEdit(r)}>Edit</Button></Tooltip>
-          <Popconfirm title="Delete campaign?" onConfirm={() => handleDelete(r.id)}>
-            <Tooltip title="Delete"><Button size="small" danger>Delete</Button></Tooltip>
-          </Popconfirm>
+          )}
+          <Tooltip title="Edit">
+            <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)} />
+          </Tooltip>
+          <Tooltip title="Delete">
+            <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(r)} />
+          </Tooltip>
         </Space>
       ),
     },
   ];
 
-  const memberColumns = [
+  const memberColumns: ColumnsType<any> = [
     { title: 'Name', dataIndex: 'contactName', key: 'contactName' },
     { title: 'Phone', dataIndex: 'contactPhone', key: 'contactPhone' },
     { title: 'Email', dataIndex: 'contactEmail', key: 'contactEmail' },
-    { title: 'Status', dataIndex: 'status', key: 'status',
-      render: (s: string) => <Tag color={memberStatusColors[s] || 'default'}>{s}</Tag> },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (s: string) => <Tag color={memberStatusColors[s] || 'default'}>{s}</Tag>,
+    },
     { title: 'Priority', dataIndex: 'priority', key: 'priority' },
-    { title: 'Called At', dataIndex: 'lastCalledAt', key: 'lastCalledAt',
-      render: (d: string) => d ? new Date(d).toLocaleString() : '-' },
+    {
+      title: 'Called At',
+      dataIndex: 'lastCalledAt',
+      key: 'lastCalledAt',
+      render: (d: string) => d ? new Date(d).toLocaleString() : '-',
+    },
   ];
 
-  const resultColumns = [
+  const resultColumns: ColumnsType<any> = [
     { title: 'Member', dataIndex: 'campaignMemberId', key: 'campaignMemberId' },
-    { title: 'Result', dataIndex: 'resultType', key: 'resultType',
-      render: (t: string) => <Tag>{t}</Tag> },
+    {
+      title: 'Result',
+      dataIndex: 'resultType',
+      key: 'resultType',
+      render: (t: string) => <Tag>{t}</Tag>,
+    },
     { title: 'Notes', dataIndex: 'notes', key: 'notes', ellipsis: true },
-    { title: 'Duration', dataIndex: 'duration', key: 'duration',
-      render: (d: number) => d ? `${d}s` : '-' },
+    {
+      title: 'Duration',
+      dataIndex: 'duration',
+      key: 'duration',
+      render: (d: number) => d ? `${d}s` : '-',
+    },
     { title: 'Agent', dataIndex: 'agentId', key: 'agentId' },
-    { title: 'Date', dataIndex: 'createdAt', key: 'createdAt',
-      render: (d: string) => d ? new Date(d).toLocaleString() : '-' },
+    {
+      title: 'Date',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (d: string) => d ? new Date(d).toLocaleString() : '-',
+    },
+  ];
+
+  const searchFields = [
+    { name: 'name', label: 'Name', type: 'input' as const, placeholder: 'Search by name' },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      placeholder: 'Filter by status',
+      options: Object.entries(campaignStatusColors).map(([value]) => ({ value, label: value })),
+    },
+    {
+      name: 'type',
+      label: 'Type',
+      type: 'select' as const,
+      placeholder: 'Filter by type',
+      options: campaignTypeOptions,
+    },
   ];
 
   const totalMembers = members.length;
@@ -176,70 +288,174 @@ export default function CampaignsPage() {
       <Title level={3}>Campaigns</Title>
 
       <Card>
-        <Tabs activeKey={activeTab} onChange={(key) => { setActiveTab(key); if (key === 'campaigns') setSelectedCampaign(null); }}
-          tabBarExtraContent={activeTab === 'campaigns' ? <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>Create Campaign</Button> : undefined}
+        <Tabs
+          activeKey={activeTab}
+          onChange={(key) => { setActiveTab(key); if (key === 'campaigns') setSelectedCampaign(null); }}
+          tabBarExtraContent={
+            activeTab === 'campaigns' ? (
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+                Create Campaign
+              </Button>
+            ) : undefined
+          }
           items={[
-            { key: 'campaigns', label: `Campaigns (${campaigns.length})`,
-              children: <Table rowKey="id" columns={campaignColumns} dataSource={campaigns} loading={loading} pagination={{ pageSize: 10 }} /> },
+            {
+              key: 'campaigns',
+              label: `Campaigns (${campaigns.length})`,
+              children: (
+                <>
+                  <CommonSearch
+                    fields={searchFields}
+                    onSearch={handleSearch}
+                    onReset={handleReset}
+                    loading={loading}
+                  />
+                  <CommonTable
+                    columns={campaignColumns}
+                    dataSource={campaigns}
+                    loading={loading}
+                    error={error}
+                    rowKey="id"
+                    onRefresh={() => fetchCampaigns(filters)}
+                    onExportCsv={handleExportCsv}
+                    onExportExcel={handleExportExcel}
+                  />
+                </>
+              ),
+            },
             ...(selectedCampaign ? [{
-              key: 'detail', label: `Detail: ${selectedCampaign.name}`,
-              children: detailLoading ? <p>Loading...</p> : (
+              key: 'detail',
+              label: `Detail: ${selectedCampaign.name}`,
+              children: detailLoading ? (
+                <CommonTable columns={[]} dataSource={[]} loading={true} rowKey="id" />
+              ) : (
                 <div>
                   <Descriptions title="Campaign Info" bordered column={2} style={{ marginBottom: 16 }}>
                     <Descriptions.Item label="Name">{selectedCampaign.name}</Descriptions.Item>
-                    <Descriptions.Item label="Status"><Tag color={campaignStatusColors[selectedCampaign.status]}>{selectedCampaign.status}</Tag></Descriptions.Item>
+                    <Descriptions.Item label="Status">
+                      <Tag color={campaignStatusColors[selectedCampaign.status]}>{selectedCampaign.status}</Tag>
+                    </Descriptions.Item>
                     <Descriptions.Item label="Type">{selectedCampaign.type}</Descriptions.Item>
                     <Descriptions.Item label="Strategy">{selectedCampaign.strategy}</Descriptions.Item>
-                    <Descriptions.Item label="Schedule">{selectedCampaign.scheduleStart ? new Date(selectedCampaign.scheduleStart).toLocaleDateString() : '-'} → {selectedCampaign.scheduleEnd ? new Date(selectedCampaign.scheduleEnd).toLocaleDateString() : '-'}</Descriptions.Item>
+                    <Descriptions.Item label="Schedule">
+                      {selectedCampaign.scheduleStart ? new Date(selectedCampaign.scheduleStart).toLocaleDateString() : '-'}
+                      {' → '}
+                      {selectedCampaign.scheduleEnd ? new Date(selectedCampaign.scheduleEnd).toLocaleDateString() : '-'}
+                    </Descriptions.Item>
                     <Descriptions.Item label="Description">{selectedCampaign.description || '-'}</Descriptions.Item>
                   </Descriptions>
 
                   <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-                    <Col span={8}><Card><Statistic title="Total Members" value={totalMembers} prefix={<TeamOutlined />} /></Card></Col>
-                    <Col span={8}><Card><Statistic title="Completed" value={completedMembers} suffix={`/ ${totalMembers}`} valueStyle={{ color: '#52c41a' }} /></Card></Col>
-                    <Col span={8}><Card><Statistic title="Results" value={results.length} prefix={<BarChartOutlined />} /></Card></Col>
+                    <Col span={8}>
+                      <Card><Statistic title="Total Members" value={totalMembers} prefix={<TeamOutlined />} /></Card>
+                    </Col>
+                    <Col span={8}>
+                      <Card>
+                        <Statistic
+                          title="Completed"
+                          value={completedMembers}
+                          suffix={`/ ${totalMembers}`}
+                          valueStyle={{ color: '#52c41a' }}
+                        />
+                      </Card>
+                    </Col>
+                    <Col span={8}>
+                      <Card><Statistic title="Results" value={results.length} prefix={<BarChartOutlined />} /></Card>
+                    </Col>
                   </Row>
 
                   <Space style={{ marginBottom: 16 }}>
                     <Upload accept=".csv,.json" showUploadList={false} customRequest={({ file }) => handleImport(file as File)}>
                       <Button icon={<UploadOutlined />}>Import Members</Button>
                     </Upload>
-                    <Button icon={<PlusOutlined />} onClick={() => setMemberModalOpen(true)}>Add Member</Button>
+                    <Button icon={<PlusOutlined />} onClick={() => { setMemberModalOpen(true); }}>
+                      Add Member
+                    </Button>
                   </Space>
 
                   <Tabs items={[
-                    { key: 'members', label: `Members (${members.length})`, children: <Table rowKey="id" columns={memberColumns} dataSource={members} pagination={{ pageSize: 10 }} /> },
-                    { key: 'results', label: `Results (${results.length})`, children: <Table rowKey="id" columns={resultColumns} dataSource={results} pagination={{ pageSize: 10 }} /> },
+                    {
+                      key: 'members',
+                      label: `Members (${members.length})`,
+                      children: (
+                        <CommonTable
+                          columns={memberColumns}
+                          dataSource={members}
+                          loading={detailLoading}
+                          rowKey="id"
+                          onRefresh={() => fetchCampaignDetail(selectedCampaign)}
+                        />
+                      ),
+                    },
+                    {
+                      key: 'results',
+                      label: `Results (${results.length})`,
+                      children: (
+                        <CommonTable
+                          columns={resultColumns}
+                          dataSource={results}
+                          loading={detailLoading}
+                          rowKey="id"
+                          onRefresh={() => fetchCampaignDetail(selectedCampaign)}
+                        />
+                      ),
+                    },
                   ]} />
                 </div>
               ),
             }] : []),
-          ]} />
+          ]}
+        />
       </Card>
 
-      <Modal title={editingCampaign ? 'Edit Campaign' : 'Create Campaign'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)} width={600}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="Name" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="description" label="Description"><Input.TextArea rows={3} /></Form.Item>
-          <Form.Item name="type" label="Type" rules={[{ required: true }]}>
-            <Select options={['OUTBOUND','INBOUND','PREVIEW','PREDICTIVE','PROGRESSIVE'].map(t => ({ value: t, label: t }))} />
-          </Form.Item>
-          <Form.Item name="strategy" label="Strategy" initialValue="SEQUENTIAL">
-            <Select options={['SEQUENTIAL','RANDOM','PRIORITY'].map(s => ({ value: s, label: s }))} />
-          </Form.Item>
-          <Form.Item name="scheduleStart" label="Start Date"><Input type="date" /></Form.Item>
-          <Form.Item name="scheduleEnd" label="End Date"><Input type="date" /></Form.Item>
-        </Form>
-      </Modal>
+      <CommonForm
+        open={campaignModalOpen}
+        title={editingCampaign ? 'Edit Campaign' : 'Create Campaign'}
+        onClose={() => { setCampaignModalOpen(false); setEditingCampaign(null); }}
+        onSubmit={handleFormSubmit}
+        initialValues={editingCampaign}
+        width={600}
+      >
+        <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Please enter campaign name' }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="description" label="Description">
+          <Input.TextArea rows={3} />
+        </Form.Item>
+        <Form.Item name="type" label="Type" rules={[{ required: true, message: 'Please select type' }]}>
+          <Select options={campaignTypeOptions} />
+        </Form.Item>
+        <Form.Item name="strategy" label="Strategy" initialValue="SEQUENTIAL">
+          <Select options={strategyOptions} />
+        </Form.Item>
+        <Form.Item name="scheduleStart" label="Start Date">
+          <Input type="date" />
+        </Form.Item>
+        <Form.Item name="scheduleEnd" label="End Date">
+          <Input type="date" />
+        </Form.Item>
+      </CommonForm>
 
-      <Modal title="Add Member" open={memberModalOpen} onOk={async () => { try { await form.validateFields(); await campaignsApi.addMember(selectedCampaign.id, form.getFieldsValue()); message.success('Member added'); setMemberModalOpen(false); fetchCampaignDetail(selectedCampaign); } catch { message.error('Failed'); } }} onCancel={() => setMemberModalOpen(false)}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="contactName" label="Name"><Input /></Form.Item>
-          <Form.Item name="contactPhone" label="Phone" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="contactEmail" label="Email"><Input /></Form.Item>
-          <Form.Item name="priority" label="Priority"><Input type="number" /></Form.Item>
-        </Form>
-      </Modal>
+      <CommonForm
+        open={memberModalOpen}
+        title="Add Member"
+        onClose={() => setMemberModalOpen(false)}
+        onSubmit={handleAddMember}
+        width={500}
+      >
+        <Form.Item name="contactName" label="Name">
+          <Input />
+        </Form.Item>
+        <Form.Item name="contactPhone" label="Phone" rules={[{ required: true, message: 'Please enter phone' }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="contactEmail" label="Email">
+          <Input />
+        </Form.Item>
+        <Form.Item name="priority" label="Priority">
+          <Input type="number" />
+        </Form.Item>
+      </CommonForm>
     </div>
   );
 }

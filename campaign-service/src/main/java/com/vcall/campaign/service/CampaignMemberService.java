@@ -10,9 +10,11 @@ import com.vcall.campaign.entity.CampaignMember.MemberStatus;
 import com.vcall.campaign.repository.CampaignMemberRepository;
 import com.vcall.campaign.repository.CampaignRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -21,7 +23,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -166,6 +170,38 @@ public class CampaignMemberService {
 
         members = campaignMemberRepository.saveAll(members);
         return members.stream().map(this::toResponse).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CampaignMemberResponse> search(Long campaignId, String keyword, String status, Pageable pageable) {
+        Specification<CampaignMember> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("campaign").get("id"), campaignId));
+            if (keyword != null && !keyword.isEmpty()) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("contactName")), pattern),
+                        cb.like(cb.lower(root.get("contactPhone")), pattern),
+                        cb.like(cb.lower(root.get("contactEmail")), pattern)
+                ));
+            }
+            if (status != null && !status.isEmpty()) {
+                predicates.add(cb.equal(root.get("status"), MemberStatus.valueOf(status.toUpperCase())));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return campaignMemberRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getStats(Long campaignId) {
+        List<CampaignMember> members = campaignMemberRepository.findByCampaignId(campaignId);
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", (long) members.size());
+        for (MemberStatus s : MemberStatus.values()) {
+            stats.put(s.name().toLowerCase(), members.stream().filter(m -> m.getStatus() == s).count());
+        }
+        return stats;
     }
 
     private CampaignMemberResponse toResponse(CampaignMember member) {

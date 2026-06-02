@@ -11,13 +11,18 @@ import com.vcall.pbx.entity.RingGroupMember;
 import com.vcall.pbx.repository.ExtensionRepository;
 import com.vcall.pbx.repository.RingGroupMemberRepository;
 import com.vcall.pbx.repository.RingGroupRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -111,6 +116,35 @@ public class RingGroupService {
                     .ifPresent(m -> m.setPosition(i));
         }
         ringGroupMemberRepository.saveAll(members);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RingGroupResponse> search(String keyword, String strategy, Pageable pageable) {
+        Specification<RingGroup> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (keyword != null && !keyword.isEmpty()) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), pattern),
+                        cb.like(cb.lower(root.get("description")), pattern)
+                ));
+            }
+            if (strategy != null && !strategy.isEmpty()) {
+                predicates.add(cb.equal(root.get("strategy"), RingStrategy.valueOf(strategy.toUpperCase())));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return ringGroupRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getStats() {
+        List<RingGroup> all = ringGroupRepository.findAll();
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", (long) all.size());
+        stats.put("sequential", all.stream().filter(r -> r.getStrategy() == RingStrategy.SEQUENTIAL).count());
+        stats.put("simultaneous", all.stream().filter(r -> r.getStrategy() == RingStrategy.SIMULTANEOUS).count());
+        return stats;
     }
 
     private RingGroupResponse toResponse(RingGroup ringGroup) {

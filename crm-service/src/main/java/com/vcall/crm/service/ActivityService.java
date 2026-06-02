@@ -7,14 +7,16 @@ import com.vcall.crm.entity.Activity;
 import com.vcall.crm.repository.ActivityRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 @Slf4j
 @Service
@@ -39,6 +41,16 @@ public class ActivityService {
 
     public Page<ActivityResponse> getAllActivities(Pageable pageable) {
         return activityRepository.findAll(pageable).map(this::mapToResponse);
+    }
+
+    public Page<ActivityResponse> searchActivities(Specification<Activity> spec, Pageable pageable) {
+        return activityRepository.findAll(spec, pageable).map(this::mapToResponse);
+    }
+
+    public Map<String, Object> getActivityStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalActivities", activityRepository.count());
+        return stats;
     }
 
     public Page<ActivityResponse> getActivitiesByCustomer(UUID customerId, Pageable pageable) {

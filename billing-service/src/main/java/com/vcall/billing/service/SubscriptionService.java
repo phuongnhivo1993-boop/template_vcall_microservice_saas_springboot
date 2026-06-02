@@ -2,6 +2,7 @@ package com.vcall.billing.service;
 
 import com.vcall.billing.dto.SubscriptionRequest;
 import com.vcall.billing.dto.SubscriptionResponse;
+import com.vcall.billing.dto.SubscriptionStatusRequest;
 import com.vcall.billing.entity.PricingPlan;
 import com.vcall.billing.entity.Subscription;
 import com.vcall.billing.kafka.BillingEventPublisher;
@@ -29,6 +30,53 @@ public class SubscriptionService {
     private final SubscriptionRepository subscriptionRepository;
     private final PricingPlanRepository pricingPlanRepository;
     private final BillingEventPublisher eventPublisher;
+
+    @Transactional
+    public SubscriptionResponse updateSubscription(Long id, SubscriptionRequest request) {
+        Subscription subscription = subscriptionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription not found with id: " + id));
+        if (request.getPlanId() != null) {
+            PricingPlan plan = pricingPlanRepository.findById(request.getPlanId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Pricing plan not found with id: " + request.getPlanId()));
+            subscription.setPlan(plan);
+        }
+        if (request.getSubscriberId() != null) subscription.setSubscriberId(request.getSubscriberId());
+        if (request.getStartDate() != null) subscription.setStartDate(request.getStartDate());
+        if (request.getEndDate() != null) subscription.setEndDate(request.getEndDate());
+        if (request.getAutoRenew() != null) subscription.setAutoRenew(request.getAutoRenew());
+        if (request.getTrialEndDate() != null) subscription.setTrialEndDate(request.getTrialEndDate());
+        subscription = subscriptionRepository.save(subscription);
+
+        eventPublisher.publishSubscriptionUpdated(subscription);
+        return toResponse(subscription);
+    }
+
+    @Transactional
+    public void deleteSubscription(Long id) {
+        Subscription subscription = subscriptionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription not found with id: " + id));
+        subscription.setIsDeleted(true);
+        subscription.setStatus(Subscription.SubscriptionStatus.CANCELED);
+        subscription.setAutoRenew(false);
+        subscriptionRepository.save(subscription);
+
+        eventPublisher.publishSubscriptionDeleted(subscription);
+    }
+
+    @Transactional
+    public SubscriptionResponse updateSubscriptionStatus(Long id, SubscriptionStatusRequest request) {
+        Subscription subscription = subscriptionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Subscription not found with id: " + id));
+        subscription.setStatus(request.getStatus());
+        if (request.getStatus() == Subscription.SubscriptionStatus.CANCELED) {
+            subscription.setCanceledAt(LocalDateTime.now());
+            subscription.setAutoRenew(false);
+        }
+        subscription = subscriptionRepository.save(subscription);
+
+        eventPublisher.publishSubscriptionStatusChanged(subscription);
+        return toResponse(subscription);
+    }
 
     @Transactional
     public SubscriptionResponse createSubscription(SubscriptionRequest request) {

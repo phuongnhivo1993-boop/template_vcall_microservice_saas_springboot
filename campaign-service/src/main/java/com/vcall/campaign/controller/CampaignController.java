@@ -6,7 +6,9 @@ import com.vcall.campaign.dto.CampaignStatusRequest;
 import com.vcall.campaign.entity.Campaign;
 import com.vcall.campaign.service.CampaignService;
 import com.vcall.common.dto.ApiResponse;
+import com.vcall.common.util.BulkOperationUtil;
 import com.vcall.common.util.CsvExportUtil;
+import com.vcall.common.util.ExcelExportUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/campaigns")
@@ -145,5 +148,57 @@ public class CampaignController {
         List<List<String>> rows = CsvExportUtil.toRows(campaigns.getContent(),
                 Arrays.asList("id", "name", "type", "status", "strategy", "scheduleStart", "scheduleEnd", "createdAt"));
         CsvExportUtil.writeCsv(response, "campaigns.csv", headers, rows);
+    }
+
+    @GetMapping("/export/excel")
+    public void exportExcel(@RequestParam(required = false) String keyword,
+                            HttpServletResponse response) throws IOException {
+        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Page<CampaignResponse> campaigns;
+        if (keyword != null && !keyword.isEmpty()) {
+            Specification<Campaign> spec = (root, query, cb) ->
+                    cb.like(cb.lower(root.get("name")), "%" + keyword.toLowerCase() + "%");
+            campaigns = campaignService.searchCampaigns(spec, pageable);
+        } else {
+            campaigns = campaignService.getAllCampaigns(pageable);
+        }
+        List<String> headers = Arrays.asList("ID", "Name", "Type", "Status", "Strategy", "Start", "End", "Created At");
+        ExcelExportUtil.writeExcel(response, "campaigns.xlsx", headers, campaigns.getContent(),
+                Arrays.asList("id", "name", "type", "status", "strategy", "scheduleStart", "scheduleEnd", "createdAt"));
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<Long>>> bulkDelete(
+            @RequestBody List<Long> ids) {
+        BulkOperationUtil.BulkResult<Long> result = new BulkOperationUtil.BulkResult<>();
+        for (Long id : ids) {
+            try {
+                campaignService.deleteCampaign(id);
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk delete completed", result));
+    }
+
+    @PostMapping("/bulk-status")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<Long>>> bulkStatus(
+            @RequestBody Map<String, Object> body) {
+        @SuppressWarnings("unchecked")
+        List<Integer> rawIds = (List<Integer>) body.get("ids");
+        List<Long> ids = rawIds.stream().map(Integer::longValue).collect(Collectors.toList());
+        String status = (String) body.get("status");
+        CampaignStatusRequest statusRequest = new CampaignStatusRequest(status);
+        BulkOperationUtil.BulkResult<Long> result = new BulkOperationUtil.BulkResult<>();
+        for (Long id : ids) {
+            try {
+                campaignService.updateStatus(id, statusRequest);
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk status update completed", result));
     }
 }

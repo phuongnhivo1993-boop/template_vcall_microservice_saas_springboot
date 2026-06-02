@@ -9,6 +9,7 @@ import com.vcall.iam.repository.PermissionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class PermissionService {
 
     private final PermissionRepository permissionRepository;
+
+    @Transactional(readOnly = true)
+    public Page<PermissionResponse> searchPermissions(Specification<com.vcall.iam.entity.Permission> spec, Pageable pageable) {
+        return permissionRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    public java.util.Map<String, Object> getPermissionStats() {
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("totalPermissions", permissionRepository.count());
+        return stats;
+    }
 
     @Transactional
     public PermissionResponse createPermission(PermissionRequest request) {

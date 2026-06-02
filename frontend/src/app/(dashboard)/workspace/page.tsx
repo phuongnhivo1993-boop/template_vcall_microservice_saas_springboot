@@ -1,17 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
-  Layout, Card, Row, Col, Table, Tag, Button, Badge, Tabs, Input, Select,
-  Typography, Space, Avatar, Tooltip, List, Switch, Dropdown, Menu,
+  Layout, Card, Row, Col, Table, Tag, Button, Badge, Tabs, Input,
+  Typography, Space, Avatar, Tooltip, List, Switch, Dropdown, Menu, Spin, Alert,
 } from 'antd';
 import {
   PhoneOutlined, MessageOutlined, CustomerServiceOutlined,
   SearchOutlined, PlusOutlined, BellOutlined, UserOutlined,
   ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined,
   MinusCircleOutlined, MailOutlined, FileTextOutlined,
-  RightOutlined, LeftOutlined, DownOutlined,
+  RightOutlined, LeftOutlined, DownOutlined, ReloadOutlined,
 } from '@ant-design/icons';
+import { callsApi, chatApi, ticketsApi, notificationsApi, agentsApi } from '@/lib/api';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
@@ -37,7 +38,7 @@ interface ChatConversation {
   channel: 'web' | 'facebook' | 'zalo' | 'whatsapp';
 }
 
-interface Ticket {
+interface TicketItem {
   id: string;
   subject: string;
   customer: string;
@@ -73,53 +74,11 @@ const callStatusColors: Record<string, string> = {
   ringing: '#faad14', 'in-progress': '#52c41a', hold: '#ff4d4f', completed: '#d9d9d9',
 };
 
-const activeCallsData: ActiveCall[] = [
-  { id: 'CL-001', caller: 'John Smith', callee: 'Sarah J.', duration: '04:32', status: 'in-progress', queue: 'Support' },
-  { id: 'CL-002', caller: 'Alice Brown', callee: 'Mike R.', duration: '00:45', status: 'ringing', queue: 'Billing' },
-  { id: 'CL-003', caller: 'Bob Wilson', callee: 'Emily W.', duration: '12:10', status: 'in-progress', queue: 'Technical' },
-  { id: 'CL-004', caller: 'Carol Davis', callee: 'John D.', duration: '02:15', status: 'hold', queue: 'Support' },
-];
-
-const chatConversationsData: ChatConversation[] = [
-  { id: 'CH-001', customer: 'John Smith', avatar: 'JS', lastMessage: 'I still need help with the password reset', time: '2m', unread: 3, channel: 'web' },
-  { id: 'CH-002', customer: 'Alice Brown', avatar: 'AB', lastMessage: 'Thanks for the update!', time: '5m', unread: 0, channel: 'facebook' },
-  { id: 'CH-003', customer: 'Bob Wilson', avatar: 'BW', lastMessage: 'When will the feature be available?', time: '12m', unread: 1, channel: 'zalo' },
-  { id: 'CH-004', customer: 'Diana Clark', avatar: 'DC', lastMessage: 'Extension 204 is still not working', time: '1h', unread: 2, channel: 'web' },
-  { id: 'CH-005', customer: 'Tom Harris', avatar: 'TH', lastMessage: 'Please send the call history report', time: '2h', unread: 0, channel: 'whatsapp' },
-];
-
-const ticketsData: Ticket[] = [
-  { id: 'TK-001', subject: 'Cannot reset password', customer: 'John Smith', priority: 'high', status: 'open' },
-  { id: 'TK-002', subject: 'Billing discrepancy on invoice #INV-042', customer: 'Alice Brown', priority: 'critical', status: 'in_progress' },
-  { id: 'TK-003', subject: 'Feature request: call recording export', customer: 'Bob Wilson', priority: 'low', status: 'open' },
-  { id: 'TK-004', subject: 'Audio issues during calls', customer: 'Carol Davis', priority: 'high', status: 'in_progress' },
-  { id: 'TK-005', subject: 'Extension not working', customer: 'Diana Clark', priority: 'critical', status: 'open' },
-];
-
-const notificationsData: Notification[] = [
-  { id: 'N-001', title: 'New call assigned', description: 'Call from John Smith routed to your queue', time: '2 min ago', read: false, type: 'call' },
-  { id: 'N-002', title: 'Ticket escalated', description: 'TK-002 has been escalated to Tier 2 support', time: '5 min ago', read: false, type: 'ticket' },
-  { id: 'N-003', title: 'New chat message', description: 'Alice Brown sent a new message in chat CH-002', time: '8 min ago', read: false, type: 'chat' },
-  { id: 'N-004', title: 'SLA warning', description: 'TK-004 is approaching SLA deadline (15 min remaining)', time: '12 min ago', read: true, type: 'system' },
-  { id: 'N-005', title: 'Call completed', description: 'Call with Bob Wilson completed. Duration: 12:10', time: '15 min ago', read: true, type: 'call' },
-  { id: 'N-006', title: 'Shift reminder', description: 'Your shift ends in 30 minutes', time: '30 min ago', read: true, type: 'system' },
-];
-
 const notificationIcons: Record<string, React.ReactNode> = {
   call: <PhoneOutlined style={{ color: '#1677ff' }} />,
   chat: <MessageOutlined style={{ color: '#52c41a' }} />,
   ticket: <FileTextOutlined style={{ color: '#faad14' }} />,
   system: <BellOutlined style={{ color: '#722ed1' }} />,
-};
-
-const customerData = {
-  name: 'John Smith',
-  email: 'john.smith@email.com',
-  phone: '+84 912 345 678',
-  segment: 'VIP',
-  totalCalls: 24,
-  csatScore: 92,
-  tags: ['Premium', 'Recurring', 'High Value'],
 };
 
 const callColumns = [
@@ -152,18 +111,85 @@ export default function WorkspacePage() {
   const [agentStatus, setAgentStatus] = useState<AgentStatus>('available');
   const [notifPanelOpen, setNotifPanelOpen] = useState(true);
   const [searchCustomer, setSearchCustomer] = useState('');
-  const [notifications, setNotifications] = useState(notificationsData);
   const [interactionSearch, setInteractionSearch] = useState('');
   const [activeTab, setActiveTab] = useState<string>('calls');
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [activeCalls, setActiveCalls] = useState<ActiveCall[]>([]);
+  const [chatConversations, setChatConversations] = useState<ChatConversation[]>([]);
+  const [ticketItems, setTicketItems] = useState<TicketItem[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [customerData, setCustomerData] = useState({
+    name: 'John Smith',
+    email: '',
+    phone: '',
+    segment: 'Standard',
+    totalCalls: 0,
+    csatScore: 0,
+    tags: [] as string[],
+  });
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [callsRes, chatRes, ticketsRes, notifsRes] = await Promise.all([
+        callsApi.list({ page: 0, size: 20 }).catch(() => ({ data: { data: [] } })),
+        chatApi.getConversations().catch(() => ({ data: { data: [] } })),
+        ticketsApi.list({ page: 0, size: 20 }).catch(() => ({ data: { data: [] } })),
+        notificationsApi.list({ page: 0, size: 20 }).catch(() => ({ data: { data: [] } })),
+      ]);
+
+      const calls = callsRes.data?.data?.content || callsRes.data?.data || callsRes.data || [];
+      setActiveCalls(Array.isArray(calls) ? calls.map((c: any) => ({
+        id: c.id, caller: c.caller || c.callerName || '', callee: c.callee || c.calleeName || '',
+        duration: c.duration || '00:00', status: c.status || 'in-progress', queue: c.queue || '',
+      })) : []);
+
+      const chats = chatRes.data?.data?.content || chatRes.data?.data || chatRes.data || [];
+      setChatConversations(Array.isArray(chats) ? chats.map((c: any) => ({
+        id: c.id, customer: c.customerName || c.customer || '', avatar: c.customerName?.charAt(0)?.toUpperCase() || '?',
+        lastMessage: c.lastMessage || '', time: c.lastMessageAt || '', unread: c.unreadCount ?? 0,
+        channel: c.channel || 'web',
+      })) : []);
+
+      const tix = ticketsRes.data?.data?.content || ticketsRes.data?.data || ticketsRes.data || [];
+      setTicketItems(Array.isArray(tix) ? tix.map((t: any) => ({
+        id: t.id, subject: t.title || t.subject || '', customer: t.customerName || t.customer || '',
+        priority: t.priority || 'medium', status: t.status || 'open',
+      })) : []);
+
+      const notifs = notifsRes.data?.data?.content || notifsRes.data?.data || notifsRes.data || [];
+      setNotifications(Array.isArray(notifs) ? notifs.map((n: any) => ({
+        id: n.id, title: n.title, description: n.description || n.message || '',
+        time: n.createdAt || n.time || '', read: n.read ?? false, type: n.type || 'system',
+      })) : []);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load workspace data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const markAsRead = (id: string) => {
+  const markAsRead = async (id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    try { await notificationsApi.markAsRead(id); } catch { /* silent */ }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      if (notifications.length > 0) {
+        const userId = notifications[0].id;
+        await notificationsApi.markAllAsRead(userId);
+      }
+    } catch { /* silent */ }
   };
 
   const statusMenuItems = [
@@ -182,11 +208,11 @@ export default function WorkspacePage() {
     />
   );
 
-  const filteredCalls = activeCallsData;
-  const filteredChats = chatConversationsData.filter(
+  const filteredCalls = activeCalls;
+  const filteredChats = chatConversations.filter(
     (c) => c.customer.toLowerCase().includes(interactionSearch.toLowerCase()),
   );
-  const filteredTickets = ticketsData.filter(
+  const filteredTickets = ticketItems.filter(
     (t) => t.subject.toLowerCase().includes(interactionSearch.toLowerCase()) ||
       t.customer.toLowerCase().includes(interactionSearch.toLowerCase()),
   );
@@ -196,9 +222,25 @@ export default function WorkspacePage() {
       n.description.toLowerCase().includes(searchCustomer.toLowerCase()),
   );
 
+  if (loading && activeCalls.length === 0) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (error && activeCalls.length === 0) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Title level={3}>Agent Workspace</Title>
+        <Alert type="error" message={error} showIcon action={<Button onClick={fetchData} icon={<ReloadOutlined />}>Retry</Button>} />
+      </div>
+    );
+  }
+
   return (
     <Layout style={{ height: 'calc(100vh - 104px)', background: '#f5f5f5', borderRadius: 8, overflow: 'hidden' }}>
-      {/* Top status bar */}
       <Header style={{
         background: '#fff', padding: '0 24px', display: 'flex', alignItems: 'center',
         justifyContent: 'space-between', borderBottom: '1px solid #f0f0f0', height: 56, lineHeight: '56px',
@@ -212,21 +254,21 @@ export default function WorkspacePage() {
               <DownOutlined />
             </Button>
           </Dropdown>
-          <Text type="secondary"><ClockCircleOutlined /> Online: 03h 42m</Text>
+          <Text type="secondary"><ClockCircleOutlined /> Online</Text>
         </Space>
         <Space size="large">
           <Tooltip title="Active Calls">
-            <Badge count={activeCallsData.length} size="small" offset={[2, -2]}>
+            <Badge count={activeCalls.length} size="small" offset={[2, -2]}>
               <PhoneOutlined style={{ fontSize: 18, color: '#1677ff' }} />
             </Badge>
           </Tooltip>
-          <Tooltip title="Waiting Chats">
-            <Badge count={chatConversationsData.reduce((s, c) => s + (c.unread > 0 ? 1 : 0), 0)} size="small">
+          <Tooltip title="Unread Chats">
+            <Badge count={chatConversations.reduce((s, c) => s + (c.unread > 0 ? 1 : 0), 0)} size="small">
               <MessageOutlined style={{ fontSize: 18, color: '#52c41a' }} />
             </Badge>
           </Tooltip>
           <Tooltip title="Open Tickets">
-            <Badge count={ticketsData.filter((t) => t.status !== 'closed' && t.status !== 'resolved').length} size="small">
+            <Badge count={ticketItems.filter((t) => t.status !== 'closed' && t.status !== 'resolved').length} size="small">
               <FileTextOutlined style={{ fontSize: 18, color: '#faad14' }} />
             </Badge>
           </Tooltip>
@@ -241,7 +283,6 @@ export default function WorkspacePage() {
       </Header>
 
       <Layout style={{ flex: 1, background: '#f5f5f5' }}>
-        {/* Left sidebar - Customer Info */}
         <Sider width={320} theme="light" style={{ background: '#fff', borderRight: '1px solid #f0f0f0', overflowY: 'auto' }}>
           <div style={{ padding: 16 }}>
             <Input
@@ -263,8 +304,8 @@ export default function WorkspacePage() {
                     </div>
                   </div>
                 </Space>
-                <div><Text type="secondary" style={{ fontSize: 12 }}>Email:</Text><br /><Text>{customerData.email}</Text></div>
-                <div><Text type="secondary" style={{ fontSize: 12 }}>Phone:</Text><br /><Text>{customerData.phone}</Text></div>
+                <div><Text type="secondary" style={{ fontSize: 12 }}>Email:</Text><br /><Text>{customerData.email || 'No email'}</Text></div>
+                <div><Text type="secondary" style={{ fontSize: 12 }}>Phone:</Text><br /><Text>{customerData.phone || 'No phone'}</Text></div>
                 <Row gutter={8}>
                   <Col span={12}>
                     <Card size="small" style={{ textAlign: 'center', background: '#f5f5f5' }}>
@@ -296,7 +337,6 @@ export default function WorkspacePage() {
           </div>
         </Sider>
 
-        {/* Main content - Interactions Panel */}
         <Content style={{ padding: 16, overflow: 'auto' }}>
           <Input
             prefix={<SearchOutlined />}
@@ -307,7 +347,10 @@ export default function WorkspacePage() {
           />
           <Card style={{ minHeight: 400 }}>
             <Tabs activeKey={activeTab} onChange={setActiveTab} tabBarExtraContent={
-              <Button type="primary" icon={<PlusOutlined />} size="small">New Interaction</Button>
+              <Space>
+                <Button icon={<ReloadOutlined />} size="small" onClick={fetchData}>Refresh</Button>
+                <Button type="primary" icon={<PlusOutlined />} size="small">New Interaction</Button>
+              </Space>
             }>
               <Tabs.TabPane
                 tab={<span><PhoneOutlined /> Active Calls <Badge count={filteredCalls.length} size="small" style={{ backgroundColor: '#1677ff' }} /></span>}
@@ -323,7 +366,7 @@ export default function WorkspacePage() {
                 />
               </Tabs.TabPane>
               <Tabs.TabPane
-                tab={<span><MessageOutlined /> Chat <Badge count={chatConversationsData.reduce((s, c) => s + c.unread, 0)} size="small" /></span>}
+                tab={<span><MessageOutlined /> Chat <Badge count={chatConversations.reduce((s, c) => s + c.unread, 0)} size="small" /></span>}
                 key="chat"
               >
                 <List
@@ -366,7 +409,6 @@ export default function WorkspacePage() {
           </Card>
         </Content>
 
-        {/* Right sidebar - Notifications */}
         {notifPanelOpen && (
           <Sider width={340} theme="light" style={{ background: '#fff', borderLeft: '1px solid #f0f0f0', overflowY: 'auto' }}>
             <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -395,25 +437,17 @@ export default function WorkspacePage() {
                   actions={!item.read ? [<Button key="read" type="link" size="small" onClick={(e) => { e.stopPropagation(); markAsRead(item.id); }}>Mark read</Button>] : []}
                 >
                   <List.Item.Meta
-                    avatar={notificationIcons[item.type]}
+                    avatar={notificationIcons[item.type] || <BellOutlined />}
                     title={<Space><Text strong={!item.read} style={{ fontSize: 13 }}>{item.title}</Text><Text type="secondary" style={{ fontSize: 11 }}>{item.time}</Text></Space>}
                     description={<Text type="secondary" style={{ fontSize: 12 }}>{item.description}</Text>}
                   />
                 </List.Item>
               )}
             />
-            {!notifPanelOpen && (
-              <div style={{ position: 'absolute', top: 12, left: -20 }}>
-                <Tooltip title="Open notifications">
-                  <Button type="text" icon={<LeftOutlined />} onClick={() => setNotifPanelOpen(true)} />
-                </Tooltip>
-              </div>
-            )}
           </Sider>
         )}
       </Layout>
 
-      {/* Floating Quick Actions */}
       <div style={{ position: 'fixed', bottom: 32, right: 32, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 100 }}>
         <Tooltip title="New Call">
           <Button type="primary" shape="circle" size="large" icon={<PhoneOutlined />} style={{ width: 48, height: 48, boxShadow: '0 4px 12px rgba(22,119,255,0.4)' }} />

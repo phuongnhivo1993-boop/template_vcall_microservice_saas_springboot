@@ -7,13 +7,15 @@ import com.vcall.crm.entity.CustomerNote;
 import com.vcall.crm.repository.CustomerNoteRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 @Slf4j
 @Service
@@ -38,6 +40,16 @@ public class CustomerNoteService {
 
     public Page<CustomerNoteResponse> getAllNotes(Pageable pageable) {
         return customerNoteRepository.findAll(pageable).map(this::mapToResponse);
+    }
+
+    public Page<CustomerNoteResponse> searchNotes(Specification<CustomerNote> spec, Pageable pageable) {
+        return customerNoteRepository.findAll(spec, pageable).map(this::mapToResponse);
+    }
+
+    public Map<String, Object> getNoteStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalNotes", customerNoteRepository.count());
+        return stats;
     }
 
     public Page<CustomerNoteResponse> getNotesByCustomer(UUID customerId, Pageable pageable) {

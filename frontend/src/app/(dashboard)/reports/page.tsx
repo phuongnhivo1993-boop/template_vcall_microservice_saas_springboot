@@ -1,12 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, Select, DatePicker, Row, Col, Typography, Table, Tabs, Space } from 'antd';
+import { useState, useEffect, useCallback } from 'react';
+import { Card, Select, DatePicker, Row, Col, Typography, Tabs, Space, message } from 'antd';
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
@@ -17,9 +15,15 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import dayjs from 'dayjs';
+import CommonTable from '@/components/common/CommonTable';
+import CommonSearch from '@/components/common/CommonSearch';
+import { reportsApi } from '@/lib/api';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
+
+const PIE_COLORS = ['#1677ff', '#52c41a', '#faad14', '#ff4d4f', '#722ed1', '#999'];
 
 const callVolumeData = [
   { month: 'Jan', inbound: 1200, outbound: 800 },
@@ -52,7 +56,80 @@ const topCustomers = [
 ];
 
 export default function ReportsPage() {
+  const [activeTab, setActiveTab] = useState('charts');
+  const [reportDefinitions, setReportDefinitions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [reportType, setReportType] = useState('callVolume');
+
+  const fetchDefinitions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await reportsApi.getAll({ page: 0, size: 100 });
+      setReportDefinitions(res.data?.data?.content || res.data?.content || []);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load report definitions');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'definitions') {
+      fetchDefinitions();
+    }
+  }, [activeTab, fetchDefinitions]);
+
+  const handleExportCsv = async () => {
+    try {
+      const res = await reportsApi.exportCsv();
+      const blob = new Blob([res.data], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reports_${dayjs().format('YYYYMMDD_HHmmss')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Exported');
+    } catch { message.error('Export failed'); }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const res = await reportsApi.exportExcel();
+      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reports_${dayjs().format('YYYYMMDD_HHmmss')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Exported');
+    } catch { message.error('Export failed'); }
+  };
+
+  const handleSearch = (values: any) => {
+    if (activeTab === 'definitions') {
+      fetchDefinitions();
+    }
+  };
+
+  const handleReset = () => {
+    if (activeTab === 'definitions') {
+      fetchDefinitions();
+    }
+  };
+
+  const definitionColumns = [
+    { title: 'ID', dataIndex: 'id', key: 'id' },
+    { title: 'Name', dataIndex: 'name', key: 'name' },
+    { title: 'Type', dataIndex: 'reportType', key: 'reportType' },
+    { title: 'Description', dataIndex: 'description', key: 'description', ellipsis: true },
+    { title: 'Schedule', dataIndex: 'schedule', key: 'schedule', render: (s: string) => s || '-' },
+    { title: 'Created', dataIndex: 'createdAt', key: 'createdAt',
+      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
+  ];
 
   const tabItems = [
     {
@@ -75,7 +152,7 @@ export default function ReportsPage() {
               </ResponsiveContainer>
             </Card>
           </Col>
-          <Col span={12}>
+          <Col xs={24} lg={12}>
             <Card title="Agent Performance">
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={agentPerfData} layout="vertical">
@@ -88,7 +165,7 @@ export default function ReportsPage() {
               </ResponsiveContainer>
             </Card>
           </Col>
-          <Col span={12}>
+          <Col xs={24} lg={12}>
             <Card title="SLA Compliance">
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -117,19 +194,35 @@ export default function ReportsPage() {
       key: 'tables',
       label: 'Tables',
       children: (
-        <Card title="Top Customers by Call Volume">
-          <Table
-            dataSource={topCustomers}
-            rowKey="rank"
-            pagination={false}
-            columns={[
-              { title: 'Rank', dataIndex: 'rank', key: 'rank', width: 60 },
-              { title: 'Customer', dataIndex: 'name', key: 'name' },
-              { title: 'Total Calls', dataIndex: 'calls', key: 'calls' },
-              { title: 'Avg Duration (min)', dataIndex: 'avgDuration', key: 'avgDuration' },
-            ]}
-          />
-        </Card>
+        <CommonTable
+          title="Top Customers by Call Volume"
+          columns={[
+            { title: 'Rank', dataIndex: 'rank', key: 'rank', width: 60 },
+            { title: 'Customer', dataIndex: 'name', key: 'name' },
+            { title: 'Total Calls', dataIndex: 'calls', key: 'calls' },
+            { title: 'Avg Duration (min)', dataIndex: 'avgDuration', key: 'avgDuration' },
+          ]}
+          dataSource={topCustomers}
+          rowKey="rank"
+          pagination={false}
+        />
+      ),
+    },
+    {
+      key: 'definitions',
+      label: `Definitions (${reportDefinitions.length})`,
+      children: (
+        <CommonTable
+          columns={definitionColumns}
+          dataSource={reportDefinitions}
+          loading={loading}
+          error={error}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
+          onRefresh={fetchDefinitions}
+          onExportCsv={handleExportCsv}
+          onExportExcel={handleExportExcel}
+        />
       ),
     },
   ];
@@ -153,7 +246,29 @@ export default function ReportsPage() {
           />
         </Space>
       </div>
-      <Tabs items={tabItems} />
+
+      {activeTab === 'definitions' && (
+        <CommonSearch
+          fields={[
+            { name: 'search', label: 'Search', type: 'input', placeholder: 'Search by name or type' },
+            {
+              name: 'reportType',
+              label: 'Type',
+              type: 'select',
+              placeholder: 'Filter by type',
+              options: [
+                { value: 'CALL_VOLUME', label: 'Call Volume' },
+                { value: 'AGENT_PERFORMANCE', label: 'Agent Performance' },
+                { value: 'SLA', label: 'SLA Compliance' },
+              ],
+            },
+          ]}
+          onSearch={handleSearch}
+          onReset={handleReset}
+        />
+      )}
+
+      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
     </div>
   );
 }

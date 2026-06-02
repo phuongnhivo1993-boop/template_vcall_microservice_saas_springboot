@@ -114,11 +114,16 @@ export const crmApi = {
 };
 
 export const callsApi = {
+  getAll: (params?: Record<string, unknown>) => apiClient.get('/calls', { params }),
   list: (params?: Record<string, unknown>) => apiClient.get('/calls/active', { params }),
   getById: (id: string) => apiClient.get(`/calls/${id}`),
   getAgentCalls: (agentId: string, params?: Record<string, unknown>) =>
     apiClient.get(`/calls/agent/${agentId}`, { params }),
   start: (data: Record<string, unknown>) => apiClient.post('/calls', data),
+  create: (data: Record<string, unknown>) => apiClient.post('/calls', data),
+  update: (id: string, data: Record<string, unknown>) =>
+    apiClient.put(`/calls/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/calls/${id}`),
   updateStatus: (id: string, data: Record<string, unknown>) =>
     apiClient.put(`/calls/${id}/status`, data),
   end: (id: string) => apiClient.post(`/calls/${id}/hangup`),
@@ -129,6 +134,11 @@ export const callsApi = {
   transfer: (id: string, data: Record<string, unknown>) =>
     apiClient.post(`/calls/${id}/transfer`, data),
   getRecording: (id: string) => apiClient.get(`/recordings/${id}`),
+  search: (params?: Record<string, unknown>) => apiClient.get('/calls/search', { params }),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/calls/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/calls/export/excel', { params, responseType: 'blob' }),
   getStats: (params?: Record<string, unknown>) => apiClient.get('/cdr/analytics', { params }),
   getQueues: (params?: Record<string, unknown>) => apiClient.get('/call-queues', { params }),
   getQueue: (id: number) => apiClient.get(`/call-queues/${id}`),
@@ -165,6 +175,7 @@ export const ticketsApi = {
 };
 
 export const reportsApi = {
+  getAll: (params?: Record<string, unknown>) => apiClient.get('/reports/definitions', { params }),
   list: (params?: Record<string, unknown>) => apiClient.get('/reports/definitions', { params }),
   getById: (id: number) => apiClient.get(`/reports/definitions/${id}`),
   create: (data: Record<string, unknown>) => apiClient.post('/reports/definitions', data),
@@ -178,6 +189,12 @@ export const reportsApi = {
   getDashboardWidgets: () => apiClient.get('/reports/dashboard/widgets'),
   getAnalytics: (params?: Record<string, unknown>) =>
     apiClient.get('/reports/analytics', { params }),
+  search: (params?: Record<string, unknown>) => apiClient.get('/reports/search', { params }),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/reports/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/reports/export/excel', { params, responseType: 'blob' }),
+  getStats: () => apiClient.get('/reports/stats'),
 };
 
 export const campaignsApi = {
@@ -209,6 +226,7 @@ export const campaignsApi = {
 };
 
 export const billingApi = {
+  getAll: (params?: Record<string, unknown>) => apiClient.get('/billing', { params }),
   getPlans: (params?: Record<string, unknown>) => apiClient.get('/billing/plans', { params }),
   getPlan: (id: number) => apiClient.get(`/billing/plans/${id}`),
   createPlan: (data: Record<string, unknown>) => apiClient.post('/billing/plans', data),
@@ -234,6 +252,12 @@ export const billingApi = {
   generateInvoice: (params: Record<string, unknown>) =>
     apiClient.post('/billing/invoices/generate', null, { params }),
   payInvoice: (id: string) => apiClient.post(`/billing/invoices/${id}/pay`),
+  search: (params?: Record<string, unknown>) => apiClient.get('/billing/search', { params }),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/billing/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/billing/export/excel', { params, responseType: 'blob' }),
+  getStats: () => apiClient.get('/billing/stats'),
 };
 
 export const settingsApi = {
@@ -249,8 +273,12 @@ export const settingsApi = {
 };
 
 export const auditApi = {
+  getAll: (params?: Record<string, unknown>) => apiClient.get('/audit/logs', { params }),
   list: (params?: Record<string, unknown>) => apiClient.get('/audit/logs', { params }),
   getById: (id: string) => apiClient.get(`/audit/logs/${id}`),
+  create: (data: Record<string, unknown>) => apiClient.post('/audit/logs', data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.put(`/audit/logs/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/audit/logs/${id}`),
   search: (params?: Record<string, unknown>) => apiClient.get('/audit/logs/search', { params }),
   getByActor: (actorId: string, params?: Record<string, unknown>) =>
     apiClient.get(`/audit/logs/actor/${actorId}`, { params }),
@@ -262,17 +290,37 @@ export const auditApi = {
     apiClient.get('/audit/fraud-alerts', { params }),
   updateFraudAlertStatus: (id: string, status: string) =>
     apiClient.patch(`/audit/fraud-alerts/${id}/status`, { status }),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/audit/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/audit/export/excel', { params, responseType: 'blob' }),
   exportLogs: (params?: Record<string, unknown>) =>
     apiClient.get('/audit/logs', { params, responseType: 'blob' }),
   getReconciliations: (params?: Record<string, unknown>) =>
     apiClient.get('/audit/reconciliations', { params }),
   runReconciliation: (data: Record<string, unknown>) =>
     apiClient.post('/audit/reconciliations', data),
+  getStats: () => apiClient.get('/audit/stats'),
+};
+
+export const dashboardApi = {
+  getStats: () => apiClient.get('/dashboard/stats'),
+  getRecentCalls: (params?: Record<string, unknown>) => apiClient.get('/calls/recent', { params }),
+  getAgentStatusDistribution: () => apiClient.get('/agents/stats/status-distribution'),
+  getTicketStatusBreakdown: () => apiClient.get('/tickets/stats/by-status'),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/dashboard/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/dashboard/export/excel', { params, responseType: 'blob' }),
 };
 
 export const notificationsApi = {
+  getAll: (params?: Record<string, unknown>) => apiClient.get('/notifications', { params }),
   list: (params?: Record<string, unknown>) => apiClient.get('/notifications', { params }),
   getById: (id: string) => apiClient.get(`/notifications/${id}`),
+  create: (data: Record<string, unknown>) => apiClient.post('/notifications', data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.put(`/notifications/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/notifications/${id}`),
   getByRecipient: (recipientId: string, params?: Record<string, unknown>) =>
     apiClient.get(`/notifications/recipient/${recipientId}`, { params }),
   getUnread: (recipientId: string, params?: Record<string, unknown>) =>
@@ -284,8 +332,41 @@ export const notificationsApi = {
   sendBatch: (data: Record<string, unknown>) => apiClient.post('/notifications/send-batch', data),
   getTemplates: (params?: Record<string, unknown>) =>
     apiClient.get('/notifications/templates', { params }),
+  createTemplate: (data: Record<string, unknown>) =>
+    apiClient.post('/notifications/templates', data),
+  updateTemplate: (id: number, data: Record<string, unknown>) =>
+    apiClient.put(`/notifications/templates/${id}`, data),
+  deleteTemplate: (id: number) => apiClient.delete(`/notifications/templates/${id}`),
   getPreferences: (userId: string) =>
     apiClient.get(`/notifications/preferences/${userId}`),
   updatePreferences: (userId: string, data: Record<string, unknown>) =>
     apiClient.put(`/notifications/preferences/${userId}`, data),
+  search: (params?: Record<string, unknown>) => apiClient.get('/notifications/search', { params }),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/notifications/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/notifications/export/excel', { params, responseType: 'blob' }),
+  getStats: () => apiClient.get('/notifications/stats'),
+};
+
+export const chatApi = {
+  getConversations: (params?: Record<string, unknown>) =>
+    apiClient.get('/chat/conversations', { params }),
+  getConversation: (id: string) => apiClient.get(`/chat/conversations/${id}`),
+  createConversation: (data: Record<string, unknown>) =>
+    apiClient.post('/chat/conversations', data),
+  updateConversation: (id: string, data: Record<string, unknown>) =>
+    apiClient.put(`/chat/conversations/${id}`, data),
+  deleteConversation: (id: string) =>
+    apiClient.delete(`/chat/conversations/${id}`),
+  getMessages: (conversationId: string) =>
+    apiClient.get(`/chat/conversations/${conversationId}/messages`),
+  sendMessage: (conversationId: string, data: Record<string, unknown>) =>
+    apiClient.post(`/chat/conversations/${conversationId}/messages`, data),
+  search: (params?: Record<string, unknown>) =>
+    apiClient.get('/chat/conversations/search', { params }),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/chat/conversations/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/chat/conversations/export/excel', { params, responseType: 'blob' }),
 };

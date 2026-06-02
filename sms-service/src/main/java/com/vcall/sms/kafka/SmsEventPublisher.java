@@ -34,6 +34,10 @@ public class SmsEventPublisher {
         publishEvent("sms.failed", message, "SMS_FAILED", message.getMessageId());
     }
 
+    public void publishSmsDeleted(SmsMessage message) {
+        publishEvent("sms.deleted", message, "SMS_DELETED", message.getMessageId());
+    }
+
     public void publishCampaignStarted(SmsCampaign campaign) {
         publishEvent("campaign.started", campaign, "CAMPAIGN_STARTED", campaign.getId().toString());
     }

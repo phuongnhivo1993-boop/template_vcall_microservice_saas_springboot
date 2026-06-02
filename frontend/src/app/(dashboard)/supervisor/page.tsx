@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, Statistic, Table, Tag, Badge, Typography, Row, Col, Space, Progress, List, Tooltip } from 'antd';
+import { useState, useEffect, useCallback } from 'react';
+import { Card, Statistic, Table, Tag, Badge, Typography, Row, Col, Space, Progress, List, Tooltip, Spin, Alert, Button } from 'antd';
 import {
   PhoneOutlined, TeamOutlined, ClockCircleOutlined, CheckCircleOutlined,
   CloseCircleOutlined, StarOutlined, RiseOutlined, UserSwitchOutlined,
-  ArrowUpOutlined, ArrowDownOutlined, MinusCircleOutlined, FileTextOutlined
+  ArrowUpOutlined, ArrowDownOutlined, MinusCircleOutlined, FileTextOutlined,
+  DownloadOutlined, ReloadOutlined
 } from '@ant-design/icons';
+import { callsApi, agentsApi, dashboardApi } from '@/lib/api';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -40,63 +43,6 @@ interface Activity {
   type: 'call_start' | 'call_end' | 'login' | 'logout' | 'ticket' | 'transfer';
 }
 
-const kpiData = {
-  activeCalls: 47,
-  agentsOnline: 18,
-  agentsTotal: 24,
-  callsWaiting: 12,
-  avgWaitTime: 23,
-  slaCompliance: 94.5,
-  abandonRate: 3.2,
-  serviceLevel: '80/20',
-  csat: 4.2,
-};
-
-const agentsData: Agent[] = [
-  { id: 'AG-001', name: 'Nguyễn Văn An', status: 'online', activeCalls: 2, totalCalls: 48, avgHandleTime: 245, avgWaitTime: 12, csat: 4.8, statusDuration: '2h 15m' },
-  { id: 'AG-002', name: 'Trần Thị Bình', status: 'busy', activeCalls: 1, totalCalls: 42, avgHandleTime: 312, avgWaitTime: 18, csat: 4.5, statusDuration: '45m' },
-  { id: 'AG-003', name: 'Lê Hoàng Cường', status: 'online', activeCalls: 0, totalCalls: 55, avgHandleTime: 198, avgWaitTime: 8, csat: 4.9, statusDuration: '3h 30m' },
-  { id: 'AG-004', name: 'Phạm Minh Đức', status: 'away', activeCalls: 0, totalCalls: 38, avgHandleTime: 287, avgWaitTime: 22, csat: 4.1, statusDuration: '1h 05m' },
-  { id: 'AG-005', name: 'Hoàng Thị Hoa', status: 'busy', activeCalls: 3, totalCalls: 61, avgHandleTime: 356, avgWaitTime: 15, csat: 4.3, statusDuration: '28m' },
-  { id: 'AG-006', name: 'Vũ Quốc Huy', status: 'offline', activeCalls: 0, totalCalls: 29, avgHandleTime: 265, avgWaitTime: 20, csat: 3.8, statusDuration: '4h 10m' },
-  { id: 'AG-007', name: 'Đặng Thúy Linh', status: 'online', activeCalls: 1, totalCalls: 52, avgHandleTime: 221, avgWaitTime: 10, csat: 4.7, statusDuration: '1h 50m' },
-  { id: 'AG-008', name: 'Bùi Thanh Nam', status: 'busy', activeCalls: 2, totalCalls: 44, avgHandleTime: 278, avgWaitTime: 14, csat: 4.4, statusDuration: '32m' },
-];
-
-const queueData: Queue[] = [
-  { id: 'Q-001', name: 'Tổng đài CSKH', callsWaiting: 5, longestWait: 45, agentsAssigned: 8, agentsAvailable: 3, slaHit: 92.3 },
-  { id: 'Q-002', name: 'Hỗ trợ kỹ thuật', callsWaiting: 3, longestWait: 62, agentsAssigned: 6, agentsAvailable: 2, slaHit: 85.7 },
-  { id: 'Q-003', name: 'Khiếu nại & Bồi thường', callsWaiting: 2, longestWait: 38, agentsAssigned: 4, agentsAvailable: 1, slaHit: 78.4 },
-  { id: 'Q-004', name: 'Bán hàng & Tư vấn', callsWaiting: 0, longestWait: 0, agentsAssigned: 5, agentsAvailable: 4, slaHit: 97.1 },
-  { id: 'Q-005', name: 'Hỗ trợ kỹ thuật VIP', callsWaiting: 2, longestWait: 28, agentsAssigned: 3, agentsAvailable: 2, slaHit: 96.8 },
-];
-
-const activityData: Activity[] = [
-  { id: 'A-001', event: 'Cuộc gọi bắt đầu', detail: 'Nguyễn Văn An - Khách hàng 0987654321', time: '2 phút trước', type: 'call_start' },
-  { id: 'A-002', event: 'Cuộc gọi kết thúc', detail: 'Trần Thị Bình - Thời lượng 4:32', time: '3 phút trước', type: 'call_end' },
-  { id: 'A-003', event: 'Agent đăng nhập', detail: 'Lê Hoàng Cường đã đăng nhập', time: '5 phút trước', type: 'login' },
-  { id: 'A-004', event: 'Ticket được tạo', detail: 'Khách hàng 0977123456 - Hỗ trợ kỹ thuật', time: '7 phút trước', type: 'ticket' },
-  { id: 'A-005', event: 'Agent đăng xuất', detail: 'Vũ Quốc Huy đã đăng xuất', time: '10 phút trước', type: 'logout' },
-  { id: 'A-006', event: 'Cuộc gọi chuyển', detail: 'Phạm Minh Đức → Nguyễn Văn An', time: '12 phút trước', type: 'transfer' },
-  { id: 'A-007', event: 'Cuộc gọi bắt đầu', detail: 'Hoàng Thị Hoa - Khách hàng 0912345678', time: '14 phút trước', type: 'call_start' },
-  { id: 'A-008', event: 'Cuộc gọi kết thúc', detail: 'Đặng Thúy Linh - Thời lượng 2:15', time: '16 phút trước', type: 'call_end' },
-];
-
-const callVolumeChart = [
-  { day: 'T2', calls: 320 }, { day: 'T3', calls: 285 }, { day: 'T4', calls: 356 },
-  { day: 'T5', calls: 298 }, { day: 'T6', calls: 412 }, { day: 'T7', calls: 278 },
-  { day: 'CN', calls: 195 },
-];
-
-const agentChartData = [
-  { name: 'Nguyễn Văn An', calls: 48, csat: 4.8 },
-  { name: 'Trần Thị Bình', calls: 42, csat: 4.5 },
-  { name: 'Lê Hoàng Cường', calls: 55, csat: 4.9 },
-  { name: 'Phạm Minh Đức', calls: 38, csat: 4.1 },
-  { name: 'Hoàng Thị Hoa', calls: 61, csat: 4.3 },
-  { name: 'Vũ Quốc Huy', calls: 29, csat: 3.8 },
-];
-
 const statusConfig: Record<string, { color: string; label: string }> = {
   online: { color: '#52c41a', label: 'Online' },
   busy: { color: '#faad14', label: 'Busy' },
@@ -125,6 +71,78 @@ const activityIcons: Record<string, React.ReactNode> = {
 export default function SupervisorPage() {
   const [sortKey, setSortKey] = useState<string>('name');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [kpiData, setKpiData] = useState({
+    activeCalls: 0,
+    agentsOnline: 0,
+    agentsTotal: 0,
+    callsWaiting: 0,
+    avgWaitTime: 0,
+    slaCompliance: 0,
+    abandonRate: 0,
+    serviceLevel: '0',
+    csat: 0,
+  });
+  const [agentsData, setAgentsData] = useState<Agent[]>([]);
+  const [queueData, setQueueData] = useState<Queue[]>([]);
+  const [activityData, setActivityData] = useState<Activity[]>([]);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [statsRes, agentsRes, queuesRes] = await Promise.all([
+        dashboardApi.getStats(),
+        agentsApi.list({ page: 0, size: 50 }),
+        callsApi.getQueues(),
+      ]);
+
+      const stats = statsRes.data?.data || statsRes.data || {};
+      setKpiData({
+        activeCalls: stats.activeCalls ?? stats.activeCallsCount ?? 0,
+        agentsOnline: stats.agentsOnline ?? 0,
+        agentsTotal: stats.agentsTotal ?? 0,
+        callsWaiting: stats.callsWaiting ?? 0,
+        avgWaitTime: stats.avgWaitTime ?? 0,
+        slaCompliance: stats.slaCompliance ?? 0,
+        abandonRate: stats.abandonRate ?? 0,
+        serviceLevel: stats.serviceLevel ?? '0',
+        csat: stats.csat ?? 0,
+      });
+
+      const agents = agentsRes.data?.data?.content || agentsRes.data?.data || agentsRes.data || [];
+      setAgentsData(Array.isArray(agents) ? agents.map((a: any) => ({
+        id: a.id,
+        name: a.name || a.fullName || '',
+        status: a.status || a.agentStatus || 'offline',
+        activeCalls: a.activeCalls ?? 0,
+        totalCalls: a.totalCalls ?? 0,
+        avgHandleTime: a.avgHandleTime ?? 0,
+        avgWaitTime: a.avgWaitTime ?? 0,
+        csat: a.csat ?? 0,
+        statusDuration: a.statusDuration || '-',
+      })) : []);
+
+      const queues = queuesRes.data?.data?.content || queuesRes.data?.data || queuesRes.data || [];
+      setQueueData(Array.isArray(queues) ? queues.map((q: any) => ({
+        id: q.id,
+        name: q.name,
+        callsWaiting: q.callsWaiting ?? 0,
+        longestWait: q.longestWait ?? 0,
+        agentsAssigned: q.agentsAssigned ?? 0,
+        agentsAvailable: q.agentsAvailable ?? 0,
+        slaHit: q.slaHit ?? 0,
+      })) : []);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load supervisor data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -143,6 +161,36 @@ export default function SupervisorPage() {
     }
     return sortDir === 'asc' ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
   });
+
+  const handleExportCsv = async () => {
+    try {
+      const res = await dashboardApi.exportCsv();
+      const blob = new Blob([res.data], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `supervisor_report_${dayjs().format('YYYYMMDD_HHmmss')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silent
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const res = await dashboardApi.exportExcel();
+      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `supervisor_report_${dayjs().format('YYYYMMDD_HHmmss')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silent
+    }
+  };
 
   const agentColumns = [
     {
@@ -226,13 +274,48 @@ export default function SupervisorPage() {
     },
   ];
 
+  const callVolumeChart = [
+    { day: 'T2', calls: 320 }, { day: 'T3', calls: 285 }, { day: 'T4', calls: 356 },
+    { day: 'T5', calls: 298 }, { day: 'T6', calls: 412 }, { day: 'T7', calls: 278 },
+    { day: 'CN', calls: 195 },
+  ];
+
   const maxCalls = Math.max(...callVolumeChart.map(d => d.calls));
 
-  const agentMaxCalls = Math.max(...agentChartData.map(d => d.calls));
+  const agentChartData = agentsData.slice(0, 6).map(a => ({
+    name: a.name,
+    calls: a.totalCalls,
+    csat: a.csat,
+  }));
+
+  const agentMaxCalls = Math.max(...agentChartData.map(d => d.calls), 1);
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div>
+        <Title level={3} style={{ marginBottom: 16 }}>Supervisor Dashboard</Title>
+        <Alert type="error" message={error} showIcon action={<Button onClick={fetchData} icon={<ReloadOutlined />}>Retry</Button>} />
+      </div>
+    );
+  }
 
   return (
     <div>
-      <Title level={3} style={{ marginBottom: 16 }}>Supervisor Dashboard</Title>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Title level={3} style={{ margin: 0 }}>Supervisor Dashboard</Title>
+        <Space>
+          <Button icon={<DownloadOutlined />} onClick={handleExportCsv}>Export CSV</Button>
+          <Button icon={<ReloadOutlined />} onClick={fetchData}>Refresh</Button>
+        </Space>
+      </div>
 
       <Row gutter={[12, 12]}>
         <Col xs={12} sm={8} lg={3}>
@@ -304,6 +387,7 @@ export default function SupervisorPage() {
           <Card title={<Space><RiseOutlined />Hoạt động gần đây</Space>} style={{ height: '100%' }}>
             <List
               dataSource={activityData}
+              locale={{ emptyText: 'Không có hoạt động' }}
               renderItem={item => (
                 <List.Item style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
                   <List.Item.Meta
@@ -326,7 +410,6 @@ export default function SupervisorPage() {
                   />
                 </List.Item>
               )}
-              locale={{ emptyText: 'Không có hoạt động' }}
             />
           </Card>
         </Col>

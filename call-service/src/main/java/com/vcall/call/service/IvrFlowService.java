@@ -8,11 +8,18 @@ import com.vcall.call.entity.IvrStep;
 import com.vcall.call.repository.IvrFlowRepository;
 import com.vcall.call.repository.IvrStepRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,10 +49,32 @@ public class IvrFlowService {
     }
 
     @Transactional(readOnly = true)
-    public List<IvrFlowResponse> getAllFlows() {
-        return ivrFlowRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<IvrFlowResponse> getAllFlows(Pageable pageable) {
+        return ivrFlowRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<IvrFlowResponse> search(String keyword, Pageable pageable) {
+        Specification<IvrFlow> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (keyword != null && !keyword.isEmpty()) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), pattern),
+                        cb.like(cb.lower(root.get("description")), pattern)
+                ));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return ivrFlowRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getStats() {
+        List<IvrFlow> all = ivrFlowRepository.findAll();
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", (long) all.size());
+        return stats;
     }
 
     @Transactional

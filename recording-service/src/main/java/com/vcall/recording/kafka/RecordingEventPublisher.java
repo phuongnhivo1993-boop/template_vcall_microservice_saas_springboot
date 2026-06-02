@@ -43,6 +43,17 @@ public class RecordingEventPublisher {
         }
     }
 
+    public void publishRecordingUpdated(Recording recording) {
+        try {
+            String payload = objectMapper.writeValueAsString(recording);
+            KafkaEvent event = KafkaEvent.create("recording.updated", recording.getId().toString(), "RECORDING_UPDATED", payload);
+            event.setSource(source);
+            kafkaTemplate.send("recording.updated", recording.getId().toString(), event);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize recording updated event", e);
+        }
+    }
+
     public void publishRecordingDeleted(Recording recording) {
         try {
             String payload = objectMapper.writeValueAsString(recording);

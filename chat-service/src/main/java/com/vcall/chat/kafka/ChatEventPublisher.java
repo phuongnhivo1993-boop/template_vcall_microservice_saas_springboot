@@ -34,6 +34,30 @@ public class ChatEventPublisher {
         }
     }
 
+    public void publishChatUpdated(ChatConversation conversation) {
+        try {
+            String payload = objectMapper.writeValueAsString(conversation);
+            KafkaEvent event = KafkaEvent.create("chat.updated", conversation.getId().toString(),
+                    "CHAT_UPDATED", payload);
+            event.setSource(source);
+            kafkaTemplate.send("chat.updated", conversation.getId().toString(), event);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize chat updated event", e);
+        }
+    }
+
+    public void publishChatDeleted(ChatConversation conversation) {
+        try {
+            String payload = objectMapper.writeValueAsString(conversation);
+            KafkaEvent event = KafkaEvent.create("chat.deleted", conversation.getId().toString(),
+                    "CHAT_DELETED", payload);
+            event.setSource(source);
+            kafkaTemplate.send("chat.deleted", conversation.getId().toString(), event);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize chat deleted event", e);
+        }
+    }
+
     public void publishChatClosed(ChatConversation conversation) {
         try {
             String payload = objectMapper.writeValueAsString(conversation);

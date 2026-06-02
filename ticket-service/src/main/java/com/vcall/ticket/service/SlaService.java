@@ -12,16 +12,21 @@ import com.vcall.ticket.entity.Ticket.TicketStatus;
 import com.vcall.ticket.kafka.TicketEventPublisher;
 import com.vcall.ticket.repository.SlaBreachRepository;
 import com.vcall.ticket.repository.SlaRuleRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -93,6 +98,38 @@ public class SlaService {
                 .orElseThrow(() -> new ResourceNotFoundException("SLA rule not found with id: " + id));
         rule.setIsDeleted(true);
         slaRuleRepository.save(rule);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SlaRuleResponse> search(String keyword, String priority, Boolean isActive, Pageable pageable) {
+        Specification<SlaRule> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (keyword != null && !keyword.isEmpty()) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), pattern),
+                        cb.like(cb.lower(root.get("category")), pattern)
+                ));
+            }
+            if (priority != null && !priority.isEmpty()) {
+                predicates.add(cb.equal(root.get("priority"), TicketPriority.valueOf(priority.toUpperCase())));
+            }
+            if (isActive != null) {
+                predicates.add(cb.equal(root.get("isActive"), isActive));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return slaRuleRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getStats() {
+        List<SlaRule> all = slaRuleRepository.findAll();
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", (long) all.size());
+        stats.put("active", all.stream().filter(SlaRule::getIsActive).count());
+        stats.put("inactive", all.stream().filter(r -> !r.getIsActive()).count());
+        return stats;
     }
 
     @Transactional(readOnly = true)

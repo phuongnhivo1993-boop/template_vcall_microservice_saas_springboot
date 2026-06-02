@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Table, Card, Tabs, Tag, Typography, Space, Button, Modal, Form,
-  Input, Select, message, Row, Col, Statistic, Tooltip, Popconfirm, Badge
-} from 'antd';
+import { Card, Tabs, Tag, Typography, Space, Button, message, Row, Col, Statistic, Badge, Input, Form, Select } from 'antd';
 import {
   BellOutlined, SendOutlined, SettingOutlined,
-  CheckCircleOutlined, DeleteOutlined, PlusOutlined, MobileOutlined
+  CheckCircleOutlined, MobileOutlined, PlusOutlined,
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import CommonTable from '@/components/common/CommonTable';
+import CommonForm from '@/components/common/CommonForm';
 import { notificationsApi } from '@/lib/api';
 
 const { Title } = Typography;
@@ -33,25 +33,30 @@ export default function NotificationsPage() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [preferences, setPreferences] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [sendModalOpen, setSendModalOpen] = useState(false);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
-  const [form] = Form.useForm();
   const [recipientId, setRecipientId] = useState('default');
+  const [form] = Form.useForm();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const [notifRes, tmplRes, prefRes] = await Promise.all([
-        notificationsApi.getByRecipient(recipientId, { page: 0, size: 100 }).catch(() => notificationsApi.list({ page: 0, size: 100 })),
+        notificationsApi.getAll({ page: 0, size: 100 }),
         notificationsApi.getTemplates({ page: 0, size: 100 }).catch(() => ({ data: { content: [] } })),
         notificationsApi.getPreferences(recipientId).catch(() => ({ data: { content: [] } })),
       ]);
       setNotifications(notifRes.data?.data?.content || notifRes.data?.content || []);
       setTemplates(tmplRes.data?.data?.content || tmplRes.data?.content || []);
       setPreferences(prefRes.data?.data?.content || prefRes.data?.content || []);
-    } catch { message.error('Failed to load notifications'); }
-    finally { setLoading(false); }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
   }, [recipientId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -74,17 +79,60 @@ export default function NotificationsPage() {
     } catch { message.error('Failed to send'); }
   };
 
+  const handleDeleteNotification = async (id: string) => {
+    try {
+      await notificationsApi.delete(id);
+      message.success('Deleted');
+      fetchData();
+    } catch { message.error('Delete failed'); }
+  };
+
+  const handleCreateTemplate = () => {
+    setEditingTemplate(null);
+    form.resetFields();
+    setTemplateModalOpen(true);
+  };
+
   const handleSaveTemplate = async () => {
     try {
       const values = await form.validateFields();
       if (editingTemplate) {
-        await notificationsApi.getTemplates(); // not updating, just creating
+        await notificationsApi.updateTemplate(editingTemplate.id, values);
+      } else {
+        await notificationsApi.createTemplate(values);
       }
-      // Templates only have GET list and GET by ID from the API client
       message.success('Template saved');
       setTemplateModalOpen(false);
       fetchData();
     } catch { message.error('Failed'); }
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      const res = await notificationsApi.exportCsv();
+      const blob = new Blob([res.data], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `notifications_${dayjs().format('YYYYMMDD_HHmmss')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Exported');
+    } catch { message.error('Export failed'); }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const res = await notificationsApi.exportExcel();
+      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `notifications_${dayjs().format('YYYYMMDD_HHmmss')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Exported');
+    } catch { message.error('Export failed'); }
   };
 
   const unreadCount = notifications.filter((n: any) => n.status === 'PENDING' || n.status === 'SENT').length;
@@ -94,7 +142,8 @@ export default function NotificationsPage() {
       render: (t: string) => <Tag color={typeColors[t] || 'default'}>{t}</Tag> },
     { title: 'Channel', dataIndex: 'channel', key: 'channel',
       render: (c: string) => <Tag color={channelColors[c] || 'default'}>{c}</Tag> },
-    { title: 'Title', dataIndex: 'title', key: 'title',
+    {
+      title: 'Title', dataIndex: 'title', key: 'title',
       render: (t: string, r: any) => (
         <Space>
           {(r.status === 'PENDING' || r.status === 'SENT') && <Badge status="processing" color="#1677ff" />}
@@ -108,14 +157,14 @@ export default function NotificationsPage() {
       render: (s: string) => <Tag color={statusColors[s] || 'default'}>{s}</Tag> },
     { title: 'Sent At', dataIndex: 'sentAt', key: 'sentAt',
       render: (d: string) => d ? new Date(d).toLocaleString() : '-' },
-    { title: 'Actions', key: 'actions',
+    {
+      title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
         <Space>
           {r.status !== 'READ' ? (
-            <Tooltip title="Mark as Read">
-              <Button size="small" icon={<CheckCircleOutlined />} onClick={() => handleMarkAsRead(r.id)} />
-            </Tooltip>
+            <Button size="small" icon={<CheckCircleOutlined />} onClick={() => handleMarkAsRead(r.id)} />
           ) : null}
+          <Button size="small" danger onClick={() => handleDeleteNotification(r.id)}>Delete</Button>
         </Space>
       ),
     },
@@ -130,6 +179,14 @@ export default function NotificationsPage() {
     { title: 'Variables', dataIndex: 'variables', key: 'variables' },
     { title: 'Active', dataIndex: 'active', key: 'active',
       render: (a: boolean) => a ? <Tag color="green">Active</Tag> : <Tag>Inactive</Tag> },
+    {
+      title: 'Actions', key: 'actions',
+      render: (_: any, r: any) => (
+        <Button size="small" onClick={() => { setEditingTemplate(r); form.setFieldsValue(r); setTemplateModalOpen(true); }}>
+          Edit
+        </Button>
+      ),
+    },
   ];
 
   const preferenceColumns = [
@@ -140,6 +197,61 @@ export default function NotificationsPage() {
     { title: 'Enabled', dataIndex: 'enabled', key: 'enabled',
       render: (e: boolean) => e ? <Tag color="green">Yes</Tag> : <Tag color="red">No</Tag> },
   ];
+
+  const tabContent = (key: string) => {
+    switch (key) {
+      case 'inbox':
+        return (
+          <CommonTable
+            columns={notifColumns}
+            dataSource={notifications}
+            loading={loading}
+            error={error}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            onRefresh={fetchData}
+            onExportCsv={handleExportCsv}
+            onExportExcel={handleExportExcel}
+            extra={
+              <Button type="primary" icon={<SendOutlined />} onClick={() => { form.resetFields(); setSendModalOpen(true); }}>
+                Send Notification
+              </Button>
+            }
+          />
+        );
+      case 'templates':
+        return (
+          <CommonTable
+            columns={templateColumns}
+            dataSource={templates}
+            loading={loading}
+            error={error}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            onRefresh={fetchData}
+            extra={
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateTemplate}>
+                Add Template
+              </Button>
+            }
+          />
+        );
+      case 'preferences':
+        return (
+          <CommonTable
+            columns={preferenceColumns}
+            dataSource={preferences}
+            loading={loading}
+            error={error}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            onRefresh={fetchData}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div>
@@ -161,35 +273,47 @@ export default function NotificationsPage() {
       />
 
       <Card>
-        <Tabs activeKey={activeTab} onChange={setActiveTab} tabBarExtraContent={
-          <Space>
-            <Button type="primary" icon={<SendOutlined />} onClick={() => { form.resetFields(); setSendModalOpen(true); }}>
-              Send Notification
-            </Button>
-          </Space>
-        } items={[
-          { key: 'inbox', label: `Inbox (${notifications.length})`,
-            children: <Table rowKey="id" columns={notifColumns} dataSource={notifications} loading={loading} pagination={{ pageSize: 10 }} /> },
-          { key: 'templates', label: `Templates (${templates.length})`,
-            children: <Table rowKey="id" columns={templateColumns} dataSource={templates} loading={loading} pagination={{ pageSize: 10 }} /> },
-          { key: 'preferences', label: `Preferences (${preferences.length})`,
-            children: <Table rowKey="id" columns={preferenceColumns} dataSource={preferences} loading={loading} pagination={{ pageSize: 10 }} /> },
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
+          { key: 'inbox', label: `Inbox (${notifications.length})`, children: tabContent('inbox') },
+          { key: 'templates', label: `Templates (${templates.length})`, children: tabContent('templates') },
+          { key: 'preferences', label: `Preferences (${preferences.length})`, children: tabContent('preferences') },
         ]} />
       </Card>
 
-      <Modal title="Send Notification" open={sendModalOpen} onOk={handleSend} onCancel={() => setSendModalOpen(false)} width={500}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="recipientId" label="Recipient ID" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="channel" label="Channel" rules={[{ required: true }]}>
-            <Select options={['SMS','EMAIL','PUSH','IN_APP'].map(c => ({ value: c, label: c }))} />
-          </Form.Item>
-          <Form.Item name="type" label="Type" rules={[{ required: true }]}>
-            <Select options={['ALERT','REMINDER','UPDATE','PROMOTION','SLA_BREACH','TICKET_ASSIGNED','CALL_MISSED'].map(t => ({ value: t, label: t }))} />
-          </Form.Item>
-          <Form.Item name="title" label="Title"><Input /></Form.Item>
-          <Form.Item name="body" label="Body" rules={[{ required: true }]}><TextArea rows={4} /></Form.Item>
-        </Form>
-      </Modal>
+      <CommonForm
+        open={sendModalOpen}
+        title="Send Notification"
+        onClose={() => setSendModalOpen(false)}
+        onSubmit={handleSend}
+        width={500}
+      >
+        <Form.Item name="recipientId" label="Recipient ID" rules={[{ required: true }]}><Input /></Form.Item>
+        <Form.Item name="channel" label="Channel" rules={[{ required: true }]}>
+          <Select options={['SMS', 'EMAIL', 'PUSH', 'IN_APP'].map(c => ({ value: c, label: c }))} />
+        </Form.Item>
+        <Form.Item name="type" label="Type" rules={[{ required: true }]}>
+          <Select options={['ALERT', 'REMINDER', 'UPDATE', 'PROMOTION', 'SLA_BREACH', 'TICKET_ASSIGNED', 'CALL_MISSED'].map(t => ({ value: t, label: t }))} />
+        </Form.Item>
+        <Form.Item name="title" label="Title"><Input /></Form.Item>
+        <Form.Item name="body" label="Body" rules={[{ required: true }]}><TextArea rows={4} /></Form.Item>
+      </CommonForm>
+
+      <CommonForm
+        open={templateModalOpen}
+        title={editingTemplate ? 'Edit Template' : 'Add Template'}
+        onClose={() => setTemplateModalOpen(false)}
+        onSubmit={handleSaveTemplate}
+        initialValues={editingTemplate}
+        width={500}
+      >
+        <Form.Item name="name" label="Name" rules={[{ required: true }]}><Input /></Form.Item>
+        <Form.Item name="channel" label="Channel" rules={[{ required: true }]}>
+          <Select options={['SMS', 'EMAIL', 'PUSH', 'IN_APP'].map(c => ({ value: c, label: c }))} />
+        </Form.Item>
+        <Form.Item name="title" label="Title"><Input /></Form.Item>
+        <Form.Item name="body" label="Body" rules={[{ required: true }]}><TextArea rows={4} /></Form.Item>
+        <Form.Item name="variables" label="Variables (comma-separated)"><Input placeholder="var1, var2, var3" /></Form.Item>
+      </CommonForm>
     </div>
   );
 }

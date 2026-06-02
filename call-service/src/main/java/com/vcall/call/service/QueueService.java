@@ -9,12 +9,19 @@ import com.vcall.call.repository.CallQueueMemberRepository;
 import com.vcall.call.repository.CallQueueRepository;
 import com.vcall.call.repository.CallRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -48,10 +55,35 @@ public class QueueService {
     }
 
     @Transactional(readOnly = true)
-    public List<QueueResponse> getAllQueues() {
-        return queueRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<QueueResponse> getAllQueues(Pageable pageable) {
+        return queueRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<QueueResponse> search(String keyword, String strategy, Pageable pageable) {
+        Specification<CallQueue> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (keyword != null && !keyword.isEmpty()) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                predicates.add(cb.like(cb.lower(root.get("name")), pattern));
+            }
+            if (strategy != null && !strategy.isEmpty()) {
+                predicates.add(cb.equal(root.get("strategy"), CallQueue.QueueStrategy.valueOf(strategy.toUpperCase())));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return queueRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getStats() {
+        List<CallQueue> all = queueRepository.findAll();
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", (long) all.size());
+        for (CallQueue.QueueStrategy s : CallQueue.QueueStrategy.values()) {
+            stats.put(s.name().toLowerCase(), all.stream().filter(q -> q.getStrategy() == s).count());
+        }
+        return stats;
     }
 
     @Transactional

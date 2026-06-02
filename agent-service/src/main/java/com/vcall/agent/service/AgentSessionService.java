@@ -9,6 +9,9 @@ import com.vcall.agent.repository.AgentRepository;
 import com.vcall.agent.repository.AgentSessionRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,6 +71,11 @@ public class AgentSessionService {
         return agentSessionRepository.findByAgentIdAndLogoutTimeIsNull(agentId)
                 .map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("No active session found for agent: " + agentId));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AgentSessionResponse> searchSessions(Specification<com.vcall.agent.entity.AgentSession> spec, Pageable pageable) {
+        return agentSessionRepository.findAll(spec, pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

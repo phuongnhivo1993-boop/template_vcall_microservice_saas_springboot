@@ -30,6 +30,18 @@ public class BillingEventPublisher {
         publishEvent("payment.completed", invoice.getId().toString(), "PAYMENT_COMPLETED", invoice);
     }
 
+    public void publishSubscriptionUpdated(Subscription subscription) {
+        publishEvent("subscription.updated", subscription.getId().toString(), "SUBSCRIPTION_UPDATED", subscription);
+    }
+
+    public void publishSubscriptionDeleted(Subscription subscription) {
+        publishEvent("subscription.deleted", subscription.getId().toString(), "SUBSCRIPTION_DELETED", subscription);
+    }
+
+    public void publishSubscriptionStatusChanged(Subscription subscription) {
+        publishEvent("subscription.status.changed", subscription.getId().toString(), "SUBSCRIPTION_STATUS_CHANGED", subscription);
+    }
+
     public void publishSubscriptionExpiring(Subscription subscription) {
         publishEvent("subscription.expiring", subscription.getId().toString(), "SUBSCRIPTION_EXPIRING", subscription);
     }

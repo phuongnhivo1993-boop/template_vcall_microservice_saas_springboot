@@ -10,6 +10,7 @@ import com.vcall.customer.dto.CustomerTagResponse;
 import com.vcall.customer.entity.Customer;
 import com.vcall.customer.entity.CustomerTag;
 import com.vcall.customer.entity.CustomerTagMapping;
+import com.vcall.customer.mapper.CustomerMapper;
 import com.vcall.customer.repository.CustomerRepository;
 import com.vcall.customer.repository.CustomerTagMappingRepository;
 import com.vcall.customer.repository.CustomerTagRepository;
@@ -36,6 +37,7 @@ public class CustomerService {
     private final CustomerRepository customerRepository;
     private final CustomerTagRepository customerTagRepository;
     private final CustomerTagMappingRepository customerTagMappingRepository;
+    private final CustomerMapper customerMapper;
 
     @Transactional(readOnly = true)
     public Page<CustomerResponse> findAll(Pageable pageable) {
@@ -94,18 +96,8 @@ public class CustomerService {
             throw new DuplicateResourceException("Phone already exists: " + request.getPhone());
         }
 
-        Customer customer = new Customer();
+        Customer customer = customerMapper.toEntity(request);
         customer.setCustomerCode(generateCustomerCode());
-        customer.setFullName(request.getFullName());
-        customer.setEmail(request.getEmail());
-        customer.setPhone(request.getPhone());
-        customer.setDateOfBirth(request.getDateOfBirth());
-        customer.setGender(request.getGender());
-        customer.setIdNumber(request.getIdNumber());
-        customer.setNationality(request.getNationality());
-        customer.setCompany(request.getCompany());
-        customer.setPosition(request.getPosition());
-        customer.setNotes(request.getNotes());
 
         Customer saved = customerRepository.save(customer);
 
@@ -135,16 +127,7 @@ public class CustomerService {
             throw new DuplicateResourceException("Phone already exists: " + request.getPhone());
         }
 
-        customer.setFullName(request.getFullName());
-        customer.setEmail(request.getEmail());
-        customer.setPhone(request.getPhone());
-        customer.setDateOfBirth(request.getDateOfBirth());
-        customer.setGender(request.getGender());
-        customer.setIdNumber(request.getIdNumber());
-        customer.setNationality(request.getNationality());
-        customer.setCompany(request.getCompany());
-        customer.setPosition(request.getPosition());
-        customer.setNotes(request.getNotes());
+        customerMapper.updateEntity(request, customer);
 
         Customer saved = customerRepository.save(customer);
 
@@ -195,6 +178,8 @@ public class CustomerService {
     }
 
     private CustomerResponse toResponse(Customer customer) {
+        CustomerResponse response = customerMapper.toResponse(customer);
+
         Set<CustomerTagResponse> tags = customerTagMappingRepository.findByCustomerId(customer.getId())
                 .stream()
                 .map(m -> CustomerTagResponse.builder()
@@ -227,23 +212,9 @@ public class CustomerService {
                         .build())
                 .collect(Collectors.toList());
 
-        return CustomerResponse.builder()
-                .id(customer.getId())
-                .customerCode(customer.getCustomerCode())
-                .fullName(customer.getFullName())
-                .email(customer.getEmail())
-                .phone(customer.getPhone())
-                .dateOfBirth(customer.getDateOfBirth())
-                .gender(customer.getGender())
-                .idNumber(customer.getIdNumber())
-                .nationality(customer.getNationality())
-                .company(customer.getCompany())
-                .position(customer.getPosition())
-                .notes(customer.getNotes())
-                .tags(tags)
-                .contacts(contacts)
-                .addresses(addresses)
-                .createdAt(customer.getCreatedAt())
-                .build();
+        response.setTags(tags);
+        response.setContacts(contacts);
+        response.setAddresses(addresses);
+        return response;
     }
 }

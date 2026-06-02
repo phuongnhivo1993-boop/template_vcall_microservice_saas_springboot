@@ -1,18 +1,17 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { Card, Tabs, Tag, Typography, Space, Button, message, Row, Col, Statistic, Modal } from 'antd';
 import {
-  Table, Card, Tabs, Tag, Typography, Space, Button, Modal, Form,
-  Input, Select, message, Row, Col, Statistic, DatePicker, Popconfirm
-} from 'antd';
-import {
-  SearchOutlined, SafetyCertificateOutlined, WarningOutlined,
-  AuditOutlined, FileTextOutlined
+  SafetyCertificateOutlined, WarningOutlined,
+  AuditOutlined, FileTextOutlined,
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import CommonTable from '@/components/common/CommonTable';
+import CommonSearch from '@/components/common/CommonSearch';
 import { auditApi } from '@/lib/api';
 
 const { Title } = Typography;
-const { RangePicker } = DatePicker;
 
 const actionColors: Record<string, string> = {
   CREATE: 'green', UPDATE: 'blue', DELETE: 'red',
@@ -35,15 +34,17 @@ export default function AuditPage() {
   const [fraudAlerts, setFraudAlerts] = useState<any[]>([]);
   const [reconciliations, setReconciliations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useState<Record<string, any>>({});
   const [logDetail, setLogDetail] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  const fetchLogs = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const [logsRes, secRes, fraudRes, recRes] = await Promise.all([
-        auditApi.search({ ...searchParams, page: 0, size: 100 }).catch(() => auditApi.list({ page: 0, size: 100 })),
+        auditApi.search({ ...searchParams, page: 0, size: 100 }).catch(() => auditApi.getAll({ page: 0, size: 100 })),
         auditApi.getSecurityLogs({ page: 0, size: 100 }).catch(() => ({ data: { content: [] } })),
         auditApi.getFraudAlerts({ page: 0, size: 100 }).catch(() => ({ data: { content: [] } })),
         auditApi.getReconciliations({ page: 0, size: 100 }).catch(() => ({ data: { content: [] } })),
@@ -52,11 +53,26 @@ export default function AuditPage() {
       setSecurityLogs(secRes.data?.data?.content || secRes.data?.content || []);
       setFraudAlerts(fraudRes.data?.data?.content || fraudRes.data?.content || []);
       setReconciliations(recRes.data?.data?.content || recRes.data?.content || []);
-    } catch { message.error('Failed to load audit data'); }
-    finally { setLoading(false); }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load audit data');
+    } finally {
+      setLoading(false);
+    }
   }, [searchParams]);
 
-  useEffect(() => { fetchLogs(); }, [fetchLogs]);
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleSearch = (values: any) => {
+    const params: Record<string, any> = {};
+    if (values.search) params.q = values.search;
+    if (values.action) params.action = values.action;
+    if (values.severity) params.severity = values.severity;
+    setSearchParams(params);
+  };
+
+  const handleReset = () => {
+    setSearchParams({});
+  };
 
   const handleViewDetail = async (id: string) => {
     try {
@@ -70,8 +86,36 @@ export default function AuditPage() {
     try {
       await auditApi.updateFraudAlertStatus(id, status);
       message.success(`Alert ${status}`);
-      fetchLogs();
+      fetchData();
     } catch { message.error('Failed to update'); }
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      const res = await auditApi.exportCsv();
+      const blob = new Blob([res.data], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit_${dayjs().format('YYYYMMDD_HHmmss')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Exported');
+    } catch { message.error('Export failed'); }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const res = await auditApi.exportExcel();
+      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit_${dayjs().format('YYYYMMDD_HHmmss')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Exported');
+    } catch { message.error('Export failed'); }
   };
 
   const logColumns = [
@@ -134,6 +178,91 @@ export default function AuditPage() {
     { title: 'Notes', dataIndex: 'notes', key: 'notes', ellipsis: true },
   ];
 
+  const tabContent = (key: string) => {
+    switch (key) {
+      case 'logs':
+        return (
+          <CommonTable
+            columns={logColumns}
+            dataSource={logs}
+            loading={loading}
+            error={error}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            onRefresh={fetchData}
+            onExportCsv={handleExportCsv}
+            onExportExcel={handleExportExcel}
+            extra={
+              <CommonSearch
+                fields={[
+                  { name: 'search', label: 'Search', type: 'input', placeholder: 'Search by action, resource...' },
+                  {
+                    name: 'action',
+                    label: 'Action',
+                    type: 'select',
+                    placeholder: 'Action',
+                    options: ['CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'ASSIGN', 'STATUS_CHANGE'].map(a => ({ value: a, label: a })),
+                  },
+                ]}
+                onSearch={handleSearch}
+                onReset={handleReset}
+                loading={loading}
+              />
+            }
+            onTableChange={(_pagination, _filters, sorter: any) => {
+              if (sorter?.order) {
+                setSearchParams(prev => ({ ...prev, sort: `${sorter.field},${sorter.order === 'ascend' ? 'asc' : 'desc'}` }));
+              }
+            }}
+          />
+        );
+      case 'security':
+        return (
+          <CommonTable
+            columns={securityColumns}
+            dataSource={securityLogs}
+            loading={loading}
+            error={error}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            onRefresh={fetchData}
+            onExportCsv={handleExportCsv}
+            onExportExcel={handleExportExcel}
+          />
+        );
+      case 'fraud':
+        return (
+          <CommonTable
+            columns={fraudColumns}
+            dataSource={fraudAlerts}
+            loading={loading}
+            error={error}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            onRefresh={fetchData}
+            onExportCsv={handleExportCsv}
+            onExportExcel={handleExportExcel}
+          />
+        );
+      case 'reconciliation':
+        return (
+          <CommonTable
+            columns={reconciliationColumns}
+            dataSource={reconciliations}
+            loading={loading}
+            error={error}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            onRefresh={fetchData}
+            onExportCsv={handleExportCsv}
+            onExportExcel={handleExportExcel}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div>
       <Title level={3}>Audit & Security</Title>
@@ -146,34 +275,11 @@ export default function AuditPage() {
       </Row>
 
       <Card>
-        <Tabs activeKey={activeTab} onChange={setActiveTab} tabBarExtraContent={
-          activeTab === 'logs' ? (
-            <Space>
-              <Input.Search
-                placeholder="Search by action, resource..."
-                onSearch={(val) => setSearchParams(prev => ({ ...prev, q: val || undefined }))}
-                style={{ width: 250 }}
-              />
-              <Select
-                placeholder="Action"
-                allowClear
-                style={{ width: 130 }}
-                onChange={(val) => setSearchParams(prev => ({ ...prev, action: val || undefined }))}
-                options={['CREATE','UPDATE','DELETE','LOGIN','LOGOUT','ASSIGN','STATUS_CHANGE'].map(a => ({ value: a, label: a }))}
-              />
-              <Button icon={<SearchOutlined />} onClick={fetchLogs}>Search</Button>
-            </Space>
-          ) : undefined
-        } items={[
-          { key: 'logs', label: `Audit Logs (${logs.length})`,
-            children: <Table rowKey="id" columns={logColumns} dataSource={logs} loading={loading} pagination={{ pageSize: 10 }}
-              expandable={{ expandedRowRender: (r: any) => <pre style={{ fontSize: 12 }}>{JSON.stringify(r.details || r.changes || r, null, 2)}</pre> }} /> },
-          { key: 'security', label: `Security (${securityLogs.length})`,
-            children: <Table rowKey="id" columns={securityColumns} dataSource={securityLogs} loading={loading} pagination={{ pageSize: 10 }} /> },
-          { key: 'fraud', label: `Fraud Alerts (${fraudAlerts.length})`,
-            children: <Table rowKey="id" columns={fraudColumns} dataSource={fraudAlerts} loading={loading} pagination={{ pageSize: 10 }} /> },
-          { key: 'reconciliation', label: `Reconciliation (${reconciliations.length})`,
-            children: <Table rowKey="id" columns={reconciliationColumns} dataSource={reconciliations} loading={loading} pagination={{ pageSize: 10 }} /> },
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
+          { key: 'logs', label: `Audit Logs (${logs.length})`, children: tabContent('logs') },
+          { key: 'security', label: `Security (${securityLogs.length})`, children: tabContent('security') },
+          { key: 'fraud', label: `Fraud Alerts (${fraudAlerts.length})`, children: tabContent('fraud') },
+          { key: 'reconciliation', label: `Reconciliation (${reconciliations.length})`, children: tabContent('reconciliation') },
         ]} />
       </Card>
 

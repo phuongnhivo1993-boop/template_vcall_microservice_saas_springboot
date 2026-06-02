@@ -18,10 +18,13 @@ import com.vcall.iam.repository.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -78,6 +81,19 @@ public class RoleService {
     public Page<RoleResponse> getAllRoles(Pageable pageable) {
         return roleRepository.findAll(pageable)
                 .map(this::toRoleResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RoleResponse> searchRoles(Specification<Role> spec, Pageable pageable) {
+        return roleRepository.findAll(spec, pageable)
+                .map(this::toRoleResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getRoleStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalRoles", roleRepository.count());
+        return stats;
     }
 
     @Transactional

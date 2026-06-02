@@ -29,6 +29,10 @@ public class EmailEventPublisher {
         publishEvent("email.received", email, "EMAIL_RECEIVED");
     }
 
+    public void publishEmailDeleted(EmailMessage email) {
+        publishEvent("email.deleted", email, "EMAIL_DELETED");
+    }
+
     private void publishEvent(String topic, EmailMessage email, String eventType) {
         try {
             String payload = objectMapper.writeValueAsString(email);

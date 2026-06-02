@@ -18,7 +18,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -105,6 +107,15 @@ public class LeadService {
 
     public long getLeadCountByStatus(LeadStatus status) {
         return leadRepository.countByStatus(status);
+    }
+
+    public Map<String, Object> getLeadStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalLeads", leadRepository.count());
+        for (LeadStatus s : LeadStatus.values()) {
+            stats.put(s.name().toLowerCase() + "Count", leadRepository.countByStatus(s));
+        }
+        return stats;
     }
 
     private void mapToEntity(LeadRequest request, Lead lead) {

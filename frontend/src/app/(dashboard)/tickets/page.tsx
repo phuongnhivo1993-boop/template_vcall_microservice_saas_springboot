@@ -1,11 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { Table, Card, Select, Tag, Typography, Space, Button, Progress, Badge, message } from 'antd';
-import { PlusOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { useState, useEffect, useCallback } from 'react';
+import { Button, Tag, Space, Typography, Form, Input, Select, message, Badge, Progress } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
+import type { SorterResult } from 'antd/es/table/interface';
 import dayjs from 'dayjs';
+import CommonTable from '@/components/common/CommonTable';
+import CommonForm from '@/components/common/CommonForm';
+import CommonSearch from '@/components/common/CommonSearch';
+import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
+import { ticketsApi } from '@/lib/api';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 interface Ticket {
   id: string;
@@ -20,7 +27,7 @@ interface Ticket {
   slaPassed: boolean;
 }
 
-const ticketsData: Ticket[] = [
+const mockTickets: Ticket[] = [
   { id: 'TK-001', subject: 'Cannot reset password', customer: 'John Smith', agent: 'Sarah J.', priority: 'high', status: 'open', category: 'Technical', created: '2026-06-01 09:00', slaDeadline: '2026-06-01 15:00', slaPassed: false },
   { id: 'TK-002', subject: 'Billing discrepancy on invoice #INV-042', customer: 'Alice Brown', agent: 'Mike R.', priority: 'critical', status: 'in_progress', category: 'Billing', created: '2026-06-01 08:30', slaDeadline: '2026-06-01 12:30', slaPassed: true },
   { id: 'TK-003', subject: 'Feature request: call recording export', customer: 'Bob Wilson', agent: 'Emily W.', priority: 'low', status: 'open', category: 'Feature', created: '2026-05-31 14:00', slaDeadline: '2026-06-07 14:00', slaPassed: false },
@@ -36,33 +43,185 @@ const priorityColors: Record<string, string> = {
   critical: 'red',
 };
 
-const statusColors: Record<string, string> = {
-  open: '#1677ff',
-  in_progress: '#faad14',
-  resolved: '#52c41a',
-  closed: '#d9d9d9',
-};
+const statusOptions = [
+  { value: 'open', label: 'Open' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'closed', label: 'Closed' },
+];
+
+const priorityOptions = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+  { value: 'critical', label: 'Critical' },
+];
+
+const categoryOptions = [
+  { value: 'Technical', label: 'Technical' },
+  { value: 'Billing', label: 'Billing' },
+  { value: 'Feature', label: 'Feature' },
+  { value: 'Request', label: 'Request' },
+];
 
 export default function TicketsPage() {
-  const [statusFilter, setStatusFilter] = useState<string | undefined>();
-  const [priorityFilter, setPriorityFilter] = useState<string | undefined>();
-
-  const filtered = ticketsData.filter((t) => {
-    const matchesStatus = !statusFilter || t.status === statusFilter;
-    const matchesPriority = !priorityFilter || t.priority === priorityFilter;
-    return matchesStatus && matchesPriority;
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: 1,
+    pageSize: 10,
+    total: 0,
   });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
+  const [filters, setFilters] = useState<Record<string, any>>({});
+  const [useMock, setUseMock] = useState(false);
 
-  const handleStatusChange = (ticket: Ticket, newStatus: string) => {
-    message.success(`Ticket ${ticket.id} moved to ${newStatus}`);
+  const fetchTickets = useCallback(async (page = 1, size = 10, params?: Record<string, any>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await ticketsApi.list({ page: page - 1, size, ...params });
+      const data = res.data;
+      if (data.content) {
+        setTickets(data.content);
+        setPagination((prev) => ({
+          ...prev,
+          current: data.page + 1,
+          pageSize: data.size,
+          total: data.totalElements,
+        }));
+      } else if (Array.isArray(data)) {
+        setTickets(data);
+      } else if (data.data) {
+        setTickets(Array.isArray(data.data) ? data.data : []);
+      }
+      setUseMock(false);
+    } catch (err: any) {
+      if (!useMock) {
+        setUseMock(true);
+        let filtered = [...mockTickets];
+        if (params) {
+          if (params.status) filtered = filtered.filter((t) => t.status === params.status);
+          if (params.priority) filtered = filtered.filter((t) => t.priority === params.priority);
+          if (params.category) filtered = filtered.filter((t) => t.category === params.category);
+          if (params.subject) filtered = filtered.filter((t) => t.subject.toLowerCase().includes(params.subject.toLowerCase()));
+        }
+        setTickets(filtered);
+        setPagination((prev) => ({ ...prev, total: filtered.length }));
+      } else {
+        setError(err?.response?.data?.message || err?.message || 'Failed to load tickets');
+        setTickets([]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [useMock]);
+
+  useEffect(() => {
+    fetchTickets(1, pagination.pageSize);
+  }, []);
+
+  const handleTableChange = (
+    pag: TablePaginationConfig,
+    _filters: any,
+    _sorter: SorterResult<Ticket> | SorterResult<Ticket>[],
+  ) => {
+    fetchTickets(pag.current, pag.pageSize, filters);
   };
 
-  const columns = [
+  const handleSearch = (values: any) => {
+    const cleaned: Record<string, any> = {};
+    Object.entries(values).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') {
+        cleaned[key] = val;
+      }
+    });
+    setFilters(cleaned);
+    if (useMock) {
+      let filtered = [...mockTickets];
+      if (cleaned.status) filtered = filtered.filter((t) => t.status === cleaned.status);
+      if (cleaned.priority) filtered = filtered.filter((t) => t.priority === cleaned.priority);
+      if (cleaned.category) filtered = filtered.filter((t) => t.category === cleaned.category);
+      if (cleaned.subject) filtered = filtered.filter((t) => t.subject.toLowerCase().includes(cleaned.subject.toLowerCase()));
+      setTickets(filtered);
+      setPagination((prev) => ({ ...prev, total: filtered.length }));
+    } else {
+      fetchTickets(1, pagination.pageSize, cleaned);
+    }
+  };
+
+  const handleReset = () => {
+    setFilters({});
+    if (useMock) {
+      setTickets(mockTickets);
+      setPagination((prev) => ({ ...prev, total: mockTickets.length }));
+    } else {
+      fetchTickets(1, pagination.pageSize);
+    }
+  };
+
+  const handleStatusChange = async (ticket: Ticket, newStatus: string) => {
+    try {
+      await ticketsApi.updateStatus(ticket.id, newStatus);
+      message.success(`Ticket ${ticket.id} moved to ${newStatus}`);
+      fetchTickets(pagination.current, pagination.pageSize, filters);
+    } catch (err: any) {
+      if (useMock) {
+        message.success(`Ticket ${ticket.id} moved to ${newStatus} (mock)`);
+        setTickets((prev) => prev.map((t) => t.id === ticket.id ? { ...t, status: newStatus as Ticket['status'] } : t));
+      } else {
+        message.error(err?.response?.data?.message || 'Failed to update status');
+      }
+    }
+  };
+
+  const handleCreate = () => {
+    setEditingTicket(null);
+    setModalOpen(true);
+  };
+
+  const handleEdit = (ticket: Ticket) => {
+    setEditingTicket(ticket);
+    setModalOpen(true);
+  };
+
+  const handleDelete = (ticket: Ticket) => {
+    showDeleteConfirm({
+      title: 'Delete Ticket',
+      content: `Are you sure you want to delete ticket ${ticket.id}? This action cannot be undone.`,
+      onOk: async () => {
+        await ticketsApi.delete(ticket.id);
+        fetchTickets(pagination.current, pagination.pageSize, filters);
+      },
+    });
+  };
+
+  const handleFormSubmit = async (values: any) => {
+    if (editingTicket) {
+      await ticketsApi.update(editingTicket.id, values);
+    } else {
+      await ticketsApi.create(values);
+    }
+    fetchTickets(pagination.current, pagination.pageSize, filters);
+  };
+
+  const handleExportCsv = () => {
+    message.info('CSV export triggered');
+  };
+
+  const handleExportExcel = () => {
+    message.info('Excel export triggered');
+  };
+
+  const columns: ColumnsType<Ticket> = [
     {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      render: (id: string) => <a style={{ fontWeight: 500 }}>{id}</a>,
+      sorter: true,
+      render: (id: string) => <span style={{ fontWeight: 500 }}>{id}</span>,
     },
     { title: 'Subject', dataIndex: 'subject', key: 'subject' },
     { title: 'Customer', dataIndex: 'customer', key: 'customer' },
@@ -71,7 +230,9 @@ export default function TicketsPage() {
       title: 'Priority',
       dataIndex: 'priority',
       key: 'priority',
-      render: (p: string) => <Tag color={priorityColors[p]}>{p.toUpperCase()}</Tag>,
+      render: (p: string) => (
+        <Tag color={priorityColors[p] || 'default'}>{p.toUpperCase()}</Tag>
+      ),
     },
     {
       title: 'Status',
@@ -83,12 +244,7 @@ export default function TicketsPage() {
           onChange={(val) => handleStatusChange(record, val)}
           size="small"
           style={{ width: 130 }}
-          options={[
-            { value: 'open', label: 'Open' },
-            { value: 'in_progress', label: 'In Progress' },
-            { value: 'resolved', label: 'Resolved' },
-            { value: 'closed', label: 'Closed' },
-          ]}
+          options={statusOptions}
         />
       ),
     },
@@ -114,50 +270,100 @@ export default function TicketsPage() {
       },
     },
     { title: 'Created', dataIndex: 'created', key: 'created' },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_: unknown, record: Ticket) => (
+        <Space>
+          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+            Edit
+          </Button>
+          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)}>
+            Delete
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
+  const searchFields = [
+    { name: 'subject', label: 'Subject', type: 'input' as const, placeholder: 'Search by subject' },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      placeholder: 'Filter by status',
+      options: statusOptions,
+    },
+    {
+      name: 'priority',
+      label: 'Priority',
+      type: 'select' as const,
+      placeholder: 'Filter by priority',
+      options: priorityOptions,
+    },
+    {
+      name: 'category',
+      label: 'Category',
+      type: 'select' as const,
+      placeholder: 'Filter by category',
+      options: categoryOptions,
+    },
   ];
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <Title level={3} style={{ margin: 0 }}>Tickets</Title>
-        <Button type="primary" icon={<PlusOutlined />}>Create Ticket</Button>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+          Create Ticket
+        </Button>
       </div>
-      <Card>
-        <Space style={{ marginBottom: 16 }}>
-          <Select
-            placeholder="Filter by status"
-            value={statusFilter}
-            onChange={setStatusFilter}
-            allowClear
-            style={{ width: 160 }}
-            options={[
-              { value: 'open', label: 'Open' },
-              { value: 'in_progress', label: 'In Progress' },
-              { value: 'resolved', label: 'Resolved' },
-              { value: 'closed', label: 'Closed' },
-            ]}
-          />
-          <Select
-            placeholder="Filter by priority"
-            value={priorityFilter}
-            onChange={setPriorityFilter}
-            allowClear
-            style={{ width: 160 }}
-            options={[
-              { value: 'low', label: 'Low' },
-              { value: 'medium', label: 'Medium' },
-              { value: 'high', label: 'High' },
-              { value: 'critical', label: 'Critical' },
-            ]}
-          />
-        </Space>
-        <Table
-          dataSource={filtered}
-          columns={columns}
-          rowKey="id"
-          pagination={{ pageSize: 10 }}
-        />
-      </Card>
+      <CommonSearch
+        fields={searchFields}
+        onSearch={handleSearch}
+        onReset={handleReset}
+        loading={loading}
+      />
+      <CommonTable<Ticket>
+        columns={columns}
+        dataSource={tickets}
+        loading={loading}
+        error={error}
+        rowKey="id"
+        pagination={pagination}
+        onRefresh={() => fetchTickets(pagination.current, pagination.pageSize, filters)}
+        onExportCsv={handleExportCsv}
+        onExportExcel={handleExportExcel}
+        onTableChange={handleTableChange}
+      />
+      <CommonForm
+        open={modalOpen}
+        title={editingTicket ? 'Edit Ticket' : 'Create Ticket'}
+        onClose={() => { setModalOpen(false); setEditingTicket(null); }}
+        onSubmit={handleFormSubmit}
+        initialValues={editingTicket}
+        width={600}
+      >
+        <Form.Item name="subject" label="Subject" rules={[{ required: true, message: 'Please enter subject' }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="customer" label="Customer" rules={[{ required: true, message: 'Please enter customer' }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="agent" label="Agent" rules={[{ required: true, message: 'Please enter agent' }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="priority" label="Priority" rules={[{ required: true, message: 'Please select priority' }]}>
+          <Select options={priorityOptions} />
+        </Form.Item>
+        <Form.Item name="status" label="Status" initialValue="open">
+          <Select options={statusOptions} />
+        </Form.Item>
+        <Form.Item name="category" label="Category" rules={[{ required: true, message: 'Please select category' }]}>
+          <Select options={categoryOptions} />
+        </Form.Item>
+      </CommonForm>
     </div>
   );
 }

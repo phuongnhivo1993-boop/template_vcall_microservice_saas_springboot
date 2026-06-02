@@ -10,14 +10,19 @@ import com.vcall.sipservice.kafka.SipEventPublisher;
 import com.vcall.sipservice.repository.SipAccountRepository;
 import com.vcall.sipservice.repository.SipDeviceRepository;
 import com.vcall.sipservice.repository.SipRegistrationRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -131,6 +136,39 @@ public class SipAccountService {
             sipRegistrationRepository.save(reg);
         }
         sipEventPublisher.publishAccountUnregistered(account);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SipAccountResponse> search(String keyword, String status, String accountType, Pageable pageable) {
+        Specification<SipAccount> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (keyword != null && !keyword.isEmpty()) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("username")), pattern),
+                        cb.like(cb.lower(root.get("domain")), pattern)
+                ));
+            }
+            if (status != null && !status.isEmpty()) {
+                predicates.add(cb.equal(root.get("status"), SipAccount.AccountStatus.valueOf(status.toUpperCase())));
+            }
+            if (accountType != null && !accountType.isEmpty()) {
+                predicates.add(cb.equal(root.get("accountType"), SipAccount.AccountType.valueOf(accountType.toUpperCase())));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return sipAccountRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getStats() {
+        List<SipAccount> all = sipAccountRepository.findAll();
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", (long) all.size());
+        stats.put("active", all.stream().filter(a -> a.getStatus() == SipAccount.AccountStatus.ACTIVE).count());
+        stats.put("inactive", all.stream().filter(a -> a.getStatus() == SipAccount.AccountStatus.INACTIVE).count());
+        stats.put("suspended", all.stream().filter(a -> a.getStatus() == SipAccount.AccountStatus.SUSPENDED).count());
+        return stats;
     }
 
     @Transactional

@@ -1,14 +1,20 @@
 package com.vcall.crm.controller;
 
 import com.vcall.common.dto.ApiResponse;
+import com.vcall.common.util.CsvExportUtil;
+import com.vcall.common.util.ExcelExportUtil;
 import com.vcall.crm.dto.OpportunityRequest;
 import com.vcall.crm.dto.OpportunityResponse;
 import com.vcall.crm.entity.OpportunityStage;
 import com.vcall.crm.service.OpportunityService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,6 +28,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -69,6 +79,77 @@ public class OpportunityController {
     public ResponseEntity<ApiResponse<OpportunityResponse>> updateStage(@PathVariable UUID id, @RequestBody OpportunityStage stage) {
         OpportunityResponse response = opportunityService.updateStage(id, stage);
         return ResponseEntity.ok(ApiResponse.success("Opportunity stage updated successfully", response));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<OpportunityResponse>>> searchOpportunities(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) OpportunityStage stage,
+            Pageable pageable) {
+        Specification<com.vcall.crm.entity.Opportunity> spec = Specification.where(null);
+        if (keyword != null && !keyword.isEmpty()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.or(
+                            cb.like(cb.lower(root.get("title")), "%" + keyword.toLowerCase() + "%"),
+                            cb.like(cb.lower(root.get("description")), "%" + keyword.toLowerCase() + "%")
+                    ));
+        }
+        if (stage != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("stage"), stage));
+        }
+        Page<OpportunityResponse> response = opportunityService.searchOpportunities(spec, pageable);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @GetMapping("/export/csv")
+    public void exportOpportunitiesCsv(@RequestParam(required = false) String keyword,
+                                       @RequestParam(required = false) OpportunityStage stage,
+                                       HttpServletResponse response) throws IOException {
+        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Specification<com.vcall.crm.entity.Opportunity> spec = Specification.where(null);
+        if (keyword != null && !keyword.isEmpty()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.or(
+                            cb.like(cb.lower(root.get("title")), "%" + keyword.toLowerCase() + "%"),
+                            cb.like(cb.lower(root.get("description")), "%" + keyword.toLowerCase() + "%")
+                    ));
+        }
+        if (stage != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("stage"), stage));
+        }
+        Page<OpportunityResponse> opportunities = opportunityService.searchOpportunities(spec, pageable);
+        List<String> headers = Arrays.asList("ID", "Title", "Stage", "Value", "Currency", "Probability", "Expected Close", "Assigned To");
+        List<List<String>> rows = CsvExportUtil.toRows(opportunities.getContent(),
+                Arrays.asList("id", "title", "stage", "value", "currency", "probability", "expectedCloseDate", "assignedTo"));
+        CsvExportUtil.writeCsv(response, "opportunities.csv", headers, rows);
+    }
+
+    @GetMapping("/export/excel")
+    public void exportOpportunitiesExcel(@RequestParam(required = false) String keyword,
+                                         @RequestParam(required = false) OpportunityStage stage,
+                                         HttpServletResponse response) throws IOException {
+        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Specification<com.vcall.crm.entity.Opportunity> spec = Specification.where(null);
+        if (keyword != null && !keyword.isEmpty()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.or(
+                            cb.like(cb.lower(root.get("title")), "%" + keyword.toLowerCase() + "%"),
+                            cb.like(cb.lower(root.get("description")), "%" + keyword.toLowerCase() + "%")
+                    ));
+        }
+        if (stage != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("stage"), stage));
+        }
+        Page<OpportunityResponse> opportunities = opportunityService.searchOpportunities(spec, pageable);
+        List<String> headers = Arrays.asList("ID", "Title", "Stage", "Value", "Currency", "Probability", "Expected Close", "Assigned To");
+        ExcelExportUtil.writeExcel(response, "opportunities.xlsx", headers, opportunities.getContent(),
+                Arrays.asList("id", "title", "stage", "value", "currency", "probability", "expectedCloseDate", "assignedTo"));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
+        Map<String, Object> stats = opportunityService.getOpportunityStats();
+        return ResponseEntity.ok(ApiResponse.success(stats));
     }
 
     @DeleteMapping("/{id}")

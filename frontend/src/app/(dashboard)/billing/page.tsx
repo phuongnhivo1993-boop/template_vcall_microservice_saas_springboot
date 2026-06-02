@@ -1,14 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Table, Card, Tabs, Tag, Typography, Space, Button, Modal, Form,
-  Input, Select, message, Row, Col, Statistic, Tooltip, Popconfirm, Descriptions
-} from 'antd';
+import { Card, Tabs, Tag, Typography, Space, Button, message, Row, Col, Statistic, Input, Form, Select, Tooltip } from 'antd';
 import {
   PlusOutlined, DollarOutlined, CreditCardOutlined,
-  FileTextOutlined, BarChartOutlined
+  FileTextOutlined, BarChartOutlined,
 } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import CommonTable from '@/components/common/CommonTable';
+import CommonForm from '@/components/common/CommonForm';
+import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { billingApi } from '@/lib/api';
 
 const { Title } = Typography;
@@ -32,14 +33,16 @@ export default function BillingPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [usage, setUsage] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<'plan' | 'subscription'>('plan');
+  const [error, setError] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formType, setFormType] = useState<'plan' | 'subscription'>('plan');
   const [editingItem, setEditingItem] = useState<any>(null);
   const [selectedSubscriber, setSelectedSubscriber] = useState('default');
   const [form] = Form.useForm();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const [plansRes, subsRes, invRes, usageRes] = await Promise.all([
         billingApi.getPlans({ page: 0, size: 100 }),
@@ -51,56 +54,65 @@ export default function BillingPage() {
       setSubscriptions(subsRes.data?.data?.content || subsRes.data?.content || []);
       setInvoices(invRes.data?.data?.content || invRes.data?.content || []);
       setUsage(usageRes.data?.data?.content || usageRes.data?.content || []);
-    } catch { message.error('Failed to load billing data'); }
-    finally { setLoading(false); }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load billing data');
+    } finally {
+      setLoading(false);
+    }
   }, [selectedSubscriber]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleCreate = (type: 'plan' | 'subscription') => {
-    setModalType(type);
+    setFormType(type);
     setEditingItem(null);
     form.resetFields();
-    setModalOpen(true);
+    setFormOpen(true);
   };
 
   const handleEdit = (item: any, type: 'plan' | 'subscription') => {
-    setModalType(type);
+    setFormType(type);
     setEditingItem(item);
     form.setFieldsValue(item);
-    setModalOpen(true);
+    setFormOpen(true);
   };
 
-  const handleDelete = async (id: number, type: string) => {
-    try {
-      if (type === 'plan') await billingApi.deletePlan(id);
-      message.success('Deleted');
-      fetchData();
-    } catch { message.error('Delete failed'); }
+  const handleDelete = (id: number) => {
+    showDeleteConfirm({
+      title: 'Delete Plan',
+      content: 'Are you sure you want to delete this plan?',
+      onOk: async () => {
+        await billingApi.deletePlan(id);
+        message.success('Plan deleted');
+        fetchData();
+      },
+    });
   };
 
   const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      if (modalType === 'plan') {
-        if (editingItem) await billingApi.updatePlan(editingItem.id, values);
-        else await billingApi.createPlan(values);
-      } else {
-        if (editingItem) await billingApi.cancelSubscription(editingItem.id);
-        else await billingApi.createSubscription(values);
-      }
-      message.success('Saved');
-      setModalOpen(false);
-      fetchData();
-    } catch { message.error('Failed'); }
+    const values = await form.validateFields();
+    if (formType === 'plan') {
+      if (editingItem) await billingApi.updatePlan(editingItem.id, values);
+      else await billingApi.createPlan(values);
+    } else {
+      if (editingItem) await billingApi.cancelSubscription(editingItem.id);
+      else await billingApi.createSubscription(values);
+    }
+    message.success('Saved');
+    setFormOpen(false);
+    fetchData();
   };
 
-  const handleCancelSubscription = async (id: string) => {
-    try {
-      await billingApi.cancelSubscription(id);
-      message.success('Subscription cancelled');
-      fetchData();
-    } catch { message.error('Failed'); }
+  const handleCancelSubscription = (id: string) => {
+    showDeleteConfirm({
+      title: 'Cancel Subscription',
+      content: 'Are you sure you want to cancel this subscription?',
+      onOk: async () => {
+        await billingApi.cancelSubscription(id);
+        message.success('Subscription cancelled');
+        fetchData();
+      },
+    });
   };
 
   const handlePayInvoice = async (id: string) => {
@@ -109,6 +121,34 @@ export default function BillingPage() {
       message.success('Payment recorded');
       fetchData();
     } catch { message.error('Payment failed'); }
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      const res = await billingApi.exportCsv();
+      const blob = new Blob([res.data], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `billing_${dayjs().format('YYYYMMDD_HHmmss')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Exported');
+    } catch { message.error('Export failed'); }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const res = await billingApi.exportExcel();
+      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `billing_${dayjs().format('YYYYMMDD_HHmmss')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Exported');
+    } catch { message.error('Export failed'); }
   };
 
   const planColumns = [
@@ -125,9 +165,7 @@ export default function BillingPage() {
       render: (_: any, r: any) => (
         <Space>
           <Tooltip title="Edit"><Button size="small" onClick={() => handleEdit(r, 'plan')}>Edit</Button></Tooltip>
-          <Popconfirm title="Delete plan?" onConfirm={() => handleDelete(r.id, 'plan')}>
-            <Tooltip title="Delete"><Button size="small" danger>Delete</Button></Tooltip>
-          </Popconfirm>
+          <Button size="small" danger onClick={() => handleDelete(r.id)}>Delete</Button>
         </Space>
       ),
     },
@@ -144,10 +182,9 @@ export default function BillingPage() {
       render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
-        r.status === 'ACTIVE' ?
-        <Popconfirm title="Cancel subscription?" onConfirm={() => handleCancelSubscription(r.id)}>
-          <Button size="small" danger>Cancel</Button>
-        </Popconfirm> : '-'
+        r.status === 'ACTIVE' ? (
+          <Button size="small" danger onClick={() => handleCancelSubscription(r.id)}>Cancel</Button>
+        ) : '-'
       ),
     },
   ];
@@ -165,10 +202,9 @@ export default function BillingPage() {
       render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
-        r.status === 'PENDING' || r.status === 'OVERDUE' ?
-        <Popconfirm title="Mark as paid?" onConfirm={() => handlePayInvoice(r.id)}>
-          <Button size="small" type="primary">Pay</Button>
-        </Popconfirm> : <Tag>Paid</Tag>
+        r.status === 'PENDING' || r.status === 'OVERDUE' ? (
+          <Button size="small" type="primary" onClick={() => handlePayInvoice(r.id)}>Pay</Button>
+        ) : <Tag>Paid</Tag>
       ),
     },
   ];
@@ -185,6 +221,79 @@ export default function BillingPage() {
 
   const totalRevenue = invoices.filter((i: any) => i.status === 'PAID').reduce((sum: number, i: any) => sum + (i.totalAmount || 0), 0);
   const activeSubscriptions = subscriptions.filter((s: any) => s.status === 'ACTIVE').length;
+
+  const tabContent = (key: string) => {
+    switch (key) {
+      case 'plans':
+        return (
+          <CommonTable
+            columns={planColumns}
+            dataSource={plans}
+            loading={loading}
+            error={error}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            onRefresh={fetchData}
+            onExportCsv={handleExportCsv}
+            onExportExcel={handleExportExcel}
+            extra={
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => handleCreate('plan')}>
+                Add Plan
+              </Button>
+            }
+          />
+        );
+      case 'subscriptions':
+        return (
+          <CommonTable
+            columns={subColumns}
+            dataSource={subscriptions}
+            loading={loading}
+            error={error}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            onRefresh={fetchData}
+            onExportCsv={handleExportCsv}
+            onExportExcel={handleExportExcel}
+            extra={
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => handleCreate('subscription')}>
+                New Subscription
+              </Button>
+            }
+          />
+        );
+      case 'invoices':
+        return (
+          <CommonTable
+            columns={invoiceColumns}
+            dataSource={invoices}
+            loading={loading}
+            error={error}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            onRefresh={fetchData}
+            onExportCsv={handleExportCsv}
+            onExportExcel={handleExportExcel}
+          />
+        );
+      case 'usage':
+        return (
+          <CommonTable
+            columns={usageColumns}
+            dataSource={usage}
+            loading={loading}
+            error={error}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            onRefresh={fetchData}
+            onExportCsv={handleExportCsv}
+            onExportExcel={handleExportExcel}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <div>
@@ -206,44 +315,41 @@ export default function BillingPage() {
       />
 
       <Card>
-        <Tabs activeKey={activeTab} onChange={setActiveTab} tabBarExtraContent={
-          <Space>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => handleCreate(activeTab === 'plans' ? 'plan' : 'subscription')}>
-              {activeTab === 'plans' ? 'Add Plan' : 'New Subscription'}
-            </Button>
-          </Space>
-        } items={[
-          { key: 'plans', label: `Pricing Plans (${plans.length})`,
-            children: <Table rowKey="id" columns={planColumns} dataSource={plans} loading={loading} pagination={{ pageSize: 10 }} /> },
-          { key: 'subscriptions', label: `Subscriptions (${subscriptions.length})`,
-            children: <Table rowKey="id" columns={subColumns} dataSource={subscriptions} loading={loading} pagination={{ pageSize: 10 }} /> },
-          { key: 'invoices', label: `Invoices (${invoices.length})`,
-            children: <Table rowKey="id" columns={invoiceColumns} dataSource={invoices} loading={loading} pagination={{ pageSize: 10 }} /> },
-          { key: 'usage', label: `Usage (${usage.length})`,
-            children: <Table rowKey="id" columns={usageColumns} dataSource={usage} loading={loading} pagination={{ pageSize: 10 }} /> },
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
+          { key: 'plans', label: `Pricing Plans (${plans.length})`, children: tabContent('plans') },
+          { key: 'subscriptions', label: `Subscriptions (${subscriptions.length})`, children: tabContent('subscriptions') },
+          { key: 'invoices', label: `Invoices (${invoices.length})`, children: tabContent('invoices') },
+          { key: 'usage', label: `Usage (${usage.length})`, children: tabContent('usage') },
         ]} />
       </Card>
 
-      <Modal title={editingItem ? 'Edit Plan' : 'Add Plan'} open={modalOpen && modalType === 'plan'} onOk={handleSubmit} onCancel={() => setModalOpen(false)}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="Name" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="planType" label="Type" rules={[{ required: true }]}>
-            <Select options={['BASIC','PROFESSIONAL','ENTERPRISE','CUSTOM'].map(t => ({ value: t, label: t }))} />
-          </Form.Item>
-          <Form.Item name="price" label="Price ($)" rules={[{ required: true }]}><Input type="number" /></Form.Item>
-          <Form.Item name="currency" label="Currency" initialValue="USD"><Input /></Form.Item>
-          <Form.Item name="billingCycle" label="Billing Cycle" initialValue="MONTHLY">
-            <Select options={['MONTHLY','QUARTERLY','YEARLY','ONE_TIME'].map(c => ({ value: c, label: c }))} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal title="New Subscription" open={modalOpen && modalType === 'subscription'} onOk={handleSubmit} onCancel={() => setModalOpen(false)}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="planId" label="Plan ID" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="subscriberId" label="Subscriber ID" rules={[{ required: true }]}><Input /></Form.Item>
-        </Form>
-      </Modal>
+      <CommonForm
+        open={formOpen}
+        title={formType === 'plan' ? (editingItem ? 'Edit Plan' : 'Add Plan') : 'New Subscription'}
+        onClose={() => setFormOpen(false)}
+        onSubmit={handleSubmit}
+        initialValues={editingItem}
+        width={500}
+      >
+        {formType === 'plan' ? (
+          <>
+            <Form.Item name="name" label="Name" rules={[{ required: true }]}><Input /></Form.Item>
+            <Form.Item name="planType" label="Type" rules={[{ required: true }]}>
+              <Select options={['BASIC', 'PROFESSIONAL', 'ENTERPRISE', 'CUSTOM'].map(t => ({ value: t, label: t }))} />
+            </Form.Item>
+            <Form.Item name="price" label="Price ($)" rules={[{ required: true }]}><Input type="number" /></Form.Item>
+            <Form.Item name="currency" label="Currency" initialValue="USD"><Input /></Form.Item>
+            <Form.Item name="billingCycle" label="Billing Cycle" initialValue="MONTHLY">
+              <Select options={['MONTHLY', 'QUARTERLY', 'YEARLY', 'ONE_TIME'].map(c => ({ value: c, label: c }))} />
+            </Form.Item>
+          </>
+        ) : (
+          <>
+            <Form.Item name="planId" label="Plan ID" rules={[{ required: true }]}><Input /></Form.Item>
+            <Form.Item name="subscriberId" label="Subscriber ID" rules={[{ required: true }]}><Input /></Form.Item>
+          </>
+        )}
+      </CommonForm>
     </div>
   );
 }

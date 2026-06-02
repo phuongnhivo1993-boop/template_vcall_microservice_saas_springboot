@@ -2,18 +2,21 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Table, Card, Tabs, Select, Tag, Typography, Space, Button, Modal, Form,
-  Input, message, Row, Col, Statistic, DatePicker, Tooltip, Popconfirm
+  Card, Tabs, Select, Tag, Typography, Space, Button, Modal, Form,
+  Input, message, Row, Col, Statistic, Tooltip
 } from 'antd';
 import {
   PlusOutlined, TeamOutlined, DollarOutlined, PhoneOutlined,
-  EditOutlined, DeleteOutlined, SwapOutlined, CheckCircleOutlined,
-  SearchOutlined
+  EditOutlined, DeleteOutlined, SwapOutlined, CheckCircleOutlined
 } from '@ant-design/icons';
+import type { ColumnsType } from 'antd/es/table';
+import CommonTable from '@/components/common/CommonTable';
+import CommonForm from '@/components/common/CommonForm';
+import CommonSearch from '@/components/common/CommonSearch';
+import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { crmApi } from '@/lib/api';
 
 const { Title, Text } = Typography;
-const { RangePicker } = DatePicker;
 
 const leadStatusColors: Record<string, string> = {
   NEW: 'blue', CONTACTED: 'cyan', QUALIFIED: 'green',
@@ -30,6 +33,11 @@ const activityTypeColors: Record<string, string> = {
   CALL: 'green', EMAIL: 'blue', MEETING: 'purple', TASK: 'orange', NOTE: 'default',
 };
 
+const leadStatusOptions = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION', 'CLOSED_WON', 'CLOSED_LOST', 'DISQUALIFIED'].map(s => ({ value: s, label: s }));
+const sourceOptions = ['MANUAL', 'REFERRAL', 'WEBSITE', 'CALL', 'EMAIL', 'SOCIAL_MEDIA', 'PARTNER', 'OTHER'].map(s => ({ value: s, label: s }));
+const oppStageOptions = ['PROSPECTING', 'QUALIFICATION', 'NEEDS_ANALYSIS', 'PROPOSAL', 'NEGOTIATION', 'CLOSED_WON', 'CLOSED_LOST'].map(s => ({ value: s, label: s }));
+const activityTypeOptions = ['CALL', 'EMAIL', 'MEETING', 'TASK', 'NOTE'].map(s => ({ value: s, label: s }));
+
 export default function CrmPage() {
   const [activeTab, setActiveTab] = useState('leads');
   const [leads, setLeads] = useState<any[]>([]);
@@ -37,32 +45,43 @@ export default function CrmPage() {
   const [activities, setActivities] = useState<any[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState({ leads: false, opportunities: false, activities: false, notes: false });
-  const [leadSearch, setLeadSearch] = useState('');
-  const [oppSearch, setOppSearch] = useState('');
-  const [activitySearch, setActivitySearch] = useState('');
-  const [noteSearch, setNoteSearch] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'lead' | 'opportunity' | 'activity' | 'note'>('lead');
   const [editingItem, setEditingItem] = useState<any>(null);
-  const [form] = Form.useForm();
   const [convertModalOpen, setConvertModalOpen] = useState(false);
   const [convertingLead, setConvertingLead] = useState<any>(null);
+  const [filters, setFilters] = useState<Record<string, any>>({});
 
-  const fetchData = useCallback(async () => {
+  const setTabLoading = (tab: string, val: boolean) =>
+    setLoading((prev) => ({ ...prev, [tab]: val }));
+
+  const fetchData = useCallback(async (searchParams?: Record<string, any>) => {
+    const params = { page: 0, size: 100, ...searchParams };
+    setError(null);
     try {
-      const [leadsRes, oppsRes, actsRes, notesRes] = await Promise.all([
-        crmApi.leads.list({ page: 0, size: 100 }),
-        crmApi.opportunities.list({ page: 0, size: 100 }),
-        crmApi.activities.list({ page: 0, size: 100 }),
-        crmApi.notes.list({ page: 0, size: 100 }),
-      ]);
+      setTabLoading('leads', true);
+      const leadsRes = await crmApi.leads.list(params);
       setLeads(leadsRes.data?.data?.content || leadsRes.data?.content || []);
+    } catch { /* ignore */ } finally { setTabLoading('leads', false); }
+
+    try {
+      setTabLoading('opportunities', true);
+      const oppsRes = await crmApi.opportunities.list(params);
       setOpportunities(oppsRes.data?.data?.content || oppsRes.data?.content || []);
+    } catch { /* ignore */ } finally { setTabLoading('opportunities', false); }
+
+    try {
+      setTabLoading('activities', true);
+      const actsRes = await crmApi.activities.list(params);
       setActivities(actsRes.data?.data?.content || actsRes.data?.content || []);
+    } catch { /* ignore */ } finally { setTabLoading('activities', false); }
+
+    try {
+      setTabLoading('notes', true);
+      const notesRes = await crmApi.notes.list(params);
       setNotes(notesRes.data?.data?.content || notesRes.data?.content || []);
-    } catch (err) {
-      message.error('Failed to load CRM data');
-    }
+    } catch { /* ignore */ } finally { setTabLoading('notes', false); }
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -70,62 +89,73 @@ export default function CrmPage() {
   const handleCreate = (type: string) => {
     setModalType(type as any);
     setEditingItem(null);
-    form.resetFields();
     setModalOpen(true);
   };
 
   const handleEdit = (item: any, type: string) => {
     setModalType(type as any);
     setEditingItem(item);
-    form.setFieldsValue(item);
     setModalOpen(true);
   };
 
-  const handleDelete = async (id: string, type: string) => {
-    try {
-      if (type === 'lead') await crmApi.leads.delete(id);
-      else if (type === 'opportunity') await crmApi.opportunities.delete(id);
-      else if (type === 'activity') await crmApi.activities.delete(Number(id));
-      else if (type === 'note') await crmApi.notes.delete(Number(id));
-      message.success('Deleted successfully');
-      fetchData();
-    } catch { message.error('Delete failed'); }
+  const handleDeleteConfirm = (id: string, type: string, label: string) => {
+    showDeleteConfirm({
+      title: `Delete ${type}`,
+      content: `Are you sure you want to delete this ${label}?`,
+      onOk: async () => {
+        if (type === 'lead') await crmApi.leads.delete(id);
+        else if (type === 'opportunity') await crmApi.opportunities.delete(id);
+        else if (type === 'activity') await crmApi.activities.delete(Number(id));
+        else if (type === 'note') await crmApi.notes.delete(Number(id));
+        fetchData();
+      },
+    });
   };
 
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      if (modalType === 'lead') {
-        if (editingItem) await crmApi.leads.update(editingItem.id, values);
-        else await crmApi.leads.create(values);
-      } else if (modalType === 'opportunity') {
-        if (editingItem) await crmApi.opportunities.update(editingItem.id, values);
-        else await crmApi.opportunities.create(values);
-      } else if (modalType === 'activity') {
-        if (editingItem) await crmApi.activities.update(editingItem.id, values);
-        else await crmApi.activities.create(values);
-      } else if (modalType === 'note') {
-        if (editingItem) await crmApi.notes.update(editingItem.id, values);
-        else await crmApi.notes.create(values);
-      }
-      message.success('Saved successfully');
-      setModalOpen(false);
-      fetchData();
-    } catch { message.error('Validation failed'); }
+  const handleFormSubmit = async (values: any) => {
+    if (modalType === 'lead') {
+      if (editingItem) await crmApi.leads.update(editingItem.id, values);
+      else await crmApi.leads.create(values);
+    } else if (modalType === 'opportunity') {
+      if (editingItem) await crmApi.opportunities.update(editingItem.id, values);
+      else await crmApi.opportunities.create(values);
+    } else if (modalType === 'activity') {
+      if (editingItem) await crmApi.activities.update(editingItem.id, values);
+      else await crmApi.activities.create(values);
+    } else if (modalType === 'note') {
+      if (editingItem) await crmApi.notes.update(editingItem.id, values);
+      else await crmApi.notes.create(values);
+    }
+    setModalOpen(false);
+    fetchData();
   };
 
-  const handleConvert = async () => {
-    try {
-      const values = await form.validateFields();
-      await crmApi.leads.convert(convertingLead.id, values);
-      message.success('Lead converted to opportunity');
-      setConvertModalOpen(false);
-      fetchData();
-    } catch { message.error('Conversion failed'); }
+  const handleConvert = async (values: any) => {
+    await crmApi.leads.convert(convertingLead.id, values);
+    setConvertModalOpen(false);
+    message.success('Lead converted to opportunity');
+    fetchData();
   };
 
-  const leadColumns = [
-    { title: 'Name', key: 'name', render: (_: any, r: any) => <a>{r.firstName} {r.lastName}</a> },
+  const handleSearch = (values: any) => {
+    const cleaned: Record<string, any> = {};
+    Object.entries(values).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') cleaned[key] = val;
+    });
+    setFilters(cleaned);
+    fetchData(cleaned);
+  };
+
+  const handleReset = () => {
+    setFilters({});
+    fetchData();
+  };
+
+  const handleExportCsv = () => message.info('CSV export triggered');
+  const handleExportExcel = () => message.info('Excel export triggered');
+
+  const leadColumns: ColumnsType<any> = [
+    { title: 'Name', key: 'name', render: (_: any, r: any) => <span style={{ fontWeight: 500 }}>{r.firstName} {r.lastName}</span> },
     { title: 'Email', dataIndex: 'email', key: 'email' },
     { title: 'Company', dataIndex: 'company', key: 'company' },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
@@ -138,18 +168,16 @@ export default function CrmPage() {
       render: (_: any, r: any) => (
         <Space>
           <Tooltip title="Convert to Opportunity">
-            <Button size="small" icon={<SwapOutlined />} onClick={() => { setConvertingLead(r); form.resetFields(); setConvertModalOpen(true); }} />
+            <Button size="small" icon={<SwapOutlined />} onClick={() => { setConvertingLead(r); setConvertModalOpen(true); }} />
           </Tooltip>
           <Tooltip title="Edit"><Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(r, 'lead')} /></Tooltip>
-          <Popconfirm title="Delete this lead?" onConfirm={() => handleDelete(r.id, 'lead')}>
-            <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} /></Tooltip>
-          </Popconfirm>
+          <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteConfirm(r.id, 'lead', 'lead')} /></Tooltip>
         </Space>
       ),
     },
   ];
 
-  const oppColumns = [
+  const oppColumns: ColumnsType<any> = [
     { title: 'Title', dataIndex: 'title', key: 'title' },
     { title: 'Stage', dataIndex: 'stage', key: 'stage',
       render: (s: string) => <Tag color={oppStageColors[s] || 'blue'}>{s}</Tag> },
@@ -165,15 +193,13 @@ export default function CrmPage() {
       render: (_: any, r: any) => (
         <Space>
           <Tooltip title="Edit"><Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(r, 'opportunity')} /></Tooltip>
-          <Popconfirm title="Delete this opportunity?" onConfirm={() => handleDelete(r.id, 'opportunity')}>
-            <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} /></Tooltip>
-          </Popconfirm>
+          <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteConfirm(r.id, 'opportunity', 'opportunity')} /></Tooltip>
         </Space>
       ),
     },
   ];
 
-  const activityColumns = [
+  const activityColumns: ColumnsType<any> = [
     { title: 'Type', dataIndex: 'type', key: 'type',
       render: (t: string) => <Tag color={activityTypeColors[t] || 'default'}>{t}</Tag> },
     { title: 'Subject', dataIndex: 'subject', key: 'subject' },
@@ -185,15 +211,13 @@ export default function CrmPage() {
       render: (_: any, r: any) => (
         <Space>
           <Tooltip title="Edit"><Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(r, 'activity')} /></Tooltip>
-          <Popconfirm title="Delete?" onConfirm={() => handleDelete(r.id, 'activity')}>
-            <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} /></Tooltip>
-          </Popconfirm>
+          <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteConfirm(r.id, 'activity', 'activity')} /></Tooltip>
         </Space>
       ),
     },
   ];
 
-  const noteColumns = [
+  const noteColumns: ColumnsType<any> = [
     { title: 'Title', dataIndex: 'title', key: 'title' },
     { title: 'Content', dataIndex: 'content', key: 'content', ellipsis: true },
     { title: 'Customer', dataIndex: 'customerId', key: 'customerId' },
@@ -203,15 +227,13 @@ export default function CrmPage() {
       render: (_: any, r: any) => (
         <Space>
           <Tooltip title="Edit"><Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(r, 'note')} /></Tooltip>
-          <Popconfirm title="Delete?" onConfirm={() => handleDelete(r.id, 'note')}>
-            <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} /></Tooltip>
-          </Popconfirm>
+          <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteConfirm(r.id, 'note', 'note')} /></Tooltip>
         </Space>
       ),
     },
   ];
 
-  const renderForm = () => {
+  const renderFormFields = () => {
     if (modalType === 'lead') return (
       <>
         <Form.Item name="firstName" label="First Name" rules={[{ required: true }]}><Input /></Form.Item>
@@ -220,10 +242,10 @@ export default function CrmPage() {
         <Form.Item name="phone" label="Phone"><Input /></Form.Item>
         <Form.Item name="company" label="Company"><Input /></Form.Item>
         <Form.Item name="status" label="Status" initialValue="NEW">
-          <Select options={['NEW','CONTACTED','QUALIFIED','PROPOSAL','NEGOTIATION','CLOSED_WON','CLOSED_LOST','DISQUALIFIED'].map(s => ({ value: s, label: s }))} />
+          <Select options={leadStatusOptions} />
         </Form.Item>
         <Form.Item name="source" label="Source" initialValue="MANUAL">
-          <Select options={['MANUAL','REFERRAL','WEBSITE','CALL','EMAIL','SOCIAL_MEDIA','PARTNER','OTHER'].map(s => ({ value: s, label: s }))} />
+          <Select options={sourceOptions} />
         </Form.Item>
       </>
     );
@@ -231,7 +253,7 @@ export default function CrmPage() {
       <>
         <Form.Item name="title" label="Title" rules={[{ required: true }]}><Input /></Form.Item>
         <Form.Item name="stage" label="Stage" initialValue="PROSPECTING">
-          <Select options={['PROSPECTING','QUALIFICATION','NEEDS_ANALYSIS','PROPOSAL','NEGOTIATION','CLOSED_WON','CLOSED_LOST'].map(s => ({ value: s, label: s }))} />
+          <Select options={oppStageOptions} />
         </Form.Item>
         <Form.Item name="value" label="Value ($)"><Input type="number" /></Form.Item>
         <Form.Item name="probability" label="Probability (%)"><Input type="number" /></Form.Item>
@@ -241,7 +263,7 @@ export default function CrmPage() {
     if (modalType === 'activity') return (
       <>
         <Form.Item name="type" label="Type" rules={[{ required: true }]}>
-          <Select options={['CALL','EMAIL','MEETING','TASK','NOTE'].map(s => ({ value: s, label: s }))} />
+          <Select options={activityTypeOptions} />
         </Form.Item>
         <Form.Item name="subject" label="Subject" rules={[{ required: true }]}><Input /></Form.Item>
         <Form.Item name="description" label="Description"><Input.TextArea rows={3} /></Form.Item>
@@ -258,32 +280,21 @@ export default function CrmPage() {
     );
   };
 
-  const filteredLeads = leads.filter(l =>
-    !leadSearch ||
-    (l.firstName || '').toLowerCase().includes(leadSearch.toLowerCase()) ||
-    (l.lastName || '').toLowerCase().includes(leadSearch.toLowerCase()) ||
-    (l.email || '').toLowerCase().includes(leadSearch.toLowerCase()) ||
-    (l.company || '').toLowerCase().includes(leadSearch.toLowerCase()) ||
-    (l.phone || '').includes(leadSearch)
-  );
-
-  const filteredOpps = opportunities.filter(o =>
-    !oppSearch ||
-    (o.title || '').toLowerCase().includes(oppSearch.toLowerCase()) ||
-    (o.stage || '').toLowerCase().includes(oppSearch.toLowerCase())
-  );
-
-  const filteredActivities = activities.filter(a =>
-    !activitySearch ||
-    (a.subject || '').toLowerCase().includes(activitySearch.toLowerCase()) ||
-    (a.type || '').toLowerCase().includes(activitySearch.toLowerCase())
-  );
-
-  const filteredNotes = notes.filter(n =>
-    !noteSearch ||
-    (n.title || '').toLowerCase().includes(noteSearch.toLowerCase()) ||
-    (n.content || '').toLowerCase().includes(noteSearch.toLowerCase())
-  );
+  const searchFields = [
+    { name: 'keyword', label: 'Keyword', type: 'input' as const, placeholder: 'Search...' },
+    ...(activeTab === 'leads' ? [{
+      name: 'status' as const, label: 'Status' as const, type: 'select' as const,
+      placeholder: 'Filter by status' as const, options: leadStatusOptions,
+    }] : []),
+    ...(activeTab === 'opportunities' ? [{
+      name: 'stage' as const, label: 'Stage' as const, type: 'select' as const,
+      placeholder: 'Filter by stage' as const, options: oppStageOptions,
+    }] : []),
+    ...(activeTab === 'activities' ? [{
+      name: 'type' as const, label: 'Type' as const, type: 'select' as const,
+      placeholder: 'Filter by type' as const, options: activityTypeOptions,
+    }] : []),
+  ];
 
   const stats = {
     totalLeads: leads.length,
@@ -291,6 +302,8 @@ export default function CrmPage() {
     totalOpps: opportunities.length,
     wonOpps: opportunities.filter(o => o.stage === 'CLOSED_WON').length,
   };
+
+  const currentTabKey = activeTab === 'leads' ? 'lead' : activeTab === 'opportunities' ? 'opportunity' : activeTab === 'activities' ? 'activity' : 'note';
 
   return (
     <div>
@@ -302,46 +315,91 @@ export default function CrmPage() {
         <Col xs={12} sm={6}><Card><Statistic title="Won" value={stats.wonOpps} valueStyle={{ color: '#52c41a' }} prefix={<CheckCircleOutlined />} /></Card></Col>
       </Row>
 
+      <CommonSearch
+        key={activeTab}
+        fields={searchFields}
+        onSearch={handleSearch}
+        onReset={handleReset}
+        loading={loading[activeTab as keyof typeof loading]}
+      />
+
       <Card>
         <Tabs activeKey={activeTab} onChange={setActiveTab} tabBarExtraContent={
-          <Space>
-            {activeTab === 'leads' && (
-              <Input prefix={<SearchOutlined />} placeholder="Search leads..." value={leadSearch} onChange={e => setLeadSearch(e.target.value)} style={{ width: 200 }} allowClear />
-            )}
-            {activeTab === 'opportunities' && (
-              <Input prefix={<SearchOutlined />} placeholder="Search opportunities..." value={oppSearch} onChange={e => setOppSearch(e.target.value)} style={{ width: 200 }} allowClear />
-            )}
-            {activeTab === 'activities' && (
-              <Input prefix={<SearchOutlined />} placeholder="Search activities..." value={activitySearch} onChange={e => setActivitySearch(e.target.value)} style={{ width: 200 }} allowClear />
-            )}
-            {activeTab === 'notes' && (
-              <Input prefix={<SearchOutlined />} placeholder="Search notes..." value={noteSearch} onChange={e => setNoteSearch(e.target.value)} style={{ width: 200 }} allowClear />
-            )}
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => handleCreate(activeTab === 'leads' ? 'lead' : activeTab === 'opportunities' ? 'opportunity' : activeTab === 'activities' ? 'activity' : 'note')}>
-              Add {activeTab === 'leads' ? 'Lead' : activeTab === 'opportunities' ? 'Opportunity' : activeTab === 'activities' ? 'Activity' : 'Note'}
-            </Button>
-          </Space>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => handleCreate(currentTabKey)}>
+            Add {activeTab === 'leads' ? 'Lead' : activeTab === 'opportunities' ? 'Opportunity' : activeTab === 'activities' ? 'Activity' : 'Note'}
+          </Button>
         } items={[
-          { key: 'leads', label: `Leads (${filteredLeads.length})`, children: <Table rowKey="id" columns={leadColumns} dataSource={filteredLeads} loading={loading.leads} pagination={{ pageSize: 10 }} /> },
-          { key: 'opportunities', label: `Opportunities (${filteredOpps.length})`, children: <Table rowKey="id" columns={oppColumns} dataSource={filteredOpps} loading={loading.opportunities} pagination={{ pageSize: 10 }} /> },
-          { key: 'activities', label: `Activities (${filteredActivities.length})`, children: <Table rowKey="id" columns={activityColumns} dataSource={filteredActivities} loading={loading.activities} pagination={{ pageSize: 10 }} /> },
-          { key: 'notes', label: `Notes (${filteredNotes.length})`, children: <Table rowKey="id" columns={noteColumns} dataSource={filteredNotes} loading={loading.notes} pagination={{ pageSize: 10 }} /> },
+          { key: 'leads', label: `Leads (${leads.length})`, children: (
+            <CommonTable
+              columns={leadColumns}
+              dataSource={leads}
+              loading={loading.leads}
+              rowKey="id"
+              onRefresh={() => fetchData(filters)}
+              onExportCsv={handleExportCsv}
+              onExportExcel={handleExportExcel}
+            />
+          )},
+          { key: 'opportunities', label: `Opportunities (${opportunities.length})`, children: (
+            <CommonTable
+              columns={oppColumns}
+              dataSource={opportunities}
+              loading={loading.opportunities}
+              rowKey="id"
+              onRefresh={() => fetchData(filters)}
+              onExportCsv={handleExportCsv}
+              onExportExcel={handleExportExcel}
+            />
+          )},
+          { key: 'activities', label: `Activities (${activities.length})`, children: (
+            <CommonTable
+              columns={activityColumns}
+              dataSource={activities}
+              loading={loading.activities}
+              rowKey="id"
+              onRefresh={() => fetchData(filters)}
+              onExportCsv={handleExportCsv}
+              onExportExcel={handleExportExcel}
+            />
+          )},
+          { key: 'notes', label: `Notes (${notes.length})`, children: (
+            <CommonTable
+              columns={noteColumns}
+              dataSource={notes}
+              loading={loading.notes}
+              rowKey="id"
+              onRefresh={() => fetchData(filters)}
+              onExportCsv={handleExportCsv}
+              onExportExcel={handleExportExcel}
+            />
+          )},
         ]} />
       </Card>
 
-      <Modal title={editingItem ? 'Edit' : 'Create'} open={modalOpen} onOk={handleSubmit} onCancel={() => setModalOpen(false)}>
-        <Form form={form} layout="vertical">{renderForm()}</Form>
-      </Modal>
+      <CommonForm
+        open={modalOpen}
+        title={editingItem ? `Edit ${modalType.charAt(0).toUpperCase() + modalType.slice(1)}` : `Create ${modalType.charAt(0).toUpperCase() + modalType.slice(1)}`}
+        onClose={() => { setModalOpen(false); setEditingItem(null); }}
+        onSubmit={handleFormSubmit}
+        initialValues={editingItem}
+        width={600}
+      >
+        {renderFormFields()}
+      </CommonForm>
 
-      <Modal title={`Convert Lead: ${convertingLead?.firstName} ${convertingLead?.lastName}`} open={convertModalOpen} onOk={handleConvert} onCancel={() => setConvertModalOpen(false)}>
-        <Form form={form} layout="vertical">
-          <Form.Item name="title" label="Opportunity Title" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="stage" label="Stage" initialValue="PROSPECTING">
-            <Select options={['PROSPECTING','QUALIFICATION','NEEDS_ANALYSIS','PROPOSAL','NEGOTIATION','CLOSED_WON','CLOSED_LOST'].map(s => ({ value: s, label: s }))} />
-          </Form.Item>
-          <Form.Item name="value" label="Value ($)"><Input type="number" /></Form.Item>
-        </Form>
-      </Modal>
+      <CommonForm
+        open={convertModalOpen}
+        title={`Convert Lead: ${convertingLead?.firstName || ''} ${convertingLead?.lastName || ''}`}
+        onClose={() => setConvertModalOpen(false)}
+        onSubmit={handleConvert}
+        width={500}
+      >
+        <Form.Item name="title" label="Opportunity Title" rules={[{ required: true }]}><Input /></Form.Item>
+        <Form.Item name="stage" label="Stage" initialValue="PROSPECTING">
+          <Select options={oppStageOptions} />
+        </Form.Item>
+        <Form.Item name="value" label="Value ($)"><Input type="number" /></Form.Item>
+      </CommonForm>
     </div>
   );
 }

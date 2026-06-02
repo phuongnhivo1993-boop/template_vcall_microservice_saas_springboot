@@ -3,6 +3,7 @@ package com.vcall.chat.controller;
 import com.vcall.chat.dto.ChatAssignRequest;
 import com.vcall.chat.dto.ChatConversationRequest;
 import com.vcall.chat.dto.ChatConversationResponse;
+import com.vcall.chat.dto.ChatConversationUpdateRequest;
 import com.vcall.chat.entity.ChatConversation.Status;
 import com.vcall.chat.service.ChatService;
 import com.vcall.common.dto.ApiResponse;
@@ -12,10 +13,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,6 +44,19 @@ public class ChatConversationController {
     public ResponseEntity<ApiResponse<ChatConversationResponse>> getConversation(@PathVariable UUID id) {
         ChatConversationResponse response = chatService.getConversationHistory(id);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<ChatConversationResponse>> updateConversation(
+            @PathVariable UUID id, @Valid @RequestBody ChatConversationUpdateRequest request) {
+        ChatConversationResponse response = chatService.updateConversation(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Conversation updated successfully", response));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteConversation(@PathVariable UUID id) {
+        chatService.deleteConversation(id);
+        return ResponseEntity.ok(ApiResponse.success("Conversation deleted successfully", null));
     }
 
     @PostMapping("/{id}/assign")

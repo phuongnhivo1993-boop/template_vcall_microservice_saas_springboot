@@ -11,13 +11,15 @@ import com.vcall.crm.repository.LeadRepository;
 import com.vcall.crm.repository.OpportunityRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 @Slf4j
 @Service
@@ -48,6 +50,16 @@ public class OpportunityService {
 
     public Page<OpportunityResponse> getAllOpportunities(Pageable pageable) {
         return opportunityRepository.findAll(pageable).map(this::mapToResponse);
+    }
+
+    public Page<OpportunityResponse> searchOpportunities(Specification<Opportunity> spec, Pageable pageable) {
+        return opportunityRepository.findAll(spec, pageable).map(this::mapToResponse);
+    }
+
+    public Map<String, Object> getOpportunityStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalOpportunities", opportunityRepository.count());
+        return stats;
     }
 
     public Page<OpportunityResponse> getOpportunitiesByLeadId(UUID leadId, Pageable pageable) {

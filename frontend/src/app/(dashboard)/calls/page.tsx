@@ -1,12 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Table, Card, Input, Select, DatePicker, Row, Col, Tag, Space, Typography, Button, message } from 'antd';
+import { useState, useEffect, useCallback } from 'react';
+import { Card, Tag, Typography, Space, Button, message, Row, Col, Statistic, Form, Input, Select } from 'antd';
 import { SearchOutlined, PhoneOutlined, DownloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
+import CommonTable from '@/components/common/CommonTable';
+import CommonSearch from '@/components/common/CommonSearch';
+import CommonForm from '@/components/common/CommonForm';
+import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
+import { callsApi } from '@/lib/api';
 
 const { Title } = Typography;
-const { RangePicker } = DatePicker;
+
+const statusColors: Record<string, string> = {
+  completed: '#52c41a',
+  ongoing: '#1677ff',
+  missed: '#ff4d4f',
+  failed: '#faad14',
+};
+
+const directionColors: Record<string, string> = {
+  inbound: 'blue',
+  outbound: 'purple',
+};
 
 interface CallRecord {
   id: string;
@@ -19,62 +35,98 @@ interface CallRecord {
   time: string;
 }
 
-const callData: CallRecord[] = [
-  { id: 'CL-001', caller: '+1 (555) 123-4567', callee: '+1 (555) 987-6543', direction: 'inbound', status: 'completed', duration: 245, agent: 'Sarah J.', time: '2026-06-01 09:23' },
-  { id: 'CL-002', caller: '+1 (555) 234-5678', callee: '+1 (555) 876-5432', direction: 'outbound', status: 'completed', duration: 180, agent: 'Mike R.', time: '2026-06-01 09:45' },
-  { id: 'CL-003', caller: '+1 (555) 345-6789', callee: '+1 (555) 765-4321', direction: 'inbound', status: 'ongoing', duration: 320, agent: 'Emily W.', time: '2026-06-01 10:02' },
-  { id: 'CL-004', caller: '+1 (555) 456-7890', callee: '+1 (555) 654-3210', direction: 'inbound', status: 'missed', duration: 0, agent: '-', time: '2026-06-01 10:15' },
-  { id: 'CL-005', caller: '+1 (555) 567-8901', callee: '+1 (555) 543-2109', direction: 'outbound', status: 'completed', duration: 412, agent: 'John D.', time: '2026-06-01 10:30' },
-  { id: 'CL-006', caller: '+1 (555) 678-9012', callee: '+1 (555) 432-1098', direction: 'inbound', status: 'completed', duration: 156, agent: 'Lisa M.', time: '2026-06-01 10:45' },
-  { id: 'CL-007', caller: '+1 (555) 789-0123', callee: '+1 (555) 321-0987', direction: 'inbound', status: 'failed', duration: 30, agent: 'Sarah J.', time: '2026-06-01 11:00' },
-  { id: 'CL-008', caller: '+1 (555) 890-1234', callee: '+1 (555) 210-9876', direction: 'outbound', status: 'completed', duration: 520, agent: 'Mike R.', time: '2026-06-01 11:20' },
-];
-
-const statusColors: Record<string, string> = {
-  completed: '#52c41a',
-  ongoing: '#1677ff',
-  missed: '#ff4d4f',
-  failed: '#faad14',
-};
-
 export default function CallsPage() {
-  const [searchText, setSearchText] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string | undefined>();
-  const [agentFilter, setAgentFilter] = useState<string | undefined>();
-  const [loading, setLoading] = useState(true);
   const [data, setData] = useState<CallRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useState<Record<string, any>>({});
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingCall, setEditingCall] = useState<any>(null);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setData(callData);
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const filtered = data.filter((call) => {
-    const matchesSearch =
-      call.caller.includes(searchText) ||
-      call.callee.includes(searchText) ||
-      call.id.toLowerCase().includes(searchText.toLowerCase());
-    const matchesStatus = !statusFilter || call.status === statusFilter;
-    const matchesAgent = !agentFilter || call.agent === agentFilter;
-    return matchesSearch && matchesStatus && matchesAgent;
-  });
-
-  const handleExport = () => {
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const headers = ['Call ID', 'Caller', 'Callee', 'Direction', 'Status', 'Duration (s)', 'Agent', 'Time'];
-      const csvContent = [headers.join(','), ...filtered.map(r =>
-        [r.id, r.caller, r.callee, r.direction, r.status, r.duration, r.agent, r.time].map(v => `"${v}"`).join(',')
-      )].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `calls_export_${dayjs().format('YYYYMMDD_HHmmss')}.csv`;
-      link.click();
-      URL.revokeObjectURL(link.href);
-      message.success('Calls exported successfully');
+      const params = { ...searchParams, page: 0, size: 100 };
+      const res = await callsApi.getAll(params);
+      setData(res.data?.data?.content || res.data?.content || []);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load calls');
+    } finally {
+      setLoading(false);
+    }
+  }, [searchParams]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleSearch = (values: any) => {
+    const params: Record<string, any> = {};
+    if (values.search) params.q = values.search;
+    if (values.status) params.status = values.status;
+    if (values.direction) params.direction = values.direction;
+    setSearchParams(params);
+  };
+
+  const handleReset = () => {
+    setSearchParams({});
+  };
+
+  const handleCreate = () => {
+    setEditingCall(null);
+    setModalOpen(true);
+  };
+
+  const handleEdit = (record: any) => {
+    setEditingCall(record);
+    setModalOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    showDeleteConfirm({
+      onOk: async () => {
+        await callsApi.delete(id);
+        message.success('Call deleted');
+        fetchData();
+      },
+    });
+  };
+
+  const handleSubmit = async (values: any) => {
+    if (editingCall) {
+      await callsApi.update(editingCall.id, values);
+    } else {
+      await callsApi.create(values);
+    }
+    fetchData();
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      const res = await callsApi.exportCsv();
+      const blob = new Blob([res.data], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `calls_${dayjs().format('YYYYMMDD_HHmmss')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Calls exported');
+    } catch {
+      message.error('Export failed');
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const res = await callsApi.exportExcel();
+      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `calls_${dayjs().format('YYYYMMDD_HHmmss')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Calls exported');
     } catch {
       message.error('Export failed');
     }
@@ -87,23 +139,15 @@ export default function CallsPage() {
       key: 'id',
       render: (id: string) => <a style={{ fontWeight: 500 }}>{id}</a>,
     },
-    {
-      title: 'Caller',
-      dataIndex: 'caller',
-      key: 'caller',
-    },
-    {
-      title: 'Callee',
-      dataIndex: 'callee',
-      key: 'callee',
-    },
+    { title: 'Caller', dataIndex: 'caller', key: 'caller' },
+    { title: 'Callee', dataIndex: 'callee', key: 'callee' },
     {
       title: 'Direction',
       dataIndex: 'direction',
       key: 'direction',
       render: (dir: string) => (
-        <Tag icon={<PhoneOutlined />} color={dir === 'inbound' ? 'blue' : 'purple'}>
-          {dir.toUpperCase()}
+        <Tag icon={<PhoneOutlined />} color={directionColors[dir] || 'default'}>
+          {dir?.toUpperCase()}
         </Tag>
       ),
     },
@@ -112,7 +156,7 @@ export default function CallsPage() {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag color={statusColors[status]}>{status.toUpperCase()}</Tag>
+        <Tag color={statusColors[status] || 'default'}>{status?.toUpperCase()}</Tag>
       ),
     },
     {
@@ -120,87 +164,109 @@ export default function CallsPage() {
       dataIndex: 'duration',
       key: 'duration',
       render: (secs: number) => {
-        if (secs === 0) return '-';
+        if (!secs) return '-';
         const mins = Math.floor(secs / 60);
         const s = secs % 60;
         return `${mins}:${s.toString().padStart(2, '0')}`;
       },
     },
+    { title: 'Agent', dataIndex: 'agent', key: 'agent' },
+    { title: 'Time', dataIndex: 'time', key: 'time' },
     {
-      title: 'Agent',
-      dataIndex: 'agent',
-      key: 'agent',
-    },
-    {
-      title: 'Time',
-      dataIndex: 'time',
-      key: 'time',
+      title: 'Actions',
+      key: 'actions',
+      render: (_: any, record: any) => (
+        <Space>
+          <Button size="small" onClick={() => handleEdit(record)}>Edit</Button>
+          <Button size="small" danger onClick={() => handleDelete(record.id)}>Delete</Button>
+        </Space>
+      ),
     },
   ];
+
+  const totalCalls = data.length;
+  const completedCalls = data.filter((c) => c.status === 'completed').length;
+  const ongoingCalls = data.filter((c) => c.status === 'ongoing').length;
+  const missedCalls = data.filter((c) => c.status === 'missed').length;
 
   return (
     <div>
       <Title level={3}>Calls</Title>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+        <Col xs={12} sm={6}><Card><Statistic title="Total Calls" value={totalCalls} prefix={<PhoneOutlined />} /></Card></Col>
+        <Col xs={12} sm={6}><Card><Statistic title="Completed" value={completedCalls} valueStyle={{ color: '#52c41a' }} /></Card></Col>
+        <Col xs={12} sm={6}><Card><Statistic title="Ongoing" value={ongoingCalls} valueStyle={{ color: '#1677ff' }} /></Card></Col>
+        <Col xs={12} sm={6}><Card><Statistic title="Missed" value={missedCalls} valueStyle={{ color: '#ff4d4f' }} /></Card></Col>
+      </Row>
+
       <Card>
-        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col xs={24} sm={8}>
-            <Input
-              placeholder="Search by caller, callee, or ID"
-              prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              allowClear
-            />
-          </Col>
-          <Col xs={12} sm={6}>
-            <Select
-              placeholder="Filter by status"
-              value={statusFilter}
-              onChange={setStatusFilter}
-              allowClear
-              style={{ width: '100%' }}
-              options={[
+        <CommonSearch
+          fields={[
+            { name: 'search', label: 'Search', type: 'input', placeholder: 'Search by caller, callee, or ID' },
+            {
+              name: 'status',
+              label: 'Status',
+              type: 'select',
+              placeholder: 'Filter by status',
+              options: [
                 { value: 'completed', label: 'Completed' },
                 { value: 'ongoing', label: 'Ongoing' },
                 { value: 'missed', label: 'Missed' },
                 { value: 'failed', label: 'Failed' },
-              ]}
-            />
-          </Col>
-          <Col xs={12} sm={6}>
-            <Select
-              placeholder="Filter by agent"
-              value={agentFilter}
-              onChange={setAgentFilter}
-              allowClear
-              style={{ width: '100%' }}
-              options={[
-                { value: 'Sarah J.', label: 'Sarah J.' },
-                { value: 'Mike R.', label: 'Mike R.' },
-                { value: 'Emily W.', label: 'Emily W.' },
-                { value: 'John D.', label: 'John D.' },
-                { value: 'Lisa M.', label: 'Lisa M.' },
-              ]}
-            />
-          </Col>
-          <Col xs={24} sm={4}>
-            <RangePicker style={{ width: '100%' }} />
-          </Col>
-        </Row>
-        <div style={{ textAlign: 'right', marginBottom: 16 }}>
-          <Button icon={<DownloadOutlined />} onClick={handleExport} loading={loading}>
-            Export CSV
-          </Button>
-        </div>
-        <Table
-          dataSource={filtered}
-          columns={columns}
-          rowKey="id"
+              ],
+            },
+            {
+              name: 'direction',
+              label: 'Direction',
+              type: 'select',
+              placeholder: 'Filter by direction',
+              options: [
+                { value: 'inbound', label: 'Inbound' },
+                { value: 'outbound', label: 'Outbound' },
+              ],
+            },
+          ]}
+          onSearch={handleSearch}
+          onReset={handleReset}
           loading={loading}
-          pagination={{ pageSize: 10, showSizeChanger: true }}
-          locale={{ emptyText: loading ? 'Loading...' : 'No call records found' }}
         />
       </Card>
+
+      <div style={{ marginTop: 16 }}>
+        <CommonTable
+          title="Call Records"
+          columns={columns}
+          dataSource={data}
+          loading={loading}
+          error={error}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
+          onRefresh={fetchData}
+          onExportCsv={handleExportCsv}
+          onExportExcel={handleExportExcel}
+          extra={
+            <Button type="primary" icon={<PhoneOutlined />} onClick={handleCreate}>
+              New Call
+            </Button>
+          }
+        />
+      </div>
+
+      <CommonForm
+        open={modalOpen}
+        title={editingCall ? 'Edit Call' : 'New Call'}
+        onClose={() => setModalOpen(false)}
+        onSubmit={handleSubmit}
+        initialValues={editingCall}
+      >
+        <Form.Item name="caller" label="Caller" rules={[{ required: true }]}><Input /></Form.Item>
+        <Form.Item name="callee" label="Callee" rules={[{ required: true }]}><Input /></Form.Item>
+        <Form.Item name="direction" label="Direction" rules={[{ required: true }]}>
+          <Select options={[{ value: 'inbound', label: 'Inbound' }, { value: 'outbound', label: 'Outbound' }]} />
+        </Form.Item>
+        <Form.Item name="agent" label="Agent"><Input /></Form.Item>
+      </CommonForm>
     </div>
   );
 }

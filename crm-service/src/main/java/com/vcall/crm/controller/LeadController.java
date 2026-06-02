@@ -1,13 +1,18 @@
 package com.vcall.crm.controller;
 
 import com.vcall.common.dto.ApiResponse;
+import com.vcall.common.dto.BulkStatusRequest;
 import com.vcall.common.dto.PagedResponse;
+import com.vcall.common.util.BulkOperationUtil;
+import com.vcall.common.util.CsvExportUtil;
+import com.vcall.common.util.ExcelExportUtil;
 import com.vcall.crm.dto.LeadRequest;
 import com.vcall.crm.dto.LeadResponse;
 import com.vcall.crm.dto.OpportunityRequest;
 import com.vcall.crm.dto.OpportunityResponse;
 import com.vcall.crm.entity.LeadStatus;
 import com.vcall.crm.service.LeadService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +33,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -96,9 +105,94 @@ public class LeadController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Lead converted to opportunity successfully", response));
     }
 
+    @GetMapping("/export/csv")
+    public void exportLeadsCsv(@RequestParam(required = false) String keyword,
+                               @RequestParam(required = false) LeadStatus status,
+                               HttpServletResponse response) throws IOException {
+        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Specification<com.vcall.crm.entity.Lead> spec = Specification.where(null);
+        if (keyword != null && !keyword.isEmpty()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.or(
+                            cb.like(cb.lower(root.get("firstName")), "%" + keyword.toLowerCase() + "%"),
+                            cb.like(cb.lower(root.get("lastName")), "%" + keyword.toLowerCase() + "%"),
+                            cb.like(cb.lower(root.get("email")), "%" + keyword.toLowerCase() + "%"),
+                            cb.like(cb.lower(root.get("company")), "%" + keyword.toLowerCase() + "%")
+                    ));
+        }
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+        Page<LeadResponse> leads = leadService.searchLeads(spec, pageable);
+        List<String> headers = Arrays.asList("ID", "Name", "Email", "Phone", "Company", "Status", "Score", "Source");
+        List<List<String>> rows = CsvExportUtil.toRows(leads.getContent(),
+                Arrays.asList("id", "fullName", "email", "phone", "company", "status", "score", "source"));
+        CsvExportUtil.writeCsv(response, "leads.csv", headers, rows);
+    }
+
+    @GetMapping("/export/excel")
+    public void exportLeadsExcel(@RequestParam(required = false) String keyword,
+                                 @RequestParam(required = false) LeadStatus status,
+                                 HttpServletResponse response) throws IOException {
+        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Specification<com.vcall.crm.entity.Lead> spec = Specification.where(null);
+        if (keyword != null && !keyword.isEmpty()) {
+            spec = spec.and((root, query, cb) ->
+                    cb.or(
+                            cb.like(cb.lower(root.get("firstName")), "%" + keyword.toLowerCase() + "%"),
+                            cb.like(cb.lower(root.get("lastName")), "%" + keyword.toLowerCase() + "%"),
+                            cb.like(cb.lower(root.get("email")), "%" + keyword.toLowerCase() + "%"),
+                            cb.like(cb.lower(root.get("company")), "%" + keyword.toLowerCase() + "%")
+                    ));
+        }
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+        Page<LeadResponse> leads = leadService.searchLeads(spec, pageable);
+        List<String> headers = Arrays.asList("ID", "Name", "Email", "Phone", "Company", "Status", "Score", "Source");
+        ExcelExportUtil.writeExcel(response, "leads.xlsx", headers, leads.getContent(),
+                Arrays.asList("id", "fullName", "email", "phone", "company", "status", "score", "source"));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
+        Map<String, Object> stats = leadService.getLeadStats();
+        return ResponseEntity.ok(ApiResponse.success(stats));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteLead(@PathVariable UUID id) {
         leadService.deleteLead(id);
         return ResponseEntity.ok(ApiResponse.success("Lead deleted successfully", null));
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> bulkDelete(
+            @RequestBody List<UUID> ids) {
+        BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
+        for (UUID id : ids) {
+            try {
+                leadService.deleteLead(id);
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk delete completed", result));
+    }
+
+    @PostMapping("/bulk-status")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> bulkStatus(
+            @RequestBody BulkStatusRequest request) {
+        BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
+        for (UUID id : request.getIds()) {
+            try {
+                leadService.updateLeadStatus(id, LeadStatus.valueOf(request.getStatus().toUpperCase()));
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk status update completed", result));
     }
 }

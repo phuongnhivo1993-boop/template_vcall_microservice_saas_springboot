@@ -80,6 +80,16 @@ public class SmsService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public void deleteSms(UUID id) {
+        SmsMessage message = smsMessageRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("SMS not found with id: " + id));
+        message.setIsDeleted(true);
+        smsMessageRepository.save(message);
+
+        smsEventPublisher.publishSmsDeleted(message);
+    }
+
     public SmsResponse getSmsStatus(UUID id) {
         SmsMessage message = smsMessageRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("SMS not found with id: " + id));

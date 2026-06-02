@@ -27,6 +27,16 @@ public class OmnichannelEventPublisher {
                 "CONVERSATION_CREATED", conversation);
     }
 
+    public void publishConversationUpdated(Conversation conversation) {
+        publish("omnichannel.conversation.updated", conversation.getId().toString(),
+                "CONVERSATION_UPDATED", conversation);
+    }
+
+    public void publishConversationDeleted(Conversation conversation) {
+        publish("omnichannel.conversation.deleted", conversation.getId().toString(),
+                "CONVERSATION_DELETED", conversation);
+    }
+
     public void publishConversationAssigned(Conversation conversation) {
         publish("omnichannel.conversation.assigned", conversation.getId().toString(),
                 "CONVERSATION_ASSIGNED", conversation);

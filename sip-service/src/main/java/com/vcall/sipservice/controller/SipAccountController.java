@@ -1,13 +1,18 @@
 package com.vcall.sipservice.controller;
 
 import com.vcall.common.dto.ApiResponse;
+import com.vcall.common.util.CsvExportUtil;
+import com.vcall.common.util.ExcelExportUtil;
 import com.vcall.sipservice.dto.SipAccountRequest;
 import com.vcall.sipservice.dto.SipAccountResponse;
 import com.vcall.sipservice.service.SipAccountService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,8 +23,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -62,9 +71,55 @@ public class SipAccountController {
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<SipAccountResponse>> updateStatus(@PathVariable Long id,
-                                                                        @RequestBody Map<String, String> body) {
+                                                                         @RequestBody Map<String, String> body) {
         String status = body.get("status");
         SipAccountResponse account = sipAccountService.updateStatus(id, status);
         return ResponseEntity.ok(ApiResponse.success("SipAccount status updated", account));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<SipAccountResponse>>> search(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String accountType,
+            Pageable pageable) {
+        Page<SipAccountResponse> result = sipAccountService.search(keyword, status, accountType, pageable);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @GetMapping("/export/csv")
+    public void exportCsv(@RequestParam(required = false) String keyword,
+                           HttpServletResponse response) throws IOException {
+        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Page<SipAccountResponse> items;
+        if (keyword != null && !keyword.isEmpty()) {
+            items = sipAccountService.search(keyword, null, null, pageable);
+        } else {
+            items = sipAccountService.findAll(pageable);
+        }
+        List<String> headers = Arrays.asList("ID", "Username", "Domain", "Realm", "Account Type", "Status", "Max Channels", "Tenant ID");
+        List<List<String>> rows = CsvExportUtil.toRows(items.getContent(),
+                Arrays.asList("id", "username", "domain", "realm", "accountType", "status", "maxChannels", "tenantId"));
+        CsvExportUtil.writeCsv(response, "sip-accounts.csv", headers, rows);
+    }
+
+    @GetMapping("/export/excel")
+    public void exportExcel(@RequestParam(required = false) String keyword,
+                            HttpServletResponse response) throws IOException {
+        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Page<SipAccountResponse> items;
+        if (keyword != null && !keyword.isEmpty()) {
+            items = sipAccountService.search(keyword, null, null, pageable);
+        } else {
+            items = sipAccountService.findAll(pageable);
+        }
+        List<String> headers = Arrays.asList("ID", "Username", "Domain", "Realm", "Account Type", "Status", "Max Channels", "Tenant ID");
+        ExcelExportUtil.writeExcel(response, "sip-accounts.xlsx", headers, items.getContent(),
+                Arrays.asList("id", "username", "domain", "realm", "accountType", "status", "maxChannels", "tenantId"));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
+        return ResponseEntity.ok(ApiResponse.success(sipAccountService.getStats()));
     }
 }

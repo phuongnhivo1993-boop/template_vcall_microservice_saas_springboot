@@ -1,12 +1,14 @@
 import { useCallback, useState, useEffect } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator,
+  View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
 import { chatApi } from '../../../lib/api';
 import type { Conversation } from '../../../types';
+import SearchBar from '../../../components/SearchBar';
+import EmptyView from '../../../components/EmptyView';
 
 function formatRelativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -24,17 +26,29 @@ export default function ChatListScreen() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
 
-  const fetchConversations = () => {
-    setLoading(true);
+  const fetchConversations = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     setError(null);
-    chatApi.getConversations()
-      .then((res) => setConversations(res.data?.data?.content || res.data?.data || res.data || []))
-      .catch((err) => setError(err?.message || 'Failed to load conversations'))
-      .finally(() => setLoading(false));
-  };
+    try {
+      const res = await chatApi.getConversations();
+      setConversations(res.data?.data?.content || res.data?.data || res.data || []);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load conversations');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
-  useEffect(() => { fetchConversations(); }, []);
+  useEffect(() => { fetchConversations(); }, [fetchConversations]);
+
+  const filtered = conversations.filter((c) =>
+    c.customerName.toLowerCase().includes(search.toLowerCase()),
+  );
 
   const renderItem = useCallback(({ item }: { item: Conversation }) => (
     <TouchableOpacity
@@ -70,17 +84,17 @@ export default function ChatListScreen() {
       <View style={styles.centerContainer}>
         <Ionicons name="chatbox-ellipses-outline" size={48} color={Colors.textSecondary} />
         <Text style={styles.emptyText}>{error}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={fetchConversations}>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => fetchConversations()}>
           <Text style={styles.retryText}>Retry</Text>
         </TouchableOpacity>
       </View>
     );
     return (
-      <View style={styles.centerContainer}>
-        <Ionicons name="chatbubbles-outline" size={48} color={Colors.textSecondary} />
-        <Text style={styles.emptyText}>No conversations yet</Text>
-        <Text style={styles.emptySubtext}>Start a new chat to begin messaging</Text>
-      </View>
+      <EmptyView
+        icon="chatbubbles-outline"
+        title={search ? 'No conversations match your search' : 'No conversations yet'}
+        subtitle={search ? 'Try a different search term' : 'Start a new chat to begin messaging'}
+      />
     );
   };
 
@@ -91,16 +105,21 @@ export default function ChatListScreen() {
         <Text style={styles.title}>Chat</Text>
       </View>
 
+      <SearchBar value={search} onChangeText={setSearch} placeholder="Search conversations..." />
+
       {loading ? (
         <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
       ) : (
       <FlatList
-        data={conversations}
+        data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
-        contentContainerStyle={[styles.list, conversations.length === 0 && styles.listEmpty]}
+        contentContainerStyle={[styles.list, filtered.length === 0 && styles.listEmpty]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmpty}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => fetchConversations(true)} colors={[Colors.primary]} />
+        }
       />
       )}
     </View>

@@ -8,15 +8,18 @@ import com.vcall.ticket.entity.TicketComment;
 import com.vcall.ticket.entity.TicketComment.AuthorType;
 import com.vcall.ticket.repository.TicketCommentRepository;
 import com.vcall.ticket.repository.TicketRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +52,23 @@ public class TicketCommentService {
     @Transactional(readOnly = true)
     public Page<TicketCommentResponse> getComments(UUID ticketId, Pageable pageable) {
         return commentRepository.findByTicketId(ticketId, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TicketCommentResponse> search(UUID ticketId, String keyword, String authorType, Pageable pageable) {
+        Specification<TicketComment> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("ticket").get("id"), ticketId));
+            if (keyword != null && !keyword.isEmpty()) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                predicates.add(cb.like(cb.lower(root.get("content")), pattern));
+            }
+            if (authorType != null && !authorType.isEmpty()) {
+                predicates.add(cb.equal(root.get("authorType"), AuthorType.valueOf(authorType.toUpperCase())));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return commentRepository.findAll(spec, pageable).map(this::toResponse);
     }
 
     @Transactional(readOnly = true)

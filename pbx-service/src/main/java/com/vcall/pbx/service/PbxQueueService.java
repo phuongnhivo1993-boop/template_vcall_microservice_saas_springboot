@@ -12,13 +12,18 @@ import com.vcall.pbx.entity.PbxQueueMember;
 import com.vcall.pbx.repository.ExtensionRepository;
 import com.vcall.pbx.repository.PbxQueueMemberRepository;
 import com.vcall.pbx.repository.PbxQueueRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -107,6 +112,36 @@ public class PbxQueueService {
         PbxQueueMember member = pbxQueueMemberRepository.findById(memberId)
                 .orElseThrow(() -> new ResourceNotFoundException("Queue member not found with id: " + memberId));
         pbxQueueMemberRepository.delete(member);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PbxQueueResponse> search(String keyword, String strategy, Pageable pageable) {
+        Specification<PbxQueue> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (keyword != null && !keyword.isEmpty()) {
+                String pattern = "%" + keyword.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("name")), pattern),
+                        cb.like(cb.lower(root.get("description")), pattern)
+                ));
+            }
+            if (strategy != null && !strategy.isEmpty()) {
+                predicates.add(cb.equal(root.get("strategy"), QueueStrategy.valueOf(strategy.toUpperCase())));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return pbxQueueRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Long> getStats() {
+        List<PbxQueue> all = pbxQueueRepository.findAll();
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("total", (long) all.size());
+        stats.put("fifo", all.stream().filter(q -> q.getStrategy() == QueueStrategy.FIFO).count());
+        stats.put("roundRobin", all.stream().filter(q -> q.getStrategy() == QueueStrategy.ROUND_ROBIN).count());
+        stats.put("ringAll", all.stream().filter(q -> q.getStrategy() == QueueStrategy.RING_ALL).count());
+        return stats;
     }
 
     private PbxQueueResponse toResponse(PbxQueue queue) {

@@ -10,6 +10,7 @@ import com.vcall.iam.entity.User;
 import com.vcall.iam.entity.UserRole;
 import com.vcall.iam.entity.UserStatus;
 import com.vcall.iam.kafka.UserEventPublisher;
+import com.vcall.iam.mapper.UserMapper;
 import com.vcall.iam.repository.RoleRepository;
 import com.vcall.iam.repository.UserRepository;
 import com.vcall.iam.repository.UserRoleRepository;
@@ -35,6 +36,7 @@ public class UserService {
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserEventPublisher eventPublisher;
+    private final UserMapper userMapper;
 
     @Transactional
     public UserResponse createUser(UserRequest request) {
@@ -45,14 +47,8 @@ public class UserService {
             throw new DuplicateResourceException("Email already exists: " + request.getEmail());
         }
 
-        User user = User.builder()
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .email(request.getEmail())
-                .phone(request.getPhone())
-                .fullName(request.getFullName())
-                .status(UserStatus.ACTIVE)
-                .build();
+        User user = userMapper.toEntity(request);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         user = userRepository.save(user);
 
@@ -116,9 +112,7 @@ public class UserService {
             throw new DuplicateResourceException("Email already exists: " + request.getEmail());
         }
 
-        user.setFullName(request.getFullName());
-        user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
+        userMapper.updateEntity(request, user);
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
@@ -185,20 +179,11 @@ public class UserService {
     }
 
     public UserResponse toUserResponse(User user) {
+        UserResponse response = userMapper.toResponse(user);
         Set<String> roles = user.getUserRoles().stream()
                 .map(ur -> ur.getRole().getName().name())
                 .collect(Collectors.toSet());
-
-        return UserResponse.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .phone(user.getPhone())
-                .fullName(user.getFullName())
-                .avatar(user.getAvatar())
-                .status(user.getStatus() != null ? user.getStatus().name() : null)
-                .roles(roles)
-                .createdAt(user.getCreatedAt())
-                .build();
+        response.setRoles(roles);
+        return response;
     }
 }

@@ -1,8 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { Table, Card, Select, Tag, Button, Space, Typography, Badge, Switch, Modal, message } from 'antd';
-import { PlusOutlined, TeamOutlined } from '@ant-design/icons';
+import { useState, useEffect, useCallback } from 'react';
+import { Button, Tag, Space, Badge, Form, Input, Select, message, Typography } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import CommonTable from '@/components/common/CommonTable';
+import CommonForm from '@/components/common/CommonForm';
+import CommonSearch from '@/components/common/CommonSearch';
+import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
+import { agentsApi } from '@/lib/api';
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
+import type { SorterResult } from 'antd/es/table/interface';
 
 const { Title } = Typography;
 
@@ -19,15 +26,6 @@ interface Agent {
   satisfaction: number;
 }
 
-const agentsData: Agent[] = [
-  { id: 'AG-001', name: 'Sarah Johnson', email: 'sarah@vcall.com', status: 'online', role: 'Senior Agent', group: 'Support', extension: '101', activeCalls: 1, totalCalls: 145, satisfaction: 95 },
-  { id: 'AG-002', name: 'Mike Roberts', email: 'mike@vcall.com', status: 'busy', role: 'Agent', group: 'Support', extension: '102', activeCalls: 2, totalCalls: 128, satisfaction: 88 },
-  { id: 'AG-003', name: 'Emily Wilson', email: 'emily@vcall.com', status: 'online', role: 'Senior Agent', group: 'Billing', extension: '103', activeCalls: 0, totalCalls: 112, satisfaction: 92 },
-  { id: 'AG-004', name: 'John Davis', email: 'john@vcall.com', status: 'break', role: 'Agent', group: 'Support', extension: '104', activeCalls: 0, totalCalls: 98, satisfaction: 85 },
-  { id: 'AG-005', name: 'Lisa Martinez', email: 'lisa@vcall.com', status: 'offline', role: 'Trainee', group: 'Support', extension: '105', activeCalls: 0, totalCalls: 56, satisfaction: 90 },
-  { id: 'AG-006', name: 'David Chen', email: 'david@vcall.com', status: 'online', role: 'Agent', group: 'Technical', extension: '106', activeCalls: 1, totalCalls: 78, satisfaction: 93 },
-];
-
 const statusColors: Record<string, string> = {
   online: '#52c41a',
   busy: '#faad14',
@@ -35,25 +33,135 @@ const statusColors: Record<string, string> = {
   offline: '#d9d9d9',
 };
 
+const statusOptions = [
+  { value: 'online', label: 'Online' },
+  { value: 'busy', label: 'Busy' },
+  { value: 'break', label: 'Break' },
+  { value: 'offline', label: 'Offline' },
+];
+
 export default function AgentsPage() {
-  const [statusFilter, setStatusFilter] = useState<string | undefined>();
-  const [groupFilter, setGroupFilter] = useState<string | undefined>();
-
-  const filtered = agentsData.filter((a) => {
-    const matchesStatus = !statusFilter || a.status === statusFilter;
-    const matchesGroup = !groupFilter || a.group === groupFilter;
-    return matchesStatus && matchesGroup;
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: 1,
+    pageSize: 10,
+    total: 0,
   });
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
+  const [filters, setFilters] = useState<Record<string, any>>({});
 
-  const handleStatusChange = (agent: Agent, newStatus: string) => {
-    message.success(`${agent.name} status changed to ${newStatus}`);
+  const fetchAgents = useCallback(async (page = 1, size = 10, params?: Record<string, any>) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await agentsApi.list({ page: page - 1, size, ...params });
+      const data = res.data;
+      if (data.content) {
+        setAgents(data.content);
+        setPagination((prev) => ({
+          ...prev,
+          current: data.page + 1,
+          pageSize: data.size,
+          total: data.totalElements,
+        }));
+      } else if (Array.isArray(data)) {
+        setAgents(data);
+      } else if (data.data) {
+        setAgents(Array.isArray(data.data) ? data.data : []);
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to load agents');
+      setAgents([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAgents(1, pagination.pageSize);
+  }, []);
+
+  const handleTableChange = (
+    pag: TablePaginationConfig,
+    _filters: any,
+    _sorter: SorterResult<Agent> | SorterResult<Agent>[],
+  ) => {
+    fetchAgents(pag.current, pag.pageSize, filters);
   };
 
-  const columns = [
+  const handleSearch = (values: any) => {
+    const cleaned: Record<string, any> = {};
+    Object.entries(values).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') {
+        cleaned[key] = val;
+      }
+    });
+    setFilters(cleaned);
+    fetchAgents(1, pagination.pageSize, cleaned);
+  };
+
+  const handleReset = () => {
+    setFilters({});
+    fetchAgents(1, pagination.pageSize);
+  };
+
+  const handleStatusChange = async (agent: Agent, newStatus: string) => {
+    try {
+      await agentsApi.updateStatus(agent.id, newStatus);
+      message.success(`${agent.name} status changed to ${newStatus}`);
+      fetchAgents(pagination.current, pagination.pageSize, filters);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Failed to update status');
+    }
+  };
+
+  const handleCreate = () => {
+    setEditingAgent(null);
+    setModalOpen(true);
+  };
+
+  const handleEdit = (agent: Agent) => {
+    setEditingAgent(agent);
+    setModalOpen(true);
+  };
+
+  const handleDelete = (agent: Agent) => {
+    showDeleteConfirm({
+      title: 'Delete Agent',
+      content: `Are you sure you want to delete ${agent.name}? This action cannot be undone.`,
+      onOk: async () => {
+        await agentsApi.delete(agent.id);
+        fetchAgents(pagination.current, pagination.pageSize, filters);
+      },
+    });
+  };
+
+  const handleFormSubmit = async (values: any) => {
+    if (editingAgent) {
+      await agentsApi.update(editingAgent.id, values);
+    } else {
+      await agentsApi.create(values);
+    }
+    fetchAgents(pagination.current, pagination.pageSize, filters);
+  };
+
+  const handleExportCsv = () => {
+    message.info('CSV export triggered');
+  };
+
+  const handleExportExcel = () => {
+    message.info('Excel export triggered');
+  };
+
+  const columns: ColumnsType<Agent> = [
     {
       title: 'Agent',
       dataIndex: 'name',
       key: 'name',
+      sorter: true,
       render: (name: string, record: Agent) => (
         <Space>
           <Badge status={record.status === 'online' ? 'success' : record.status === 'busy' ? 'warning' : record.status === 'break' ? 'processing' : 'default'} />
@@ -72,12 +180,7 @@ export default function AgentsPage() {
           onChange={(val) => handleStatusChange(record, val)}
           size="small"
           style={{ width: 110 }}
-          options={[
-            { value: 'online', label: 'Online' },
-            { value: 'busy', label: 'Busy' },
-            { value: 'break', label: 'Break' },
-            { value: 'offline', label: 'Offline' },
-          ]}
+          options={statusOptions}
         />
       ),
     },
@@ -101,49 +204,105 @@ export default function AgentsPage() {
         <Tag color={val >= 90 ? 'green' : val >= 80 ? 'orange' : 'red'}>{val}%</Tag>
       ),
     },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_: unknown, record: Agent) => (
+        <Space>
+          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+            Edit
+          </Button>
+          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)}>
+            Delete
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
+  const searchFields = [
+    { name: 'name', label: 'Name', type: 'input' as const, placeholder: 'Search by name' },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      placeholder: 'Filter by status',
+      options: statusOptions,
+    },
+    {
+      name: 'group',
+      label: 'Group',
+      type: 'select' as const,
+      placeholder: 'Filter by group',
+      options: [
+        { value: 'Support', label: 'Support' },
+        { value: 'Billing', label: 'Billing' },
+        { value: 'Technical', label: 'Technical' },
+      ],
+    },
   ];
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <Title level={3} style={{ margin: 0 }}>Agents</Title>
-        <Button type="primary" icon={<PlusOutlined />}>Add Agent</Button>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+          Add Agent
+        </Button>
       </div>
-      <Card>
-        <Space style={{ marginBottom: 16 }}>
-          <Select
-            placeholder="Filter by status"
-            value={statusFilter}
-            onChange={setStatusFilter}
-            allowClear
-            style={{ width: 160 }}
-            options={[
-              { value: 'online', label: 'Online' },
-              { value: 'busy', label: 'Busy' },
-              { value: 'break', label: 'Break' },
-              { value: 'offline', label: 'Offline' },
-            ]}
-          />
-          <Select
-            placeholder="Filter by group"
-            value={groupFilter}
-            onChange={setGroupFilter}
-            allowClear
-            style={{ width: 160 }}
-            options={[
-              { value: 'Support', label: 'Support' },
-              { value: 'Billing', label: 'Billing' },
-              { value: 'Technical', label: 'Technical' },
-            ]}
-          />
-        </Space>
-        <Table
-          dataSource={filtered}
-          columns={columns}
-          rowKey="id"
-          pagination={{ pageSize: 10 }}
-        />
-      </Card>
+      <CommonSearch
+        fields={searchFields}
+        onSearch={handleSearch}
+        onReset={handleReset}
+        loading={loading}
+      />
+      <CommonTable<Agent>
+        columns={columns}
+        dataSource={agents}
+        loading={loading}
+        error={error}
+        rowKey="id"
+        pagination={pagination}
+        onRefresh={() => fetchAgents(pagination.current, pagination.pageSize, filters)}
+        onExportCsv={handleExportCsv}
+        onExportExcel={handleExportExcel}
+        onTableChange={handleTableChange}
+      />
+      <CommonForm
+        open={modalOpen}
+        title={editingAgent ? 'Edit Agent' : 'Add Agent'}
+        onClose={() => { setModalOpen(false); setEditingAgent(null); }}
+        onSubmit={handleFormSubmit}
+        initialValues={editingAgent}
+        width={600}
+      >
+        <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Please enter name' }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Please enter a valid email' }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="role" label="Role" rules={[{ required: true, message: 'Please select role' }]}>
+          <Select options={[
+            { value: 'Senior Agent', label: 'Senior Agent' },
+            { value: 'Agent', label: 'Agent' },
+            { value: 'Trainee', label: 'Trainee' },
+          ]} />
+        </Form.Item>
+        <Form.Item name="group" label="Group" rules={[{ required: true, message: 'Please select group' }]}>
+          <Select options={[
+            { value: 'Support', label: 'Support' },
+            { value: 'Billing', label: 'Billing' },
+            { value: 'Technical', label: 'Technical' },
+          ]} />
+        </Form.Item>
+        <Form.Item name="extension" label="Extension" rules={[{ required: true, message: 'Please enter extension' }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="status" label="Status" initialValue="offline">
+          <Select options={statusOptions} />
+        </Form.Item>
+      </CommonForm>
     </div>
   );
 }

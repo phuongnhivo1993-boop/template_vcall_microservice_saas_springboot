@@ -3,6 +3,7 @@ package com.vcall.chat.service;
 import com.vcall.chat.dto.ChatAssignRequest;
 import com.vcall.chat.dto.ChatConversationRequest;
 import com.vcall.chat.dto.ChatConversationResponse;
+import com.vcall.chat.dto.ChatConversationUpdateRequest;
 import com.vcall.chat.entity.ChatConversation;
 import com.vcall.chat.entity.ChatConversation.Source;
 import com.vcall.chat.entity.ChatConversation.Status;
@@ -28,6 +29,30 @@ public class ChatService {
     private final ChatConversationRepository conversationRepository;
     private final ChatMessageRepository messageRepository;
     private final ChatEventPublisher eventPublisher;
+
+    @Transactional
+    public ChatConversationResponse updateConversation(UUID conversationId, ChatConversationUpdateRequest request) {
+        ChatConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found with id: " + conversationId));
+        if (request.getCustomerName() != null) conversation.setCustomerName(request.getCustomerName());
+        if (request.getCustomerEmail() != null) conversation.setCustomerEmail(request.getCustomerEmail());
+        if (request.getPageUrl() != null) conversation.setPageUrl(request.getPageUrl());
+        if (request.getUserAgent() != null) conversation.setUserAgent(request.getUserAgent());
+        conversation = conversationRepository.save(conversation);
+
+        eventPublisher.publishChatUpdated(conversation);
+        return toResponse(conversation);
+    }
+
+    @Transactional
+    public void deleteConversation(UUID conversationId) {
+        ChatConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found with id: " + conversationId));
+        conversation.setIsDeleted(true);
+        conversationRepository.save(conversation);
+
+        eventPublisher.publishChatDeleted(conversation);
+    }
 
     @Transactional
     public ChatConversationResponse createConversation(ChatConversationRequest request) {

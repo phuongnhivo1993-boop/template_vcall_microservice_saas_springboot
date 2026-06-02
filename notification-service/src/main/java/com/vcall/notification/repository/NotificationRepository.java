@@ -25,6 +25,8 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 
     List<Notification> findByRecipientIdAndType(UUID recipientId, NotificationType type);
 
+    List<Notification> findByRecipientIdAndStatus(UUID recipientId, NotificationStatus status);
+
     List<Notification> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
     Page<Notification> findByRecipientIdAndStatusNotOrderBySentAtDesc(UUID recipientId, NotificationStatus status, Pageable pageable);

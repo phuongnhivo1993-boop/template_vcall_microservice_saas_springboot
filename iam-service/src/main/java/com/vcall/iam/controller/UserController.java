@@ -1,6 +1,8 @@
 package com.vcall.iam.controller;
 
 import com.vcall.common.dto.ApiResponse;
+import com.vcall.common.dto.BulkStatusRequest;
+import com.vcall.common.util.BulkOperationUtil;
 import com.vcall.common.util.CsvExportUtil;
 import com.vcall.iam.dto.UserRequest;
 import com.vcall.iam.dto.UserResponse;
@@ -14,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,8 +28,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -136,5 +143,61 @@ public class UserController {
         List<List<String>> rows = CsvExportUtil.toRows(users.getContent(),
                 Arrays.asList("id", "username", "fullName", "email", "phone", "status", "createdAt"));
         CsvExportUtil.writeCsv(response, "users.csv", headers, rows);
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> bulkDelete(
+            @RequestBody List<UUID> ids) {
+        BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
+        for (UUID id : ids) {
+            try {
+                userService.deleteUser(id);
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk delete completed", result));
+    }
+
+    @PostMapping("/bulk-status")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> bulkStatus(
+            @RequestBody BulkStatusRequest request) {
+        BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
+        for (UUID id : request.getIds()) {
+            try {
+                userService.updateUserStatus(id, request.getStatus());
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk status update completed", result));
+    }
+
+    @PostMapping(value = "/import/csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<?>>> importCsv(
+            @RequestParam("file") MultipartFile file) throws IOException {
+        List<UserRequest> items = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+            reader.readLine(); // skip header
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] fields = line.split(",");
+                if (fields.length >= 3) {
+                    UserRequest request = UserRequest.builder()
+                            .username(fields[0].trim())
+                            .password(fields[1].trim())
+                            .email(fields.length > 2 ? fields[2].trim() : null)
+                            .phone(fields.length > 3 ? fields[3].trim() : null)
+                            .fullName(fields.length > 4 ? fields[4].trim() : fields[0].trim())
+                            .build();
+                    items.add(request);
+                }
+            }
+        }
+        BulkOperationUtil.BulkResult<?> result = BulkOperationUtil.bulkCreate(items, item ->
+                userService.createUser((UserRequest) item));
+        return ResponseEntity.ok(ApiResponse.success("Import completed", result));
     }
 }

@@ -10,12 +10,14 @@ import com.vcall.agent.entity.AgentGroup;
 import com.vcall.agent.entity.AgentGroupMember;
 import com.vcall.agent.entity.AgentSession;
 import com.vcall.agent.kafka.AgentEventPublisher;
+import com.vcall.agent.mapper.AgentMapper;
 import com.vcall.agent.repository.AgentGroupMemberRepository;
 import com.vcall.agent.repository.AgentGroupRepository;
 import com.vcall.agent.repository.AgentRepository;
 import com.vcall.agent.repository.AgentSessionRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,18 +41,12 @@ public class AgentService {
     private final AgentSessionRepository agentSessionRepository;
     private final AgentStatusService agentStatusService;
     private final AgentEventPublisher eventPublisher;
+    private final AgentMapper agentMapper;
 
     @Transactional
     public AgentResponse createAgent(AgentRequest request) {
-        Agent agent = new Agent();
+        Agent agent = agentMapper.toEntity(request);
         agent.setUserId(request.getUserId());
-        agent.setAgentCode(request.getAgentCode());
-        agent.setFullName(request.getFullName());
-        agent.setEmail(request.getEmail());
-        agent.setPhone(request.getPhone());
-        agent.setSkill(request.getSkill());
-        agent.setMaxConcurrentCalls(request.getMaxConcurrentCalls());
-        agent.setStatus(AgentStatusEnum.OFFLINE);
         agent = agentRepository.save(agent);
 
         if (request.getGroupIds() != null && !request.getGroupIds().isEmpty()) {
@@ -73,15 +69,16 @@ public class AgentService {
         return agentRepository.findAll(pageable).map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
+    public Page<AgentResponse> searchAgents(Specification<com.vcall.agent.entity.Agent> spec, Pageable pageable) {
+        return agentRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
     @Transactional
     public AgentResponse updateAgent(UUID id, AgentRequest request) {
         Agent agent = agentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Agent not found with id: " + id));
-        agent.setFullName(request.getFullName());
-        agent.setEmail(request.getEmail());
-        agent.setPhone(request.getPhone());
-        agent.setSkill(request.getSkill());
-        agent.setMaxConcurrentCalls(request.getMaxConcurrentCalls());
+        agentMapper.updateEntity(request, agent);
         agent = agentRepository.save(agent);
         return toResponse(agent);
     }
@@ -179,19 +176,9 @@ public class AgentService {
 
     private AgentResponse toResponse(Agent agent) {
         AgentSessionResponse currentSession = getCurrentSession(agent.getId());
-        return AgentResponse.builder()
-                .id(agent.getId())
-                .userId(agent.getUserId())
-                .agentCode(agent.getAgentCode())
-                .fullName(agent.getFullName())
-                .email(agent.getEmail())
-                .phone(agent.getPhone())
-                .status(agent.getStatus().name())
-                .skill(agent.getSkill())
-                .maxConcurrentCalls(agent.getMaxConcurrentCalls())
-                .currentSession(currentSession)
-                .createdAt(agent.getCreatedAt())
-                .build();
+        AgentResponse response = agentMapper.toResponse(agent);
+        response.setCurrentSession(currentSession);
+        return response;
     }
 
     private AgentSessionResponse toSessionResponse(AgentSession session) {
