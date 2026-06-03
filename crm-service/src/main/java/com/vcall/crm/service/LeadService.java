@@ -1,5 +1,10 @@
 package com.vcall.crm.service;
 
+import com.vcall.audit.entity.AuditLog;
+import com.vcall.audit.entity.AuditLog.Action;
+import com.vcall.audit.entity.AuditLog.ActorType;
+import com.vcall.audit.entity.AuditLog.AuditStatus;
+import com.vcall.audit.service.AuditLogService;
 import com.vcall.common.exception.ResourceNotFoundException;
 import com.vcall.crm.dto.LeadRequest;
 import com.vcall.crm.dto.LeadResponse;
@@ -18,6 +23,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +37,7 @@ public class LeadService {
     private final LeadRepository leadRepository;
     private final OpportunityService opportunityService;
     private final CrmEventPublisher eventPublisher;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public LeadResponse createLead(LeadRequest request) {
@@ -39,12 +46,40 @@ public class LeadService {
         lead.setStatus(LeadStatus.NEW);
         lead = leadRepository.save(lead);
         eventPublisher.publishLeadCreated(lead);
+        
+        // Audit log
+        AuditLog auditLog = AuditLog.builder()
+                .actorId(lead.getAssignedTo() != null ? lead.getAssignedTo() : UUID.randomUUID())
+                .actorType(ActorType.USER)
+                .action(Action.CREATE)
+                .resource("Lead")
+                .resourceId(lead.getId().toString())
+                .resourceType("Lead")
+                .details("Created lead: " + lead.getFirstName() + " " + lead.getLastName())
+                .status(AuditStatus.SUCCESS)
+                .build();
+        auditLogService.createLog(auditLog);
+        
         return mapToResponse(lead);
     }
 
     public LeadResponse getLead(UUID id) {
         Lead lead = leadRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + id));
+        
+        // Audit log
+        AuditLog auditLog = AuditLog.builder()
+                .actorId(UUID.randomUUID())
+                .actorType(ActorType.USER)
+                .action(Action.READ)
+                .resource("Lead")
+                .resourceId(lead.getId().toString())
+                .resourceType("Lead")
+                .details("Retrieved lead: " + lead.getFirstName() + " " + lead.getLastName())
+                .status(AuditStatus.SUCCESS)
+                .build();
+        auditLogService.createLog(auditLog);
+        
         return mapToResponse(lead);
     }
 
@@ -64,6 +99,20 @@ public class LeadService {
                 .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + id));
         mapToEntity(request, lead);
         lead = leadRepository.save(lead);
+        
+        // Audit log
+        AuditLog auditLog = AuditLog.builder()
+                .actorId(UUID.randomUUID())
+                .actorType(ActorType.USER)
+                .action(Action.UPDATE)
+                .resource("Lead")
+                .resourceId(lead.getId().toString())
+                .resourceType("Lead")
+                .details("Updated lead: " + lead.getFirstName() + " " + lead.getLastName())
+                .status(AuditStatus.SUCCESS)
+                .build();
+        auditLogService.createLog(auditLog);
+        
         return mapToResponse(lead);
     }
 
@@ -73,6 +122,20 @@ public class LeadService {
                 .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + id));
         lead.setStatus(status);
         lead = leadRepository.save(lead);
+        
+        // Audit log
+        AuditLog auditLog = AuditLog.builder()
+                .actorId(UUID.randomUUID())
+                .actorType(ActorType.USER)
+                .action(Action.UPDATE)
+                .resource("Lead")
+                .resourceId(lead.getId().toString())
+                .resourceType("Lead")
+                .details("Updated lead status to: " + status)
+                .status(AuditStatus.SUCCESS)
+                .build();
+        auditLogService.createLog(auditLog);
+        
         return mapToResponse(lead);
     }
 
@@ -82,6 +145,20 @@ public class LeadService {
                 .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + id));
         lead.setAssignedTo(assignedTo);
         lead = leadRepository.save(lead);
+        
+        // Audit log
+        AuditLog auditLog = AuditLog.builder()
+                .actorId(UUID.randomUUID())
+                .actorType(ActorType.USER)
+                .action(Action.UPDATE)
+                .resource("Lead")
+                .resourceId(lead.getId().toString())
+                .resourceType("Lead")
+                .details("Assigned lead to user: " + assignedTo)
+                .status(AuditStatus.SUCCESS)
+                .build();
+        auditLogService.createLog(auditLog);
+        
         return mapToResponse(lead);
     }
 

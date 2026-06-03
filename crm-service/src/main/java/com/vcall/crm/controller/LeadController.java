@@ -5,7 +5,9 @@ import com.vcall.common.dto.BulkStatusRequest;
 import com.vcall.common.dto.PagedResponse;
 import com.vcall.common.util.BulkOperationUtil;
 import com.vcall.common.util.CsvExportUtil;
+import com.vcall.common.util.CsvUtil;
 import com.vcall.common.util.ExcelExportUtil;
+import com.vcall.common.util.ExcelImportUtil;
 import com.vcall.crm.dto.LeadRequest;
 import com.vcall.crm.dto.LeadResponse;
 import com.vcall.crm.dto.OpportunityRequest;
@@ -31,7 +33,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -194,5 +198,59 @@ public class LeadController {
             }
         }
         return ResponseEntity.ok(ApiResponse.success("Bulk status update completed", result));
+    }
+
+    @PostMapping("/import/csv")
+    public ResponseEntity<ApiResponse<List<LeadResponse>>> importLeadsCsv(
+            @RequestParam("file") MultipartFile file) throws Exception {
+        List<String[]> rows = CsvUtil.parseCsv(file.getInputStream());
+        List<LeadResponse> importedLeads = new ArrayList<>();
+        
+        // Skip header row
+        for (int i = 1; i < rows.size(); i++) {
+            String[] row = rows.get(i);
+            if (row.length >= 6) {
+                LeadRequest request = new LeadRequest();
+                request.setFirstName(row[0]);
+                request.setLastName(row[1]);
+                request.setEmail(row.length > 2 ? row[2] : null);
+                request.setPhone(row.length > 3 ? row[3] : null);
+                request.setCompany(row.length > 4 ? row[4] : null);
+                request.setStatus(LeadStatus.valueOf(row[5].toUpperCase()));
+                
+                LeadResponse response = leadService.createLead(request);
+                importedLeads.add(response);
+            }
+        }
+        
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Leads imported successfully", importedLeads));
+    }
+
+    @PostMapping("/import/excel")
+    public ResponseEntity<ApiResponse<List<LeadResponse>>> importLeadsExcel(
+            @RequestParam("file") MultipartFile file) throws Exception {
+        List<String[]> rows = ExcelImportUtil.parseXlsx(file.getInputStream());
+        List<LeadResponse> importedLeads = new ArrayList<>();
+        
+        // Skip header row
+        for (int i = 1; i < rows.size(); i++) {
+            String[] row = rows.get(i);
+            if (row.length >= 6) {
+                LeadRequest request = new LeadRequest();
+                request.setFirstName(row[0]);
+                request.setLastName(row[1]);
+                request.setEmail(row.length > 2 ? row[2] : null);
+                request.setPhone(row.length > 3 ? row[3] : null);
+                request.setCompany(row.length > 4 ? row[4] : null);
+                request.setStatus(LeadStatus.valueOf(row[5].toUpperCase()));
+                
+                LeadResponse response = leadService.createLead(request);
+                importedLeads.add(response);
+            }
+        }
+        
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Leads imported successfully", importedLeads));
     }
 }
