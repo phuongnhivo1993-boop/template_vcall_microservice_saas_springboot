@@ -21,7 +21,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Validation', 'Please enter email and password');
+      Alert.alert('Xác thực', 'Vui lòng nhập email và mật khẩu');
       return;
     }
     try {
@@ -30,7 +30,7 @@ export default function LoginScreen() {
         router.replace('/(app)/calls');
       }
     } catch (err: any) {
-      Alert.alert('Login Failed', err || 'Invalid credentials');
+      Alert.alert('Đăng nhập thất bại', err || 'Thông tin đăng nhập không hợp lệ');
     }
   };
 
@@ -43,7 +43,7 @@ export default function LoginScreen() {
         <View style={styles.header}>
           <Ionicons name="call" size={48} color={Colors.primary} />
           <Text style={styles.title}>VCall</Text>
-          <Text style={styles.subtitle}>Agent Login</Text>
+          <Text style={styles.subtitle}>Đăng nhập</Text>
         </View>
 
         <View style={styles.form}>
@@ -51,7 +51,7 @@ export default function LoginScreen() {
             <Ionicons name="mail-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Email or Phone"
+              placeholder="Email hoặc SĐT"
               placeholderTextColor={Colors.textSecondary}
               value={email}
               onChangeText={setEmail}
@@ -64,7 +64,7 @@ export default function LoginScreen() {
             <Ionicons name="lock-closed-outline" size={20} color={Colors.textSecondary} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Password"
+              placeholder="Mật khẩu"
               placeholderTextColor={Colors.textSecondary}
               value={password}
               onChangeText={setPassword}
@@ -83,7 +83,7 @@ export default function LoginScreen() {
             {loading ? (
               <ActivityIndicator color={Colors.white} />
             ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
+              <Text style={styles.buttonText}>Đăng nhập</Text>
             )}
           </TouchableOpacity>
         </View>

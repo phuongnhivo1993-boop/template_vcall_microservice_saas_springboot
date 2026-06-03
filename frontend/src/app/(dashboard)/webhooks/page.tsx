@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, Tag, Button, Space, Typography, Switch, Form, Input, Checkbox, message, Badge, Tooltip, Alert } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ApiOutlined, ReloadOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
+import { webhooksApi } from '@/lib/api';
 
 const { Text } = Typography;
 
@@ -37,58 +38,80 @@ const EVENT_OPTIONS = [
   { value: 'agent.status', label: 'Agent Status Changed' },
 ];
 
-const MOCK_WEBHOOKS: Webhook[] = [
-  { id: '1', name: 'Zalo Integration', url: 'https://zalo-api.vn/webhook/vcall', events: ['ticket.created', 'ticket.updated', 'customer.updated'], secret: '****', isActive: true, lastTriggeredAt: new Date().toISOString(), lastResponseCode: 200, failureCount: 0, createdAt: '2026-05-01' },
-  { id: '2', name: 'Facebook Messenger Bot', url: 'https://graph.facebook.com/webhook', events: ['chat.message', 'customer.created'], secret: '****', isActive: true, lastTriggeredAt: new Date(Date.now() - 3600000).toISOString(), lastResponseCode: 200, failureCount: 1, createdAt: '2026-04-15' },
-  { id: '3', name: 'Internal CRM Sync', url: 'https://crm-internal.company.vn/api/sync', events: ['customer.created', 'customer.updated', 'ticket.resolved'], secret: '****', isActive: false, lastTriggeredAt: new Date(Date.now() - 86400000).toISOString(), lastResponseCode: 500, failureCount: 5, createdAt: '2026-03-20' },
-  { id: '4', name: 'Slack Notification', url: 'https://hooks.slack.com/services/T00/B00/xxx', events: ['ticket.created', 'call.missed'], secret: '****', isActive: true, lastTriggeredAt: new Date(Date.now() - 7200000).toISOString(), lastResponseCode: 200, failureCount: 0, createdAt: '2026-05-10' },
-];
-
 export default function WebhooksPage() {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [editingWebhook, setEditingWebhook] = useState<Webhook | null>(null);
   const [testResult, setTestResult] = useState<string | null>(null);
 
-  useEffect(() => {
-    setWebhooks(MOCK_WEBHOOKS);
-    setLoading(false);
+  const fetchWebhooks = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await webhooksApi.list({ page: 0, size: 100 });
+      setWebhooks(res.data?.data?.content || res.data?.content || []);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load webhooks');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const toggleWebhook = (webhook: Webhook) => {
-    setWebhooks(prev => prev.map(w => w.id === webhook.id ? { ...w, isActive: !w.isActive } : w));
-    message.success(`${webhook.name} ${webhook.isActive ? 'disabled' : 'enabled'}`);
+  useEffect(() => {
+    fetchWebhooks();
+  }, [fetchWebhooks]);
+
+  const toggleWebhook = async (webhook: Webhook) => {
+    try {
+      await webhooksApi.update(webhook.id, { isActive: !webhook.isActive });
+      message.success(`${webhook.name} ${webhook.isActive ? 'disabled' : 'enabled'}`);
+      fetchWebhooks();
+    } catch (err: any) {
+      message.error(err?.message || 'Failed to toggle webhook');
+    }
   };
 
   const handleSave = async (values: any) => {
-    if (editingWebhook) {
-      setWebhooks(prev => prev.map(w => w.id === editingWebhook.id ? { ...w, ...values } : w));
-      message.success('Webhook updated');
-    } else {
-      const newWebhook: Webhook = {
-        id: Date.now().toString(), ...values, isActive: true,
-        lastTriggeredAt: null, lastResponseCode: null, failureCount: 0,
-        createdAt: new Date().toISOString(),
-      };
-      setWebhooks(prev => [newWebhook, ...prev]);
-      message.success('Webhook created');
+    try {
+      if (editingWebhook) {
+        await webhooksApi.update(editingWebhook.id, values);
+        message.success('Webhook updated');
+      } else {
+        await webhooksApi.create(values);
+        message.success('Webhook created');
+      }
+      setFormOpen(false);
+      setEditingWebhook(null);
+      fetchWebhooks();
+    } catch (err: any) {
+      message.error(err?.message || 'Failed to save webhook');
     }
-    setFormOpen(false);
-    setEditingWebhook(null);
   };
 
   const testWebhook = async (webhook: Webhook) => {
     setTestResult(`Testing ${webhook.url}...`);
-    setTimeout(() => {
-      const success = Math.random() > 0.3;
-      setTestResult(success ? `✅ ${webhook.url} - 200 OK` : `❌ ${webhook.url} - Connection failed`);
-      setWebhooks(prev => prev.map(w => w.id === webhook.id ? {
-        ...w, lastTriggeredAt: new Date().toISOString(),
-        lastResponseCode: success ? 200 : 500,
-        failureCount: success ? w.failureCount : w.failureCount + 1,
-      } : w));
-    }, 1500);
+    try {
+      const res = await webhooksApi.test(webhook.id);
+      setTestResult(`✅ ${webhook.url} - ${res.status} OK`);
+      fetchWebhooks();
+    } catch (err: any) {
+      setTestResult(`❌ ${webhook.url} - ${err?.message || 'Connection failed'}`);
+    }
+    setTimeout(() => setTestResult(null), 3000);
+  };
+
+  const handleDeleteWebhook = async (id: string) => {
+    showDeleteConfirm({
+      title: 'Delete Webhook',
+      content: 'Are you sure you want to delete this webhook?',
+      onOk: async () => {
+        await webhooksApi.delete(id);
+        message.success('Webhook deleted');
+        fetchWebhooks();
+      },
+    });
   };
 
   const columns = [
@@ -116,9 +139,7 @@ export default function WebhooksPage() {
             <Button size="small" icon={<ReloadOutlined />} onClick={() => testWebhook(record)} />
           </Tooltip>
           <Button size="small" icon={<EditOutlined />} onClick={() => { setEditingWebhook(record); setFormOpen(true); }} />
-          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => showDeleteConfirm({
-            onOk: async () => { setWebhooks(prev => prev.filter(w => w.id !== record.id)); message.success('Deleted'); }
-          })} />
+          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteWebhook(record.id)} />
         </Space>
       ),
     },
@@ -138,7 +159,7 @@ export default function WebhooksPage() {
           <Alert message={testResult} type={testResult.includes('✅') ? 'success' : 'error'} closable
             onClose={() => setTestResult(null)} style={{ marginBottom: 16 }} />
         )}
-        <CommonTable columns={columns} dataSource={webhooks} rowKey="id" loading={loading} pagination={false} />
+        <CommonTable columns={columns} dataSource={webhooks} rowKey="id" loading={loading} error={error} onRefresh={fetchWebhooks} pagination={false} />
       </Card>
 
       <CommonForm

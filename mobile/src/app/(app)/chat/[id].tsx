@@ -56,8 +56,8 @@ export default function ChatDetailScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          headerTitle: `Chat`,
-          headerBackTitle: 'Back',
+          headerTitle: `Trò chuyện`,
+          headerBackTitle: 'Quay lại',
           headerStyle: { backgroundColor: Colors.white },
           headerTintColor: Colors.text,
         }}
@@ -80,7 +80,7 @@ export default function ChatDetailScreen() {
         </TouchableOpacity>
         <TextInput
           style={styles.textInput}
-          placeholder="Type a message..."
+          placeholder="Nhập tin nhắn..."
           placeholderTextColor={Colors.textSecondary}
           value={inputText}
           onChangeText={setInputText}

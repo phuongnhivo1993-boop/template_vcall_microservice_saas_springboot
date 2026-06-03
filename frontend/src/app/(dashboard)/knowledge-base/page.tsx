@@ -8,6 +8,7 @@ import CommonForm from '@/components/common/CommonForm';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { Can } from '@/components/common/Can';
 import { Permissions } from '@/lib/permissions';
+import { knowledgeBaseApi } from '@/lib/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -34,15 +35,6 @@ const CATEGORIES = [
   { key: 'faq', label: 'FAQ' },
 ];
 
-const MOCK_ARTICLES: Article[] = [
-  { id: '1', title: 'Hướng dẫn đăng nhập hệ thống lần đầu', content: 'Chi tiết các bước đăng nhập hệ thống VCall Contact Center lần đầu tiên...', category: 'getting-started', tags: ['login', 'setup'], author: 'Admin', views: 245, likes: 12, createdAt: '2026-05-01', updatedAt: '2026-05-15', status: 'published' },
-  { id: '2', title: 'Cách tạo ticket hỗ trợ khách hàng', content: 'Hướng dẫn chi tiết cách tạo và quản lý ticket hỗ trợ...', category: 'features', tags: ['ticket', 'support'], author: 'Admin', views: 189, likes: 8, createdAt: '2026-05-03', updatedAt: '2026-05-10', status: 'published' },
-  { id: '3', title: 'Khắc phục lỗi không nghe được âm thanh cuộc gọi', content: 'Các bước kiểm tra và khắc phục lỗi âm thanh khi thực hiện cuộc gọi...', category: 'troubleshooting', tags: ['audio', 'call'], author: 'Tech Support', views: 312, likes: 25, createdAt: '2026-04-20', updatedAt: '2026-05-18', status: 'published' },
-  { id: '4', title: 'Bảng giá dịch vụ và cách thanh toán', content: 'Chi tiết các gói dịch vụ và phương thức thanh toán...', category: 'account', tags: ['pricing', 'payment'], author: 'Finance', views: 156, likes: 5, createdAt: '2026-04-15', updatedAt: '2026-05-01', status: 'published' },
-  { id: '5', title: 'Hướng dẫn sử dụng tính năng chuyển cuộc gọi', content: 'Cách sử dụng tính năng chuyển cuộc gọi giữa các agent...', category: 'features', tags: ['call', 'transfer'], author: 'Admin', views: 98, likes: 3, createdAt: '2026-05-10', updatedAt: '2026-05-12', status: 'published' },
-  { id: '6', title: 'Câu hỏi thường gặp về gói cước', content: 'Các câu hỏi thường gặp về gói cước và dịch vụ...', category: 'faq', tags: ['faq', 'pricing'], author: 'Admin', views: 67, likes: 2, createdAt: '2026-05-05', updatedAt: '2026-05-08', status: 'published' },
-];
-
 export default function KnowledgeBasePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,21 +45,23 @@ export default function KnowledgeBasePage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
 
-  useEffect(() => {
-    loadArticles();
-  }, []);
-
-  const loadArticles = useCallback(() => {
+  const loadArticles = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      setArticles(MOCK_ARTICLES);
-    } catch (err) {
-      setError('Failed to load articles');
+      const res = await knowledgeBaseApi.list({ page: 0, size: 100 });
+      const data = res.data?.data?.content || res.data?.content || [];
+      setArticles(data);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load articles');
     } finally {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    loadArticles();
+  }, [loadArticles]);
 
   const filteredArticles = articles.filter(article => {
     if (selectedCategory !== 'all' && article.category !== selectedCategory) return false;
@@ -81,25 +75,32 @@ export default function KnowledgeBasePage() {
   });
 
   const handleSaveArticle = async (values: any) => {
-    if (editingArticle) {
-      setArticles(prev => prev.map(a => a.id === editingArticle.id ? { ...a, ...values } : a));
-      message.success('Article updated');
-    } else {
-      const newArticle: Article = {
-        id: Date.now().toString(),
-        ...values,
-        author: 'Admin',
-        views: 0,
-        likes: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        status: 'published',
-      };
-      setArticles(prev => [newArticle, ...prev]);
-      message.success('Article created');
+    try {
+      if (editingArticle) {
+        await knowledgeBaseApi.update(editingArticle.id, values);
+        message.success('Article updated');
+      } else {
+        await knowledgeBaseApi.create(values);
+        message.success('Article created');
+      }
+      setFormOpen(false);
+      setEditingArticle(null);
+      loadArticles();
+    } catch (err: any) {
+      message.error(err?.message || 'Failed to save article');
     }
-    setFormOpen(false);
-    setEditingArticle(null);
+  };
+
+  const handleDeleteArticle = async (id: string) => {
+    showDeleteConfirm({
+      title: 'Delete Article',
+      content: 'Are you sure you want to delete this article?',
+      onOk: async () => {
+        await knowledgeBaseApi.delete(id);
+        message.success('Article deleted');
+        loadArticles();
+      },
+    });
   };
 
   if (loading) {
@@ -156,7 +157,7 @@ export default function KnowledgeBasePage() {
             <Button size="small" icon={<EditOutlined />} onClick={() => { setEditingArticle(record); setFormOpen(true); }}>Edit</Button>
           </Can>
           <Can I={Permissions.KNOWLEDGE_DELETE}>
-            <Button size="small" danger icon={<DeleteOutlined />} onClick={() => showDeleteConfirm({ onOk: async () => { setArticles(prev => prev.filter(a => a.id !== record.id)); message.success('Deleted'); } })}>Delete</Button>
+            <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteArticle(record.id)}>Delete</Button>
           </Can>
         </Space>
       ),

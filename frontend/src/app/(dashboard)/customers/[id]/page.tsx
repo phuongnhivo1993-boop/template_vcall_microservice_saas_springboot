@@ -8,7 +8,7 @@ import { ArrowLeftOutlined, MailOutlined, PhoneOutlined, EnvironmentOutlined, Us
          StarOutlined, ShoppingCartOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import CustomerTimeline from '@/components/common/CustomerTimeline';
-import { customersApi, ticketsApi } from '@/lib/api';
+import { customersApi, ticketsApi, callsApi } from '@/lib/api';
 
 const { Title, Text } = Typography;
 
@@ -24,65 +24,60 @@ export default function CustomerDetailPage() {
     fetchCustomer360();
   }, [params.id]);
 
+  const [customerCalls, setCustomerCalls] = useState<any[]>([]);
+  const [customerTickets, setCustomerTickets] = useState<any[]>([]);
+  const [timeline, setTimeline] = useState<any[]>([]);
+  const [subLoading, setSubLoading] = useState(false);
+
   const fetchCustomer360 = async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await customersApi.getById(params.id as string);
-      setCustomer(res.data?.data || generateMockCustomer());
-    } catch {
-      setCustomer(generateMockCustomer());
+      setCustomer(res.data?.data || res.data);
+      if (res.data?.data || res.data) {
+        fetchCustomerSubData(params.id as string);
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load customer');
     } finally {
       setLoading(false);
     }
   };
 
-  const generateMockCustomer = () => ({
-    id: params.id,
-    fullName: 'Nguyen Van Anh',
-    email: 'nguyenvananh@email.com',
-    phone: '0909 123 456',
-    customerCode: 'KH-00123',
-    gender: 'Male',
-    dateOfBirth: '1990-05-15',
-    company: 'TechCorp Vietnam',
-    position: 'Senior Developer',
-    nationality: 'Vietnam',
-    status: 'ACTIVE',
-    totalCalls: 45,
-    totalTickets: 12,
-    totalRevenue: 15000000,
-    lifetimeValue: 45000000,
-    satisfactionScore: 92,
-    lastContactAt: new Date().toISOString(),
-    segment: 'VIP',
-    tags: ['tech', 'premium', 'long-term'],
-    contacts: [
-      { id: 1, name: 'Nguyen Van Anh', email: 'personal@email.com', phone: '0909 123 456', role: 'Primary' },
-      { id: 2, name: 'Tran Thi B', email: 'work@email.com', phone: '0912 345 678', role: 'Work' },
-    ],
-    addresses: [
-      { id: 1, street: '123 Nguyen Hue', city: 'Ho Chi Minh', state: '', zipCode: '70000', country: 'Vietnam', type: 'Office' },
-    ],
-  });
-
-  const mockTimeline = [
-    { id: '1', type: 'call' as const, title: 'Cuộc gọi đến - Hỗ trợ kỹ thuật', description: 'Khách hàng gọi về lỗi kết nối internet', timestamp: new Date(Date.now() - 3600000).toISOString(), status: 'COMPLETED', agent: 'Tuan Anh' },
-    { id: '2', type: 'ticket' as const, title: 'Ticket #TK-2026-0456', description: 'Yêu cầu nâng cấp gói cước doanh nghiệp', timestamp: new Date(Date.now() - 86400000).toISOString(), status: 'OPEN', agent: 'System' },
-    { id: '3', type: 'chat' as const, title: 'Chat hỗ trợ trực tuyến', description: 'Tư vấn gói dịch vụ internet tốc độ cao', timestamp: new Date(Date.now() - 172800000).toISOString(), status: 'RESOLVED' },
-    { id: '4', type: 'email' as const, title: 'Email - Báo giá dịch vụ', description: 'Gửi báo giá gói dịch vụ doanh nghiệp', timestamp: new Date(Date.now() - 259200000).toISOString(), status: 'SENT' },
-    { id: '5', type: 'call' as const, title: 'Cuộc gọi đi - Chăm sóc khách hàng', description: 'Gọi chúc mừng sinh nhật khách hàng', timestamp: new Date(Date.now() - 604800000).toISOString(), status: 'COMPLETED', agent: 'Mai Anh' },
-  ];
-
-  const mockCalls = [
-    { id: '1', direction: 'INBOUND', callerNumber: '0909123456', duration: 485, startTime: new Date(Date.now() - 3600000).toISOString(), status: 'COMPLETED', agentName: 'Tuan Anh', disposition: 'RESOLVED' },
-    { id: '2', direction: 'OUTBOUND', callerNumber: '0909123456', duration: 320, startTime: new Date(Date.now() - 604800000).toISOString(), status: 'COMPLETED', agentName: 'Mai Anh', disposition: 'FOLLOW_UP' },
-  ];
-
-  const mockTickets = [
-    { id: 'TK-2026-0456', title: 'Yêu cầu nâng cấp gói cước', priority: 'HIGH', status: 'OPEN', createdAt: new Date(Date.now() - 86400000).toISOString(), assignedTo: 'Tuan Anh' },
-    { id: 'TK-2026-0450', title: 'Lỗi kết nối mạng', priority: 'MEDIUM', status: 'RESOLVED', createdAt: new Date(Date.now() - 604800000).toISOString(), assignedTo: 'Ky Thuat' },
-  ];
+  const fetchCustomerSubData = async (customerId: string) => {
+    setSubLoading(true);
+    try {
+      const [callsRes, ticketsRes] = await Promise.all([
+        callsApi.getAll({ customerId, page: 0, size: 10 }).catch(() => ({ data: { content: [] } })),
+        ticketsApi.list({ customerId, page: 0, size: 10 }).catch(() => ({ data: { content: [] } })),
+      ]);
+      setCustomerCalls(callsRes.data?.data?.content || callsRes.data?.content || []);
+      const tix = ticketsRes.data?.data?.content || ticketsRes.data?.content || [];
+      setCustomerTickets(tix);
+      const tl: any[] = [];
+      if (Array.isArray(callsRes.data?.data?.content)) {
+        callsRes.data.data.content.forEach((c: any) => tl.push({
+          id: c.id, type: 'call', title: `Cuộc gọi ${c.direction || ''}`,
+          description: `SĐT: ${c.callerNumber || c.callee || ''}`,
+          timestamp: c.startTime || c.time, status: c.status, agent: c.agentName,
+        }));
+      }
+      if (Array.isArray(ticketsRes.data?.data?.content)) {
+        ticketsRes.data.data.content.forEach((t: any) => tl.push({
+          id: t.id, type: 'ticket', title: `Ticket ${t.id || ''}`,
+          description: t.subject || t.title, timestamp: t.createdAt,
+          status: t.status, agent: t.assignedTo,
+        }));
+      }
+      tl.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setTimeline(tl);
+    } catch {
+      // sub data fetch silently fails
+    } finally {
+      setSubLoading(false);
+    }
+  };
 
   if (loading) {
     return <div style={{ textAlign: 'center', padding: 100 }}><Spin size="large" tip="Loading customer 360..." /></div>;
@@ -161,7 +156,7 @@ export default function CustomerDetailPage() {
             </Card>
 
             <Card title="Hoạt động gần đây" style={{ marginTop: 16 }}>
-              <CustomerTimeline events={mockTimeline} height={350} />
+              <CustomerTimeline events={timeline} height={350} />
             </Card>
           </Col>
         </Row>
@@ -169,7 +164,7 @@ export default function CustomerDetailPage() {
     },
     {
       key: 'calls',
-      label: <span><PhoneOutlined /> Cuộc gọi ({mockCalls.length})</span>,
+      label: <span><PhoneOutlined /> Cuộc gọi ({customerCalls.length})</span>,
       children: (
         <CommonTable
           columns={[
@@ -180,15 +175,16 @@ export default function CustomerDetailPage() {
             { title: 'Agent', dataIndex: 'agentName', key: 'agentName' },
             { title: 'Kết quả', dataIndex: 'disposition', key: 'disposition', render: (d: string) => <Tag>{d}</Tag> },
           ]}
-          dataSource={mockCalls}
+          dataSource={customerCalls}
           rowKey="id"
+          loading={subLoading}
           pagination={{ pageSize: 5 }}
         />
       ),
     },
     {
       key: 'tickets',
-      label: <span><FileTextOutlined /> Tickets ({mockTickets.length})</span>,
+      label: <span><FileTextOutlined /> Tickets ({customerTickets.length})</span>,
       children: (
         <CommonTable
           columns={[
@@ -199,8 +195,9 @@ export default function CustomerDetailPage() {
             { title: 'Ngày tạo', dataIndex: 'createdAt', key: 'createdAt', render: (t: string) => new Date(t).toLocaleString('vi-VN') },
             { title: 'Phụ trách', dataIndex: 'assignedTo', key: 'assignedTo' },
           ]}
-          dataSource={mockTickets}
+          dataSource={customerTickets}
           rowKey="id"
+          loading={subLoading}
           pagination={{ pageSize: 5 }}
         />
       ),
@@ -210,7 +207,7 @@ export default function CustomerDetailPage() {
       label: <span><ClockCircleOutlined /> Lịch sử</span>,
       children: (
         <Card>
-          <CustomerTimeline events={mockTimeline} />
+          <CustomerTimeline events={timeline} />
         </Card>
       ),
     },

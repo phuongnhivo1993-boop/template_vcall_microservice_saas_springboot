@@ -20,6 +20,7 @@ export default function CallsScreen() {
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
   const PAGE_SIZE = 20;
 
   const fetchCalls = async (pageNum: number, isRefresh = false) => {
@@ -73,15 +74,15 @@ export default function CallsScreen() {
         <Ionicons name="cloud-offline-outline" size={48} color={Colors.textSecondary} />
         <Text style={styles.emptyText}>{error}</Text>
         <TouchableOpacity style={styles.retryBtn} onPress={() => fetchCalls(0)}>
-          <Text style={styles.retryText}>Retry</Text>
+          <Text style={styles.retryText}>Thử lại</Text>
         </TouchableOpacity>
       </View>
     );
     return (
       <EmptyView
         icon="call-outline"
-        title={search ? 'No calls match your search' : 'No call history'}
-        subtitle={search ? 'Try a different search term' : 'Make your first call to get started'}
+        title={search ? 'Không tìm thấy cuộc gọi' : 'Chưa có cuộc gọi nào'}
+        subtitle={search ? 'Thử tìm kiếm với từ khóa khác' : 'Thực hiện cuộc gọi đầu tiên để bắt đầu'}
       />
     );
   };
@@ -90,13 +91,18 @@ export default function CallsScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <Text style={styles.title}>Call History</Text>
-        <TouchableOpacity style={styles.dialBtn} onPress={() => router.push('/calls/dialer')}>
-          <Ionicons name="dialpad" size={22} color={Colors.white} />
-        </TouchableOpacity>
+        <Text style={styles.title}>Cuộc gọi</Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => setShowSearch(!showSearch)} hitSlop={8}>
+            <Ionicons name={showSearch ? 'close-outline' : 'search-outline'} size={22} color={Colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.dialBtn} onPress={() => router.push('/calls/dialer')}>
+            <Ionicons name="dialpad" size={22} color={Colors.white} />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <SearchBar value={search} onChangeText={setSearch} placeholder="Search calls..." />
+      {showSearch && <SearchBar value={search} onChangeText={setSearch} placeholder="Tìm kiếm cuộc gọi..." />}
 
       {loading && calls.length === 0 ? (
         <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
@@ -144,6 +150,18 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: Colors.text,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   dialBtn: {
     width: 40,

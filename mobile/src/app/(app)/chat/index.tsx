@@ -28,6 +28,7 @@ export default function ChatListScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
 
   const fetchConversations = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -85,15 +86,15 @@ export default function ChatListScreen() {
         <Ionicons name="chatbox-ellipses-outline" size={48} color={Colors.textSecondary} />
         <Text style={styles.emptyText}>{error}</Text>
         <TouchableOpacity style={styles.retryBtn} onPress={() => fetchConversations()}>
-          <Text style={styles.retryText}>Retry</Text>
+          <Text style={styles.retryText}>Thử lại</Text>
         </TouchableOpacity>
       </View>
     );
     return (
       <EmptyView
         icon="chatbubbles-outline"
-        title={search ? 'No conversations match your search' : 'No conversations yet'}
-        subtitle={search ? 'Try a different search term' : 'Start a new chat to begin messaging'}
+        title={search ? 'Không tìm thấy cuộc trò chuyện' : 'Chưa có cuộc trò chuyện'}
+        subtitle={search ? 'Thử tìm kiếm với từ khóa khác' : 'Bắt đầu một cuộc trò chuyện mới'}
       />
     );
   };
@@ -102,10 +103,13 @@ export default function ChatListScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <Text style={styles.title}>Chat</Text>
+        <Text style={styles.title}>Trò chuyện</Text>
+        <TouchableOpacity style={styles.searchBtn} onPress={() => setShowSearch(!showSearch)} hitSlop={8}>
+          <Ionicons name={showSearch ? 'close-outline' : 'search-outline'} size={22} color={Colors.text} />
+        </TouchableOpacity>
       </View>
 
-      <SearchBar value={search} onChangeText={setSearch} placeholder="Search conversations..." />
+      {showSearch && <SearchBar value={search} onChangeText={setSearch} placeholder="Tìm kiếm cuộc trò chuyện..." />}
 
       {loading ? (
         <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
@@ -132,10 +136,21 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 16,
     backgroundColor: Colors.white,
+  },
+  searchBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: 24,

@@ -15,10 +15,10 @@ const statusColors: Record<AgentStatus, string> = {
 };
 
 const statusLabels: Record<AgentStatus, string> = {
-  online: 'Online',
-  offline: 'Offline',
-  away: 'Away',
-  busy: 'Busy',
+  online: 'Trực tuyến',
+  offline: 'Ngoại tuyến',
+  away: 'Tạm vắng',
+  busy: 'Bận',
 };
 
 export default function StatusBadge({ status, size = 'small' }: Props) {

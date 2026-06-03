@@ -22,9 +22,18 @@ export default function AppLayout() {
       }}
     >
       <Tabs.Screen
+        name="dashboard"
+        options={{
+          title: 'Tổng quan',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="calls"
         options={{
-          title: 'Calls',
+          title: 'Cuộc gọi',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="call-outline" size={size} color={color} />
           ),
@@ -33,7 +42,7 @@ export default function AppLayout() {
       <Tabs.Screen
         name="chat"
         options={{
-          title: 'Chat',
+          title: 'Trò chuyện',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbubbles-outline" size={size} color={color} />
           ),
@@ -42,18 +51,18 @@ export default function AppLayout() {
       <Tabs.Screen
         name="tickets"
         options={{
-          title: 'Tickets',
+          title: 'Phiếu yêu cầu',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="ticket-outline" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="more"
         options={{
-          title: 'Profile',
+          title: 'Thêm',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+            <Ionicons name="ellipsis-horizontal-outline" size={size} color={color} />
           ),
         }}
       />

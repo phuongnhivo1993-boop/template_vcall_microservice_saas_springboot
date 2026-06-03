@@ -9,7 +9,7 @@ interface Props {
   onClear?: () => void;
 }
 
-export default function SearchBar({ value, onChangeText, placeholder = 'Search...', onClear }: Props) {
+export default function SearchBar({ value, onChangeText, placeholder = 'Tìm kiếm...', onClear }: Props) {
   return (
     <View style={styles.container}>
       <Ionicons name="search-outline" size={18} color={Colors.textSecondary} style={styles.icon} />

@@ -53,7 +53,7 @@ export default function DialerScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="close" size={28} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Dial</Text>
+        <Text style={styles.title}>Quay số</Text>
         <View style={{ width: 28 }} />
       </View>
 
@@ -61,7 +61,7 @@ export default function DialerScreen() {
         style={styles.numberInput}
         value={number}
         onChangeText={setNumber}
-        placeholder="Enter number"
+        placeholder="Nhập số điện thoại"
         placeholderTextColor={Colors.textSecondary}
         keyboardType="phone-pad"
       />
@@ -106,7 +106,7 @@ export default function DialerScreen() {
       <View style={styles.searchSection}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search contacts..."
+          placeholder="Tìm kiếm danh bạ..."
           placeholderTextColor={Colors.textSecondary}
           value={search}
           onChangeText={setSearch}

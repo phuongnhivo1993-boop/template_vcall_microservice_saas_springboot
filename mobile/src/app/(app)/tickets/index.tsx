@@ -11,11 +11,11 @@ import SearchBar from '../../../components/SearchBar';
 import EmptyView from '../../../components/EmptyView';
 
 const FILTERS: { label: string; value: TicketStatus | 'all' }[] = [
-  { label: 'All', value: 'all' },
-  { label: 'Open', value: 'open' },
-  { label: 'In Progress', value: 'in_progress' },
-  { label: 'Resolved', value: 'resolved' },
-  { label: 'Closed', value: 'closed' },
+  { label: 'Tất cả', value: 'all' },
+  { label: 'Mở', value: 'open' },
+  { label: 'Đang xử lý', value: 'in_progress' },
+  { label: 'Đã giải quyết', value: 'resolved' },
+  { label: 'Đã đóng', value: 'closed' },
 ];
 
 const priorityColors: Record<TicketPriority, string> = {
@@ -26,10 +26,10 @@ const priorityColors: Record<TicketPriority, string> = {
 };
 
 const statusLabels: Record<TicketStatus, string> = {
-  open: 'Open',
-  in_progress: 'In Progress',
-  resolved: 'Resolved',
-  closed: 'Closed',
+  open: 'Mở',
+  in_progress: 'Đang xử lý',
+  resolved: 'Đã giải quyết',
+  closed: 'Đã đóng',
 };
 
 function formatDate(dateStr: string): string {
@@ -45,6 +45,7 @@ export default function TicketsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
 
   const fetchTickets = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -99,7 +100,10 @@ export default function TicketsScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <Text style={styles.title}>Tickets</Text>
+        <Text style={styles.title}>Phiếu yêu cầu</Text>
+        <TouchableOpacity style={styles.searchBtn} onPress={() => setShowSearch(!showSearch)} hitSlop={8}>
+          <Ionicons name={showSearch ? 'close-outline' : 'search-outline'} size={22} color={Colors.text} />
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -120,7 +124,7 @@ export default function TicketsScreen() {
         )}
       />
 
-      <SearchBar value={search} onChangeText={setSearch} placeholder="Search tickets..." />
+      {showSearch && <SearchBar value={search} onChangeText={setSearch} placeholder="Tìm kiếm phiếu yêu cầu..." />}
 
       {loading ? (
         <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
@@ -136,16 +140,16 @@ export default function TicketsScreen() {
             <View style={styles.centerContainer}>
               <Ionicons name="bug-outline" size={48} color={Colors.textSecondary} />
               <Text style={styles.emptyText}>{error}</Text>
-              <TouchableOpacity style={styles.retryBtn} onPress={() => fetchTickets()}>
-                <Text style={styles.retryText}>Retry</Text>
-              </TouchableOpacity>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => fetchTickets()}>
+          <Text style={styles.retryText}>Thử lại</Text>
+        </TouchableOpacity>
             </View>
           );
           return (
             <EmptyView
               icon="ticket-outline"
-              title={search ? 'No tickets match your search' : 'No tickets found'}
-              subtitle={search ? 'Try a different search term' : 'Create a new ticket to get started'}
+        title={search ? 'Không tìm thấy phiếu yêu cầu' : 'Chưa có phiếu yêu cầu'}
+        subtitle={search ? 'Thử tìm kiếm với từ khóa khác' : 'Tạo phiếu yêu cầu mới để bắt đầu'}
             />
           );
         }}
@@ -164,10 +168,21 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 12,
     backgroundColor: Colors.white,
+  },
+  searchBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
     fontSize: 24,

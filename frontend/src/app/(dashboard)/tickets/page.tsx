@@ -31,14 +31,7 @@ interface Ticket {
   slaPassed: boolean;
 }
 
-const mockTickets: Ticket[] = [
-  { id: 'TK-001', subject: 'Cannot reset password', customer: 'John Smith', agent: 'Sarah J.', priority: 'high', status: 'open', category: 'Technical', created: '2026-06-01 09:00', slaDeadline: '2026-06-01 15:00', slaPassed: false },
-  { id: 'TK-002', subject: 'Billing discrepancy on invoice #INV-042', customer: 'Alice Brown', agent: 'Mike R.', priority: 'critical', status: 'in_progress', category: 'Billing', created: '2026-06-01 08:30', slaDeadline: '2026-06-01 12:30', slaPassed: true },
-  { id: 'TK-003', subject: 'Feature request: call recording export', customer: 'Bob Wilson', agent: 'Emily W.', priority: 'low', status: 'open', category: 'Feature', created: '2026-05-31 14:00', slaDeadline: '2026-06-07 14:00', slaPassed: false },
-  { id: 'TK-004', subject: 'Audio issues during calls', customer: 'Carol Davis', agent: 'John D.', priority: 'high', status: 'in_progress', category: 'Technical', created: '2026-06-01 07:00', slaDeadline: '2026-06-01 13:00', slaPassed: false },
-  { id: 'TK-005', subject: 'Need call history for audit', customer: 'Tom Harris', agent: 'Lisa M.', priority: 'medium', status: 'resolved', category: 'Request', created: '2026-05-30 10:00', slaDeadline: '2026-06-02 10:00', slaPassed: false },
-  { id: 'TK-006', subject: 'Extension not working', customer: 'Diana Clark', agent: 'David C.', priority: 'critical', status: 'open', category: 'Technical', created: '2026-06-01 10:00', slaDeadline: '2026-06-01 11:00', slaPassed: false },
-];
+
 
 const priorityColors: Record<string, string> = {
   low: 'green',
@@ -81,8 +74,6 @@ export default function TicketsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
   const [filters, setFilters] = useState<Record<string, any>>({});
-  const [useMock, setUseMock] = useState(false);
-
   const fetchTickets = useCallback(async (page = 1, size = 10, params?: Record<string, any>) => {
     setLoading(true);
     setError(null);
@@ -102,27 +93,13 @@ export default function TicketsPage() {
       } else if (data.data) {
         setTickets(Array.isArray(data.data) ? data.data : []);
       }
-      setUseMock(false);
     } catch (err: any) {
-      if (!useMock) {
-        setUseMock(true);
-        let filtered = [...mockTickets];
-        if (params) {
-          if (params.status) filtered = filtered.filter((t) => t.status === params.status);
-          if (params.priority) filtered = filtered.filter((t) => t.priority === params.priority);
-          if (params.category) filtered = filtered.filter((t) => t.category === params.category);
-          if (params.subject) filtered = filtered.filter((t) => t.subject.toLowerCase().includes(params.subject.toLowerCase()));
-        }
-        setTickets(filtered);
-        setPagination((prev) => ({ ...prev, total: filtered.length }));
-      } else {
-        setError(err?.response?.data?.message || err?.message || 'Failed to load tickets');
-        setTickets([]);
-      }
+      setError(err?.response?.data?.message || err?.message || 'Failed to load tickets');
+      setTickets([]);
     } finally {
       setLoading(false);
     }
-  }, [useMock]);
+  }, []);
 
   useEffect(() => {
     fetchTickets(1, pagination.pageSize);
@@ -144,27 +121,12 @@ export default function TicketsPage() {
       }
     });
     setFilters(cleaned);
-    if (useMock) {
-      let filtered = [...mockTickets];
-      if (cleaned.status) filtered = filtered.filter((t) => t.status === cleaned.status);
-      if (cleaned.priority) filtered = filtered.filter((t) => t.priority === cleaned.priority);
-      if (cleaned.category) filtered = filtered.filter((t) => t.category === cleaned.category);
-      if (cleaned.subject) filtered = filtered.filter((t) => t.subject.toLowerCase().includes(cleaned.subject.toLowerCase()));
-      setTickets(filtered);
-      setPagination((prev) => ({ ...prev, total: filtered.length }));
-    } else {
-      fetchTickets(1, pagination.pageSize, cleaned);
-    }
+    fetchTickets(1, pagination.pageSize, cleaned);
   };
 
   const handleReset = () => {
     setFilters({});
-    if (useMock) {
-      setTickets(mockTickets);
-      setPagination((prev) => ({ ...prev, total: mockTickets.length }));
-    } else {
-      fetchTickets(1, pagination.pageSize);
-    }
+    fetchTickets(1, pagination.pageSize);
   };
 
   const handleStatusChange = async (ticket: Ticket, newStatus: string) => {
@@ -173,12 +135,7 @@ export default function TicketsPage() {
       message.success(`Ticket ${ticket.id} moved to ${newStatus}`);
       fetchTickets(pagination.current, pagination.pageSize, filters);
     } catch (err: any) {
-      if (useMock) {
-        message.success(`Ticket ${ticket.id} moved to ${newStatus} (mock)`);
-        setTickets((prev) => prev.map((t) => t.id === ticket.id ? { ...t, status: newStatus as Ticket['status'] } : t));
-      } else {
-        message.error(err?.response?.data?.message || 'Failed to update status');
-      }
+      message.error(err?.response?.data?.message || 'Failed to update status');
     }
   };
 
@@ -344,17 +301,7 @@ export default function TicketsPage() {
           currentValues={filters}
           onApply={(values) => {
             setFilters(values);
-            if (useMock) {
-              let filtered = [...mockTickets];
-              if (values.status) filtered = filtered.filter((t) => t.status === values.status);
-              if (values.priority) filtered = filtered.filter((t) => t.priority === values.priority);
-              if (values.category) filtered = filtered.filter((t) => t.category === values.category);
-              if (values.subject) filtered = filtered.filter((t) => t.subject.toLowerCase().includes(values.subject.toLowerCase()));
-              setTickets(filtered);
-              setPagination((prev) => ({ ...prev, total: filtered.length }));
-            } else {
-              fetchTickets(1, pagination.pageSize, values);
-            }
+            fetchTickets(1, pagination.pageSize, values);
           }}
           storageKey="vcall-saved-filters-tickets"
         />

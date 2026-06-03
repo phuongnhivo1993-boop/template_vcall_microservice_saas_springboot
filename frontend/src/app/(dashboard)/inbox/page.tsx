@@ -7,6 +7,7 @@ import {
   SearchOutlined, SendOutlined,
   FacebookOutlined, GlobalOutlined,
 } from '@ant-design/icons';
+import { chatApi } from '@/lib/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -47,21 +48,11 @@ export default function InboxPage() {
     setLoading(true);
     setError(null);
     try {
-      const allConversations: Conversation[] = [
-        { id: 'ch1', channel: 'chat', customerName: 'Nguyen Van Anh', lastMessage: 'Tôi cần hỗ trợ về dịch vụ internet', lastMessageAt: new Date().toISOString(), unread: 2, status: 'ACTIVE', tags: ['internet', 'urgent'] },
-        { id: 'ch2', channel: 'chat', customerName: 'Tran Thi Binh', lastMessage: 'Cảm ơn bạn đã hỗ trợ!', lastMessageAt: new Date(Date.now() - 1800000).toISOString(), unread: 0, status: 'ACTIVE' },
-        { id: 'em1', channel: 'email', customerName: 'Le Van Cuong', lastMessage: 'Re: Yêu cầu báo giá gói dịch vụ doanh nghiệp', lastMessageAt: new Date(Date.now() - 3600000).toISOString(), unread: 1, status: 'PENDING', tags: ['quote'] },
-        { id: 'em2', channel: 'email', customerName: 'Pham Thi Dung', lastMessage: 'Khiếu nại về hóa đơn tháng 5', lastMessageAt: new Date(Date.now() - 7200000).toISOString(), unread: 0, status: 'RESOLVED', tags: ['complaint', 'billing'] },
-        { id: 'sms1', channel: 'sms', customerName: 'Hoang Van Em', lastMessage: 'Mã OTP của bạn là 123456', lastMessageAt: new Date(Date.now() - 300000).toISOString(), unread: 0, status: 'SENT' },
-        { id: 'sms2', channel: 'sms', customerName: 'Vu Thi Phuong', lastMessage: 'Quý khách đã đăng ký thành công gói cước 4G', lastMessageAt: new Date(Date.now() - 86400000).toISOString(), unread: 0, status: 'DELIVERED' },
-        { id: 'fb1', channel: 'facebook', customerName: 'Minh Anh Nguyen', lastMessage: 'Shop ơi, mình đặt hàng khi nào có?', lastMessageAt: new Date(Date.now() - 600000).toISOString(), unread: 3, status: 'ACTIVE', tags: ['facebook'] },
-        { id: 'zl1', channel: 'zalo', customerName: 'Thanh Huyen', lastMessage: 'Em chào anh, bên mình còn phòng hội nghị không ạ?', lastMessageAt: new Date(Date.now() - 900000).toISOString(), unread: 1, status: 'ACTIVE', tags: ['booking'] },
-        { id: 'cl1', channel: 'call', customerName: 'Dinh Van Giang', lastMessage: 'Gọi để hủy dịch vụ - đã xử lý', lastMessageAt: new Date(Date.now() - 4800000).toISOString(), unread: 0, status: 'COMPLETED', tags: ['cancellation'] },
-        { id: 'cl2', channel: 'call', customerName: 'Nguyen Thi Hanh', lastMessage: 'Khách hàng gọi hỏi về khuyến mãi tháng 6', lastMessageAt: new Date(Date.now() - 5400000).toISOString(), unread: 0, status: 'MISSED', tags: ['promo'] },
-      ];
-      setConversations(allConversations);
-    } catch (err) {
-      setError('Failed to load conversations');
+      const params: Record<string, any> = { page: 0, size: 50 };
+      const res = await chatApi.getConversations(params);
+      setConversations(res.data?.data?.content || res.data?.content || []);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load conversations');
     } finally {
       setLoading(false);
     }
@@ -69,7 +60,7 @@ export default function InboxPage() {
 
   useEffect(() => {
     loadConversations();
-  }, [channelFilter, loadConversations]);
+  }, [loadConversations]);
 
   const getChannelIcon = (channel: string) => {
     const ch = CHANNELS.find(c => c.key === channel);
@@ -88,25 +79,29 @@ export default function InboxPage() {
     return true;
   });
 
-  const handleSelectConversation = (conv: Conversation) => {
+  const handleSelectConversation = async (conv: Conversation) => {
     setSelectedConv(conv);
-    setMessages([
-      { id: 'm1', content: 'Xin chào, tôi cần hỗ trợ', senderType: 'customer', sentAt: new Date(Date.now() - 600000).toISOString() },
-      { id: 'm2', content: 'Dạ vâng, anh/chị cần hỗ trợ vấn đề gì ạ?', senderType: 'agent', sentAt: new Date(Date.now() - 540000).toISOString() },
-      { id: 'm3', content: conv.lastMessage, senderType: 'customer', sentAt: conv.lastMessageAt },
-    ]);
+    try {
+      const res = await chatApi.getMessages(conv.id);
+      const msgs = res.data?.data?.content || res.data?.data || res.data || [];
+      setMessages(Array.isArray(msgs) ? msgs : []);
+    } catch {
+      setMessages([]);
+    }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedConv) return;
-    const newMsg = {
-      id: Date.now().toString(),
-      content: messageInput.trim(),
-      senderType: 'agent' as const,
-      sentAt: new Date().toISOString(),
-    };
-    setMessages(prev => [...prev, newMsg]);
-    setMessageInput('');
+    try {
+      await chatApi.sendMessage(selectedConv.id, { content: messageInput.trim() });
+      setMessageInput('');
+      const res = await chatApi.getMessages(selectedConv.id);
+      const msgs = res.data?.data?.content || res.data?.data || res.data || [];
+      setMessages(Array.isArray(msgs) ? msgs : []);
+      loadConversations();
+    } catch {
+      message.error('Failed to send message');
+    }
   };
 
   const channelOptions = CHANNELS.map(ch => ({

@@ -57,7 +57,7 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <View style={styles.statusRow}>
           <View>
-            <Text style={styles.sectionLabel}>Status</Text>
+            <Text style={styles.sectionLabel}>Trạng thái</Text>
             <StatusBadge status={status} size="medium" />
           </View>
           <Switch
@@ -70,7 +70,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Today's Stats</Text>
+        <Text style={styles.sectionTitle}>Thống kê hôm nay</Text>
         {loading ? (
           <ActivityIndicator size="small" color={Colors.primary} />
         ) : (
@@ -78,22 +78,22 @@ export default function ProfileScreen() {
           <View style={styles.statCard}>
             <Ionicons name="people-outline" size={24} color={Colors.primary} />
             <Text style={styles.statValue}>{stats.totalAgents ?? '-'}</Text>
-            <Text style={styles.statLabel}>Total Agents</Text>
+            <Text style={styles.statLabel}>Tổng NV</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="checkmark-circle-outline" size={24} color={Colors.success} />
             <Text style={styles.statValue}>{stats.onlineCount ?? '-'}</Text>
-            <Text style={styles.statLabel}>Online</Text>
+            <Text style={styles.statLabel}>Trực tuyến</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="close-circle-outline" size={24} color={Colors.error} />
             <Text style={styles.statValue}>{stats.offlineCount ?? '-'}</Text>
-            <Text style={styles.statLabel}>Offline</Text>
+            <Text style={styles.statLabel}>Ngoại tuyến</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="timer-outline" size={24} color={Colors.warning} />
             <Text style={styles.statValue}>{stats.busyCount ?? '-'}</Text>
-            <Text style={styles.statLabel}>Busy</Text>
+            <Text style={styles.statLabel}>Bận</Text>
           </View>
         </View>
         )}
@@ -102,24 +102,24 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <TouchableOpacity style={styles.menuItem}>
           <Ionicons name="settings-outline" size={20} color={Colors.text} />
-          <Text style={styles.menuText}>Settings</Text>
+          <Text style={styles.menuText}>Cài đặt</Text>
           <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem}>
           <Ionicons name="notifications-outline" size={20} color={Colors.text} />
-          <Text style={styles.menuText}>Notifications</Text>
+          <Text style={styles.menuText}>Thông báo</Text>
           <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem}>
           <Ionicons name="help-circle-outline" size={20} color={Colors.text} />
-          <Text style={styles.menuText}>Help & Support</Text>
+          <Text style={styles.menuText}>Trợ giúp & Hỗ trợ</Text>
           <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
       <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={20} color={Colors.error} />
-        <Text style={styles.logoutText}>Sign Out</Text>
+        <Text style={styles.logoutText}>Đăng xuất</Text>
       </TouchableOpacity>
     </ScrollView>
   );

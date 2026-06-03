@@ -251,16 +251,7 @@ export default function CustomersPage() {
           currentValues={filters}
           onApply={(values) => {
             setFilters(values);
-            if (useMock) {
-              let filtered = [...mockCustomers];
-              if (values.name) filtered = filtered.filter((c) => c.name.toLowerCase().includes(values.name.toLowerCase()));
-              if (values.status) filtered = filtered.filter((c) => c.status === values.status);
-              if (values.plan) filtered = filtered.filter((c) => c.plan === values.plan);
-              setCustomers(filtered);
-              setPagination((prev) => ({ ...prev, total: filtered.length }));
-            } else {
-              fetchCustomers(1, pagination.pageSize, values);
-            }
+            fetchCustomers(1, pagination.pageSize, values);
           }}
           storageKey="vcall-saved-filters-customers"
         />

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, List, Tag, Button, Space, Typography, Modal, Form, Select, Input, Switch, message, Empty, Alert, Tooltip, Divider } from 'antd';
+import { useState, useEffect, useCallback } from 'react';
+import { Card, Tag, Button, Space, Typography, Input, message, Alert, Tooltip, Divider } from 'antd';
 import { PlusOutlined, ThunderboltOutlined, EditOutlined, DeleteOutlined, PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
+import { automationApi } from '@/lib/api';
 
 const { Title, Text } = Typography;
 
@@ -47,69 +48,67 @@ const ACTION_OPTIONS = [
   { value: 'escalate_ticket', label: 'Escalate Ticket', group: 'Ticket' },
 ];
 
-const MOCK_RULES: AutomationRule[] = [
-  {
-    id: '1', name: 'Auto-assign High Priority Tickets', description: 'Automatically assign high priority tickets to senior agents',
-    trigger: 'ticket.created', triggerLabel: 'Ticket Created',
-    conditions: [{ field: 'priority', operator: 'equals', value: 'HIGH' }],
-    actions: [{ type: 'assign_ticket', config: { group: 'Senior Agents' } }],
-    isActive: true, createdAt: '2026-05-01', updatedAt: '2026-05-10',
-  },
-  {
-    id: '2', name: 'SLA Breach Notification', description: 'Notify supervisor when ticket is about to breach SLA',
-    trigger: 'sla.breach', triggerLabel: 'SLA Breach Warning',
-    conditions: [{ field: 'time_remaining', operator: 'less_than', value: '30' }],
-    actions: [{ type: 'notify_agent', config: { role: 'SUPERVISOR', channel: 'IN_APP' } }],
-    isActive: true, createdAt: '2026-04-15', updatedAt: '2026-05-12',
-  },
-  {
-    id: '3', name: 'Missed Call Follow-up', description: 'Create ticket and send SMS for missed calls',
-    trigger: 'call.missed', triggerLabel: 'Call Missed',
-    conditions: [],
-    actions: [
-      { type: 'create_ticket', config: { priority: 'MEDIUM', category: 'CALLBACK' } },
-      { type: 'send_sms', config: { template: 'missed_call_followup' } },
-    ],
-    isActive: false, createdAt: '2026-05-05', updatedAt: '2026-05-14',
-  },
-];
-
 export default function AutomationPage() {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [rules, setRules] = useState<AutomationRule[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<AutomationRule | null>(null);
 
-  useEffect(() => {
-    setRules(MOCK_RULES);
-    setLoading(false);
+  const fetchRules = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await automationApi.list({ page: 0, size: 100 });
+      setRules(res.data?.data?.content || res.data?.content || []);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load automation rules');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchRules();
+  }, [fetchRules]);
+
   const handleSave = async (values: any) => {
-    if (editingRule) {
-      setRules(prev => prev.map(r => r.id === editingRule.id ? { ...r, ...values } : r));
-      message.success('Rule updated');
-    } else {
-      const newRule: AutomationRule = {
-        id: Date.now().toString(),
-        ...values,
-        triggerLabel: TRIGGER_OPTIONS.find(t => t.value === values.trigger)?.label || values.trigger,
-        conditions: [],
-        actions: [],
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setRules(prev => [newRule, ...prev]);
-      message.success('Rule created');
+    try {
+      if (editingRule) {
+        await automationApi.update(editingRule.id, values);
+        message.success('Rule updated');
+      } else {
+        await automationApi.create(values);
+        message.success('Rule created');
+      }
+      setFormOpen(false);
+      setEditingRule(null);
+      fetchRules();
+    } catch (err: any) {
+      message.error(err?.message || 'Failed to save rule');
     }
-    setFormOpen(false);
-    setEditingRule(null);
   };
 
-  const toggleActive = (rule: AutomationRule) => {
-    setRules(prev => prev.map(r => r.id === rule.id ? { ...r, isActive: !r.isActive } : r));
-    message.success(`Rule ${rule.isActive ? 'paused' : 'activated'}`);
+  const toggleActive = async (rule: AutomationRule) => {
+    try {
+      await automationApi.toggle(rule.id, !rule.isActive);
+      message.success(`Rule ${rule.isActive ? 'paused' : 'activated'}`);
+      fetchRules();
+    } catch (err: any) {
+      message.error(err?.message || 'Failed to toggle rule');
+    }
+  };
+
+  const handleDeleteRule = async (id: string) => {
+    showDeleteConfirm({
+      title: 'Delete Rule',
+      content: 'Are you sure you want to delete this rule?',
+      onOk: async () => {
+        await automationApi.delete(id);
+        message.success('Rule deleted');
+        fetchRules();
+      },
+    });
   };
 
   const columns = [
@@ -133,7 +132,7 @@ export default function AutomationPage() {
               onClick={() => toggleActive(record)} />
           </Tooltip>
           <Button size="small" icon={<EditOutlined />} onClick={() => { setEditingRule(record); setFormOpen(true); }} />
-          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => showDeleteConfirm({ onOk: async () => { setRules(prev => prev.filter(r => r.id !== record.id)); message.success('Rule deleted'); } })} />
+          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteRule(record.id)} />
         </Space>
       ),
     },
@@ -160,6 +159,8 @@ export default function AutomationPage() {
           dataSource={rules}
           rowKey="id"
           loading={loading}
+          error={error}
+          onRefresh={fetchRules}
           pagination={false}
         />
       </Card>

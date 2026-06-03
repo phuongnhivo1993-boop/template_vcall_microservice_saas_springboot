@@ -50,9 +50,9 @@ export default function ActiveCallScreen() {
   if (!activeCall) {
     return (
       <View style={styles.container}>
-        <Text style={styles.noCallText}>No active call</Text>
+        <Text style={styles.noCallText}>Không có cuộc gọi</Text>
         <TouchableOpacity style={styles.endBtn} onPress={() => router.back()}>
-          <Text style={styles.endBtnText}>Go Back</Text>
+          <Text style={styles.endBtnText}>Quay lại</Text>
         </TouchableOpacity>
       </View>
     );
@@ -69,7 +69,7 @@ export default function ActiveCallScreen() {
         <View style={styles.statusBadge}>
           <View style={styles.statusDot} />
           <Text style={styles.statusText}>
-            {activeCall.direction === 'incoming' ? 'Incoming Call' : 'Outgoing Call'}
+            {activeCall.direction === 'incoming' ? 'Cuộc gọi đến' : 'Cuộc gọi đi'}
           </Text>
         </View>
       </View>
@@ -92,11 +92,11 @@ export default function ActiveCallScreen() {
       )}
 
       <View style={styles.controls}>
-        <ControlButton icon="mic-off-outline" label="Mute" active={activeCall.isMuted} onPress={() => dispatch(toggleMute())} />
-        <ControlButton icon="volume-high-outline" label="Speaker" active={activeCall.isSpeakerOn} onPress={() => dispatch(toggleSpeaker())} />
+        <ControlButton icon="mic-off-outline" label="Tắt mic" active={activeCall.isMuted} onPress={() => dispatch(toggleMute())} />
+        <ControlButton icon="volume-high-outline" label="Loa ngoài" active={activeCall.isSpeakerOn} onPress={() => dispatch(toggleSpeaker())} />
         <ControlButton
           icon="keypad-outline"
-          label="Keypad"
+          label="Bàn phím"
           active={showKeypad}
           onPress={() => setShowKeypad(!showKeypad)}
         />

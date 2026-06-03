@@ -10,7 +10,7 @@ export default function Index() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/(app)/calls');
+      router.replace('/(app)/dashboard');
     } else {
       router.replace('/(auth)/login');
     }

@@ -33,10 +33,10 @@ const priorityColors: Record<TicketPriority, string> = {
 };
 
 const statusLabels: Record<TicketStatus, string> = {
-  open: 'Open',
-  in_progress: 'In Progress',
-  resolved: 'Resolved',
-  closed: 'Closed',
+  open: 'Mở',
+  in_progress: 'Đang xử lý',
+  resolved: 'Đã giải quyết',
+  closed: 'Đã đóng',
 };
 
 function formatDate(dateStr: string): string {
@@ -85,7 +85,7 @@ export default function TicketDetailScreen() {
         options={{
           headerShown: true,
           headerTitle: `Ticket #${id}`,
-          headerBackTitle: 'Back',
+          headerBackTitle: 'Quay lại',
           headerStyle: { backgroundColor: Colors.white },
           headerTintColor: Colors.text,
         }}
@@ -136,7 +136,7 @@ export default function TicketDetailScreen() {
           <View style={styles.commentInputRow}>
             <TextInput
               style={styles.commentInput}
-              placeholder="Add a comment..."
+              placeholder="Thêm bình luận..."
               placeholderTextColor={Colors.textSecondary}
               value={comment}
               onChangeText={setComment}

@@ -5,7 +5,7 @@ interface Props {
   message?: string;
 }
 
-export default function LoadingScreen({ message = 'Loading...' }: Props) {
+export default function LoadingScreen({ message = 'Đang tải...' }: Props) {
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color={Colors.primary} />
