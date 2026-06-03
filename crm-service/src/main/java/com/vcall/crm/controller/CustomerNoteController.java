@@ -2,7 +2,9 @@ package com.vcall.crm.controller;
 
 import com.vcall.common.dto.ApiResponse;
 import com.vcall.common.util.CsvExportUtil;
+import com.vcall.common.util.CsvUtil;
 import com.vcall.common.util.ExcelExportUtil;
+import com.vcall.common.util.ExcelImportUtil;
 import com.vcall.crm.dto.CustomerNoteRequest;
 import com.vcall.crm.dto.CustomerNoteResponse;
 import com.vcall.crm.service.CustomerNoteService;
@@ -24,7 +26,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -127,6 +131,58 @@ public class CustomerNoteController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
         Map<String, Object> stats = customerNoteService.getNoteStats();
         return ResponseEntity.ok(ApiResponse.success(stats));
+    }
+
+    @PostMapping("/import/csv")
+    public ResponseEntity<ApiResponse<List<CustomerNoteResponse>>> importNotesCsv(
+            @RequestParam("file") MultipartFile file) throws Exception {
+        List<String[]> rows = CsvUtil.parseCsv(file.getInputStream());
+        List<CustomerNoteResponse> importedNotes = new ArrayList<>();
+        
+        // Skip header row
+        for (int i = 1; i < rows.size(); i++) {
+            String[] row = rows.get(i);
+            if (row.length >= 4) {
+                CustomerNoteRequest request = new CustomerNoteRequest();
+                request.setTitle(row[0]);
+                request.setContent(row[1]);
+                request.setPinned(Boolean.parseBoolean(row[2].toLowerCase()));
+                // Note: customerId and leadId would need to be handled based on business logic
+                // For now, we'll leave them as null and they'd need to be set separately
+                
+                CustomerNoteResponse response = customerNoteService.createNote(request);
+                importedNotes.add(response);
+            }
+        }
+        
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Customer notes imported successfully", importedNotes));
+    }
+
+    @PostMapping("/import/excel")
+    public ResponseEntity<ApiResponse<List<CustomerNoteResponse>>> importNotesExcel(
+            @RequestParam("file") MultipartFile file) throws Exception {
+        List<String[]> rows = ExcelImportUtil.parseXlsx(file.getInputStream());
+        List<CustomerNoteResponse> importedNotes = new ArrayList<>();
+        
+        // Skip header row
+        for (int i = 1; i < rows.size(); i++) {
+            String[] row = rows.get(i);
+            if (row.length >= 4) {
+                CustomerNoteRequest request = new CustomerNoteRequest();
+                request.setTitle(row[0]);
+                request.setContent(row[1]);
+                request.setPinned(Boolean.parseBoolean(row[2].toLowerCase()));
+                // Note: customerId and leadId would need to be handled based on business logic
+                // For now, we'll leave them as null and they'd need to be set separately
+                
+                CustomerNoteResponse response = customerNoteService.createNote(request);
+                importedNotes.add(response);
+            }
+        }
+        
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Customer notes imported successfully", importedNotes));
     }
 
     @DeleteMapping("/{id}")
