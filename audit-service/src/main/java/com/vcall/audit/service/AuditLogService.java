@@ -17,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -116,6 +118,18 @@ public class AuditLogService {
             log.setIsDeleted(true);
         }
         auditLogRepository.saveAll(oldLogs);
+    }
+
+    public List<AuditLogResponse> exportLogs(LocalDateTime startDate, LocalDateTime endDate) {
+        if (startDate == null) startDate = LocalDateTime.now().minusMonths(1);
+        if (endDate == null) endDate = LocalDateTime.now();
+        return getByDateRange(startDate, endDate);
+    }
+
+    public Map<String, Long> getStats() {
+        Map<String, Long> stats = new HashMap<>();
+        stats.put("totalLogs", auditLogRepository.count());
+        return stats;
     }
 
     private AuditLogResponse toResponse(AuditLog log) {

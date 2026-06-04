@@ -12,11 +12,11 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/vcall_customer360
     username: vcall
-    password: vcall@123
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${JPA_DDL_AUTO:validate}
     show-sql: false
 
 eureka:

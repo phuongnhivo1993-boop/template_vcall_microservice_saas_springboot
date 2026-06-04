@@ -7,12 +7,12 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/vcall_chat
     username: postgres
-    password: postgres
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    show-sql: ${JPA_SHOW_SQL:false}
     properties:
       hibernate:
         format_sql: true

@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/vcall_survey_dev
     username: vcall
-    password: vcall@123
+    password: ${DB_PASSWORD}
   jpa:
     show-sql: true
     hibernate:

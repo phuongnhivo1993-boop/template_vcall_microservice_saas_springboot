@@ -156,8 +156,36 @@ export default function CampaignsPage() {
     fetchCampaigns();
   };
 
-  const handleExportCsv = () => message.info('CSV export triggered');
-  const handleExportExcel = () => message.info('Excel export triggered');
+  const handleExportCsv = async () => {
+    try {
+      const res = await campaignsApi.exportCsv();
+      const blob = new Blob([res.data], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `campaigns_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Campaigns exported');
+    } catch {
+      message.error('Export failed');
+    }
+  };
+  const handleExportExcel = async () => {
+    try {
+      const res = await campaignsApi.exportExcel();
+      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `campaigns_${new Date().toISOString().slice(0,10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Campaigns exported');
+    } catch {
+      message.error('Export failed');
+    }
+  };
 
   const campaignColumns: ColumnsType<any> = [
     {

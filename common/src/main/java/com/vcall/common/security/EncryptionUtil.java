@@ -9,6 +9,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 
@@ -22,19 +23,19 @@ public class EncryptionUtil {
 
     private final SecretKey key;
 
-    public EncryptionUtil(@Value("${security.encryption.secret:})") String secret) {
-        if (secret.isEmpty() || secret.length() < 16) {
-            byte[] fallback = new byte[16];
+    private static final int AES_KEY_SIZE = 32;
+
+    public EncryptionUtil(@Value("${security.encryption.secret:${ENCRYPTION_SECRET:}}") String secret) {
+        if (secret == null || secret.isEmpty()) {
+            byte[] fallback = new byte[AES_KEY_SIZE];
             new SecureRandom().nextBytes(fallback);
             this.key = new SecretKeySpec(fallback, "AES");
-            log.warn("Using auto-generated encryption key. Set security.encryption.secret in production.");
+            log.warn("Using auto-generated encryption key. Set ENCRYPTION_SECRET environment variable in production.");
         } else {
-            byte[] keyBytes = secret.length() >= 32
-                    ? secret.substring(0, 32).getBytes()
-                    : secret.getBytes();
-            byte[] padded = new byte[16];
-            System.arraycopy(keyBytes, 0, padded, 0, Math.min(keyBytes.length, 16));
-            this.key = new SecretKeySpec(padded, "AES");
+            byte[] keyBytes = new byte[AES_KEY_SIZE];
+            byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
+            System.arraycopy(secretBytes, 0, keyBytes, 0, Math.min(secretBytes.length, AES_KEY_SIZE));
+            this.key = new SecretKeySpec(keyBytes, "AES");
         }
     }
 

@@ -61,6 +61,18 @@ spring:
           uri: lb://chat-service
           predicates:
             - Path=/api/v1/chat/**
+        - id: call-queues
+          uri: lb://call-service
+          predicates:
+            - Path=/api/v1/call-queues/**
+        - id: ivr-flows
+          uri: lb://call-service
+          predicates:
+            - Path=/api/v1/ivr-flows/**
+        - id: routing-rules
+          uri: lb://call-service
+          predicates:
+            - Path=/api/v1/routing-rules/**
         - id: email-service
           uri: lb://email-service
           predicates:
@@ -93,6 +105,14 @@ spring:
           uri: lb://notification-service
           predicates:
             - Path=/api/v1/notifications/**
+        - id: settings-service
+          uri: lb://iam-service
+          predicates:
+            - Path=/api/v1/settings/**
+        - id: dashboard-service
+          uri: lb://reporting-service
+          predicates:
+            - Path=/api/v1/dashboard/**
         - id: audit-service
           uri: lb://audit-service
           predicates:
@@ -129,6 +149,9 @@ rate-limiter:
       capacity: 30
       refill-tokens: 5
       refill-duration: 1
+
+jwt:
+  secret: ${JWT_SECRET}
 
 springdoc:
   swagger-ui:

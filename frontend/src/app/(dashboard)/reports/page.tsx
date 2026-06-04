@@ -26,7 +26,7 @@ const { RangePicker } = DatePicker;
 
 const PIE_COLORS = ['#1677ff', '#52c41a', '#faad14', '#ff4d4f', '#722ed1', '#999'];
 
-const callVolumeData = [
+const FALLBACK_CALL_VOLUME = [
   { month: 'Jan', inbound: 1200, outbound: 800 },
   { month: 'Feb', inbound: 1400, outbound: 900 },
   { month: 'Mar', inbound: 1100, outbound: 750 },
@@ -35,7 +35,7 @@ const callVolumeData = [
   { month: 'Jun', inbound: 1500, outbound: 950 },
 ];
 
-const agentPerfData = [
+const FALLBACK_AGENT_PERF = [
   { name: 'Sarah J.', calls: 145, avgDuration: 4.2, resolution: 95 },
   { name: 'Mike R.', calls: 128, avgDuration: 5.1, resolution: 88 },
   { name: 'Emily W.', calls: 112, avgDuration: 3.8, resolution: 92 },
@@ -43,12 +43,12 @@ const agentPerfData = [
   { name: 'Lisa M.', calls: 56, avgDuration: 4.5, resolution: 90 },
 ];
 
-const slaData = [
+const FALLBACK_SLA = [
   { name: 'Within SLA', value: 92, color: '#52c41a' },
   { name: 'Breached SLA', value: 8, color: '#ff4d4f' },
 ];
 
-const topCustomers = [
+const FALLBACK_TOP_CUSTOMERS = [
   { rank: 1, name: 'MediCorp Health', calls: 456, avgDuration: 5.2 },
   { rank: 2, name: 'CareFirst Clinic', calls: 389, avgDuration: 4.8 },
   { rank: 3, name: 'Wellness Plus', calls: 312, avgDuration: 6.1 },
@@ -72,12 +72,17 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState('charts');
   const [reportDefinitions, setReportDefinitions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [chartsLoading, setChartsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reportType, setReportType] = useState('callVolume');
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [scheduleForm] = Form.useForm();
   const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
   const [selectedFrequency, setSelectedFrequency] = useState('DAILY');
+  const [callVolumeData, setCallVolumeData] = useState(FALLBACK_CALL_VOLUME);
+  const [agentPerfData, setAgentPerfData] = useState(FALLBACK_AGENT_PERF);
+  const [slaData, setSlaData] = useState(FALLBACK_SLA);
+  const [topCustomers, setTopCustomers] = useState(FALLBACK_TOP_CUSTOMERS);
 
   const fetchDefinitions = useCallback(async () => {
     setLoading(true);
@@ -97,6 +102,35 @@ export default function ReportsPage() {
       fetchDefinitions();
     }
   }, [activeTab, fetchDefinitions]);
+
+    const fetchChartsData = useCallback(async () => {
+    setChartsLoading(true);
+    try {
+      const [analyticsRes, agentPerfRes] = await Promise.allSettled([
+        reportsApi.getAnalytics({ period: 'MONTHLY' }),
+        reportsApi.getAgentPerformance({ period: 'MONTHLY' }),
+      ]);
+
+      if (analyticsRes.status === 'fulfilled') {
+        const data = analyticsRes.value.data?.data || analyticsRes.value.data;
+        if (data?.callVolume) setCallVolumeData(data.callVolume);
+        if (data?.sla) setSlaData(data.sla);
+        if (data?.topCustomers) setTopCustomers(data.topCustomers);
+      }
+      if (agentPerfRes.status === 'fulfilled') {
+        const data = agentPerfRes.value.data?.data || agentPerfRes.value.data;
+        if (data?.agents) setAgentPerfData(data.agents);
+      }
+    } catch {
+      // Fallback data already set
+    } finally {
+      setChartsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchChartsData();
+  }, [fetchChartsData]);
 
   const handleExportCsv = async () => {
     try {
@@ -173,7 +207,9 @@ export default function ReportsPage() {
     {
       key: 'charts',
       label: 'Charts',
-      children: (
+      children: chartsLoading ? (
+        <Card><div style={{ textAlign: 'center', padding: 60 }}><Typography.Text type="secondary">Loading chart data...</Typography.Text></div></Card>
+      ) : (
         <Row gutter={[24, 24]}>
           <Col span={24}>
             <Card title="Call Volume (Inbound vs Outbound)">

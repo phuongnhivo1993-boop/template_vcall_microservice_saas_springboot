@@ -9,11 +9,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -94,6 +100,39 @@ public class AuditLogController {
     public ResponseEntity<ApiResponse<Void>> deleteLog(@PathVariable UUID id) {
         auditLogService.deleteLog(id);
         return ResponseEntity.ok(ApiResponse.success("Audit log deleted successfully", null));
+    }
+
+    @GetMapping("/export/csv")
+    public ResponseEntity<byte[]> exportCsv(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+        List<AuditLogResponse> logs = auditLogService.exportLogs(startDate, endDate);
+        StringBuilder csv = new StringBuilder("Timestamp,Actor,Action,Resource,ResourceId,Status,Details\n");
+        for (AuditLogResponse log : logs) {
+            csv.append(String.format("%s,%s,%s,%s,%s,%s,%s\n",
+                    log.getTimestamp(), log.getActorId(), log.getAction(),
+                    log.getResource(), log.getResourceId(), log.getStatus(),
+                    log.getDetails() != null ? log.getDetails().replace(",", ";") : ""));
+        }
+        byte[] bytes = csv.toString().getBytes(StandardCharsets.UTF_8);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("text/csv"));
+        headers.setContentDispositionFormData("attachment", "audit-logs.csv");
+        return ResponseEntity.ok().headers(headers).body(bytes);
+    }
+
+    @GetMapping("/export/excel")
+    public ResponseEntity<ApiResponse<List<AuditLogResponse>>> exportExcel(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
+        List<AuditLogResponse> logs = auditLogService.exportLogs(startDate, endDate);
+        return ResponseEntity.ok(ApiResponse.success(logs));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
+        Map<String, Long> stats = auditLogService.getStats();
+        return ResponseEntity.ok(ApiResponse.success(stats));
     }
 
     @PreAuthorize("hasRole('ADMIN')")

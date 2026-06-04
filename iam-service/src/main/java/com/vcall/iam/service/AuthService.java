@@ -104,6 +104,7 @@ public class AuthService {
             int remaining = loginAttemptService.getRemainingAttempts(username);
             throw new BadCredentialsException("Invalid credentials. " + remaining + " attempts remaining.");
         }
+    }
 
     @Transactional
     public LoginResponse refreshToken(RefreshTokenRequest request) {

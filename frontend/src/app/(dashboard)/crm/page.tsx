@@ -151,8 +151,38 @@ export default function CrmPage() {
     fetchData();
   };
 
-  const handleExportCsv = () => message.info('CSV export triggered');
-  const handleExportExcel = () => message.info('Excel export triggered');
+  const handleExportCsv = async () => {
+    try {
+      const type = activeTab === 'leads' ? 'leads' : activeTab === 'opportunities' ? 'opportunities' : activeTab === 'activities' ? 'activities' : 'notes';
+      const res = await crmApi.exportCsv(type);
+      const blob = new Blob([res.data], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${type}_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success(`${type} exported`);
+    } catch {
+      message.error('Export failed');
+    }
+  };
+  const handleExportExcel = async () => {
+    try {
+      const type = activeTab === 'leads' ? 'leads' : activeTab === 'opportunities' ? 'opportunities' : activeTab === 'activities' ? 'activities' : 'notes';
+      const res = await crmApi.exportExcel(type);
+      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${type}_${new Date().toISOString().slice(0,10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success(`${type} exported`);
+    } catch {
+      message.error('Export failed');
+    }
+  };
 
   const leadColumns: ColumnsType<any> = [
     { title: 'Name', key: 'name', render: (_: any, r: any) => <span style={{ fontWeight: 500 }}>{r.firstName} {r.lastName}</span> },

@@ -121,6 +121,13 @@ public class ChatService {
                 .map(this::toResponse);
     }
 
+    @Transactional(readOnly = true)
+    public List<ChatConversationResponse> getAllConversations() {
+        return conversationRepository.findAll().stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private ChatConversationResponse toResponse(ChatConversation conversation) {
         List<ChatMessage> messages = conversation.getMessages();
         ChatMessage lastMsg = messages.isEmpty() ? null : messages.get(messages.size() - 1);

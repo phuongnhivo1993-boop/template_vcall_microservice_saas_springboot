@@ -44,6 +44,10 @@ export const agentsApi = {
   getProfile: (userId: string) => apiClient.get('/agents/profile', { params: { userId } }),
   getStats: () => apiClient.get('/agents/stats'),
   getSessions: (id: string) => apiClient.get(`/agent-sessions/active/${id}`),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/agents/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/agents/export/excel', { params, responseType: 'blob' }),
 };
 
 export const customersApi = {
@@ -66,6 +70,10 @@ export const customersApi = {
     apiClient.put(`/customers/${customerId}/addresses/${addressId}`, data),
   deleteAddress: (customerId: string, addressId: number) =>
     apiClient.delete(`/customers/${customerId}/addresses/${addressId}`),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/customers/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/customers/export/excel', { params, responseType: 'blob' }),
 };
 
 export const crmApi = {
@@ -111,6 +119,10 @@ export const crmApi = {
     update: (id: number, data: Record<string, unknown>) => apiClient.put(`/crm/notes/${id}`, data),
     delete: (id: number) => apiClient.delete(`/crm/notes/${id}`),
   },
+  exportCsv: (type: string, params?: Record<string, unknown>) =>
+    apiClient.get(`/crm/${type}/export/csv`, { params, responseType: 'blob' }),
+  exportExcel: (type: string, params?: Record<string, unknown>) =>
+    apiClient.get(`/crm/${type}/export/excel`, { params, responseType: 'blob' }),
 };
 
 export const callsApi = {
@@ -172,6 +184,10 @@ export const ticketsApi = {
   updateSlaRule: (id: number, data: Record<string, unknown>) =>
     apiClient.put(`/sla-rules/${id}`, data),
   deleteSlaRule: (id: number) => apiClient.delete(`/sla-rules/${id}`),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/tickets/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/tickets/export/excel', { params, responseType: 'blob' }),
 };
 
 export const reportsApi = {
@@ -231,6 +247,10 @@ export const campaignsApi = {
     apiClient.get(`/campaigns/${campaignId}/results`, { params }),
   getAgentResults: (campaignId: string, agentId: string, params?: Record<string, unknown>) =>
     apiClient.get(`/campaigns/${campaignId}/results/agent/${agentId}`, { params }),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/campaigns/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/campaigns/export/excel', { params, responseType: 'blob' }),
 };
 
 export const billingApi = {

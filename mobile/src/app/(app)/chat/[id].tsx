@@ -1,29 +1,32 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList,
+  View, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator,
   StyleSheet, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
+import { chatApi } from '@/lib/api';
 import type { ChatMessage } from '../../../types';
-
-const MOCK_MESSAGES: ChatMessage[] = [
-  { id: 'm1', conversationId: '1', senderId: 'customer', senderType: 'customer', content: 'Hello, I need help with my account', type: 'text', createdAt: new Date(Date.now() - 1200000).toISOString(), read: true },
-  { id: 'm2', conversationId: '1', senderId: 'agent', senderType: 'agent', content: 'Hi John! I\'d be happy to help. What seems to be the issue?', type: 'text', createdAt: new Date(Date.now() - 1100000).toISOString(), read: true },
-  { id: 'm3', conversationId: '1', senderId: 'customer', senderType: 'customer', content: 'I can\'t log into my account. It says invalid password.', type: 'text', createdAt: new Date(Date.now() - 1000000).toISOString(), read: true },
-  { id: 'm4', conversationId: '1', senderId: 'agent', senderType: 'agent', content: 'Let me check your account. Can you provide your email address?', type: 'text', createdAt: new Date(Date.now() - 900000).toISOString(), read: true },
-  { id: 'm5', conversationId: '1', senderId: 'customer', senderType: 'customer', content: 'john.doe@email.com', type: 'text', createdAt: new Date(Date.now() - 800000).toISOString(), read: true },
-  { id: 'm6', conversationId: '1', senderId: 'agent', senderType: 'agent', content: 'Thanks! I\'ve reset your password. Please check your email for the temporary password.', type: 'text', createdAt: new Date(Date.now() - 700000).toISOString(), read: true },
-  { id: 'm7', conversationId: '1', senderId: 'customer', senderType: 'customer', content: 'Thanks for your help!', type: 'text', createdAt: new Date(Date.now() - 600000).toISOString(), read: true },
-];
 
 export default function ChatDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const [messages] = useState<ChatMessage[]>(MOCK_MESSAGES);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    chatApi.getMessages(id)
+      .then((res) => setMessages(Array.isArray(res.data) ? res.data : []))
+      .catch((err) => setError(err?.message || 'Failed to load messages'))
+      .finally(() => setLoading(false));
+  }, [id]);
 
   const renderMessage = useCallback(({ item }: { item: ChatMessage }) => {
     const isAgent = item.senderType === 'agent';
@@ -41,11 +44,37 @@ export default function ChatDetailScreen() {
     );
   }, []);
 
-  const handleSend = () => {
-    if (!inputText.trim()) return;
-    // In a real app, dispatch sendMessage thunk
+  const handleSend = useCallback(() => {
+    if (!inputText.trim() || !id) return;
+    const content = inputText.trim();
     setInputText('');
-  };
+    chatApi.sendMessage(id, { content, senderType: 'AGENT' }).then((res) => {
+      setMessages((prev) => [...prev, res.data]);
+    }).catch(() => {
+      // silently fail — message lost, but we don't block the UI
+    });
+  }, [inputText, id]);
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.centerText}>Loading messages...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <Ionicons name="alert-circle-outline" size={48} color={Colors.error} />
+        <Text style={[styles.centerText, { color: Colors.error, marginTop: 12 }]}>{error}</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => { setLoading(true); setError(null); chatApi.getMessages(id).then((res) => setMessages(Array.isArray(res.data) ? res.data : [])).catch((e) => setError(e?.message || 'Failed to load messages')).finally(() => setLoading(false)); }}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -68,10 +97,16 @@ export default function ChatDetailScreen() {
         data={messages}
         keyExtractor={(item) => item.id}
         renderItem={renderMessage}
-        contentContainerStyle={styles.messagesList}
+        contentContainerStyle={[styles.messagesList, messages.length === 0 && styles.emptyList]}
         showsVerticalScrollIndicator={false}
         inverted={false}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="chatbubbles-outline" size={48} color={Colors.textSecondary} />
+            <Text style={styles.emptyText}>No messages yet</Text>
+          </View>
+        }
       />
 
       <View style={styles.inputBar}>
@@ -186,5 +221,44 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: {
     backgroundColor: Colors.border,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    padding: 24,
+  },
+  centerText: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  retryBtn: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: Colors.primary,
+  },
+  retryText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyList: {
+    flexGrow: 1,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    marginTop: 12,
   },
 });

@@ -12,13 +12,26 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/reports/dashboard")
+@RequestMapping("/api/v1/dashboard")
 @RequiredArgsConstructor
 public class DashboardController {
 
     private final DashboardService dashboardService;
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
+        Map<String, Object> stats = dashboardService.getDashboardStats();
+        return ResponseEntity.ok(ApiResponse.success(stats));
+    }
+
+    @GetMapping("/activities")
+    public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getActivities() {
+        List<Map<String, Object>> activities = dashboardService.getRecentActivities();
+        return ResponseEntity.ok(ApiResponse.success(activities));
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<DashboardDataResponse>>> getDashboardData() {

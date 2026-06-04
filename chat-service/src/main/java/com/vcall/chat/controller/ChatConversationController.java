@@ -4,7 +4,9 @@ import com.vcall.chat.dto.ChatAssignRequest;
 import com.vcall.chat.dto.ChatConversationRequest;
 import com.vcall.chat.dto.ChatConversationResponse;
 import com.vcall.chat.dto.ChatConversationUpdateRequest;
+import com.vcall.chat.entity.ChatConversation;
 import com.vcall.chat.entity.ChatConversation.Status;
+import com.vcall.chat.service.ChatMessageService;
 import com.vcall.chat.service.ChatService;
 import com.vcall.common.dto.ApiResponse;
 import jakarta.validation.Valid;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -31,6 +34,7 @@ import java.util.UUID;
 public class ChatConversationController {
 
     private final ChatService chatService;
+    private final ChatMessageService chatMessageService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<ChatConversationResponse>> createConversation(
@@ -89,5 +93,40 @@ public class ChatConversationController {
             @PathVariable UUID agentId, Pageable pageable) {
         Page<ChatConversationResponse> conversations = chatService.getByAgentId(agentId, pageable);
         return ResponseEntity.ok(ApiResponse.success(conversations));
+    }
+
+    @PostMapping("/{id}/read")
+    public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable UUID id) {
+        chatMessageService.markAsRead(id);
+        return ResponseEntity.ok(ApiResponse.success("Messages marked as read", null));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<ChatConversationResponse>>> searchConversations(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String source,
+            @RequestParam(required = false) UUID agentId,
+            Pageable pageable) {
+        Page<ChatConversationResponse> result;
+        if (agentId != null) {
+            result = chatService.getByAgentId(agentId, pageable);
+        } else if (status != null) {
+            result = chatService.getByStatus(ChatConversation.Status.valueOf(status.toUpperCase()), pageable);
+        } else {
+            result = chatService.getByStatus(ChatConversation.Status.ACTIVE, pageable);
+        }
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @GetMapping("/export/csv")
+    public ResponseEntity<ApiResponse<List<ChatConversationResponse>>> exportCsv() {
+        List<ChatConversationResponse> all = chatService.getAllConversations();
+        return ResponseEntity.ok(ApiResponse.success(all));
+    }
+
+    @GetMapping("/export/excel")
+    public ResponseEntity<ApiResponse<List<ChatConversationResponse>>> exportExcel() {
+        List<ChatConversationResponse> all = chatService.getAllConversations();
+        return ResponseEntity.ok(ApiResponse.success(all));
     }
 }

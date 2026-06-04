@@ -1,18 +1,13 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useDispatch } from 'react-redux';
 import { Colors } from '../../../constants/colors';
-
-const CONTACTS = [
-  { id: '1', name: 'John Doe', number: '+1 555-0101' },
-  { id: '2', name: 'Jane Roe', number: '+1 555-0102' },
-  { id: '3', name: 'Bob Wilson', number: '+1 555-0103' },
-  { id: '4', name: 'Alice Brown', number: '+1 555-0104' },
-  { id: '5', name: 'Charlie Davis', number: '+1 555-0105' },
-];
+import { customersApi, callsApi } from '../../../lib/api';
+import { setActiveCall } from '../../../store/slices/callSlice';
 
 const KEYS = [
   ['1', '', '2', 'ABC', '3', 'DEF'],
@@ -23,14 +18,37 @@ const KEYS = [
 
 export default function DialerScreen() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [number, setNumber] = useState('');
   const [search, setSearch] = useState('');
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
+  const [calling, setCalling] = useState(false);
 
-  const filtered = CONTACTS.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.number.includes(search),
+  const filtered = contacts.filter(
+    (c: any) =>
+      c.name?.toLowerCase().includes(search.toLowerCase()) ||
+      (c.phone || '').includes(search),
   );
+
+  const searchContacts = useCallback(async (keyword: string) => {
+    if (!keyword.trim()) { setContacts([]); return; }
+    setContactsLoading(true);
+    try {
+      const res = await customersApi.search(keyword);
+      const data = res.data?.data || res.data || [];
+      setContacts(Array.isArray(data) ? data : []);
+    } catch {
+      setContacts([]);
+    } finally {
+      setContactsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => searchContacts(search), 300);
+    return () => clearTimeout(timer);
+  }, [search, searchContacts]);
 
   const handlePress = (digit: string) => {
     setNumber((prev) => prev + digit);
@@ -40,9 +58,32 @@ export default function DialerScreen() {
     setNumber((prev) => prev.slice(0, -1));
   };
 
-  const handleCall = () => {
-    if (number.trim()) {
+  const handleCall = async () => {
+    if (!number.trim() || calling) return;
+    setCalling(true);
+    try {
+      const res = await callsApi.startCall({
+        callerNumber: number.trim(),
+        calleeNumber: number.trim(),
+        direction: 'OUTBOUND',
+      });
+      const callData = res.data?.data || res.data;
+      if (callData?.id) {
+        dispatch(setActiveCall({
+          id: callData.id,
+          caller: callData.callerNumber || number.trim(),
+          callee: callData.calleeNumber || number.trim(),
+          status: 'connected',
+          isMuted: false,
+          isSpeakerOn: false,
+          startedAt: new Date().toISOString(),
+        }));
+      }
       router.push('/calls/active');
+    } catch {
+      router.push('/calls/active');
+    } finally {
+      setCalling(false);
     }
   };
 
@@ -111,26 +152,37 @@ export default function DialerScreen() {
           value={search}
           onChangeText={setSearch}
         />
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.contactItem}
-              onPress={() => setNumber(item.number)}
-            >
-              <Ionicons name="person-circle-outline" size={36} color={Colors.textSecondary} />
-              <View style={styles.contactInfo}>
-                <Text style={styles.contactName}>{item.name}</Text>
-                <Text style={styles.contactNumber}>{item.number}</Text>
-              </View>
-              <TouchableOpacity onPress={() => { setNumber(item.number); handleCall(); }}>
-                <Ionicons name="call-outline" size={20} color={Colors.primary} />
+        {contactsLoading && filtered.length === 0 ? (
+          <ActivityIndicator size="small" color={Colors.primary} style={{ marginTop: 20 }} />
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => String(item.id || item.name)}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.contactItem}
+                onPress={() => setNumber(item.phone || item.phoneNumber || '')}
+              >
+                <Ionicons name="person-circle-outline" size={36} color={Colors.textSecondary} />
+                <View style={styles.contactInfo}>
+                  <Text style={styles.contactName}>{item.name}</Text>
+                  <Text style={styles.contactNumber}>{item.phone || item.phoneNumber || ''}</Text>
+                </View>
+                <TouchableOpacity onPress={() => {
+                  const phone = item.phone || item.phoneNumber || '';
+                  setNumber(phone);
+                  handleCall();
+                }}>
+                  <Ionicons name="call-outline" size={20} color={Colors.primary} />
+                </TouchableOpacity>
               </TouchableOpacity>
-            </TouchableOpacity>
-          )}
-          style={styles.contactList}
-        />
+            )}
+            ListEmptyComponent={search.trim() ? (
+              <Text style={{ textAlign: 'center', color: Colors.textSecondary, marginTop: 20 }}>No contacts found</Text>
+            ) : null}
+            style={styles.contactList}
+          />
+        )}
       </View>
     </View>
   );

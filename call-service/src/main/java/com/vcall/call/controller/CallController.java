@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,15 +29,24 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/calls")
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 public class CallController {
 
     private final CallService callService;
     private final EvaluationService evaluationService;
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getCallStats() {
+        Map<String, Object> stats = callService.getCallStats();
+        return ResponseEntity.ok(ApiResponse.success(stats));
+    }
 
     @PostMapping
     public ResponseEntity<CallResponse> initiateCall(@Valid @RequestBody CallRequest request) {
@@ -132,5 +142,29 @@ public class CallController {
     public ResponseEntity<Page<CallEvaluationResponse>> getEvaluations(
             @PathVariable UUID id, Pageable pageable) {
         return ResponseEntity.ok(evaluationService.getEvaluationsByCall(id, pageable));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<CallResponse>>> searchCalls(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String direction,
+            @RequestParam(required = false) UUID agentId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            Pageable pageable) {
+        Page<CallResponse> result = callService.searchCalls(status, direction, agentId, startDate, endDate, pageable);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @GetMapping("/export/csv")
+    public ResponseEntity<ApiResponse<List<CallResponse>>> exportCsv() {
+        List<CallResponse> calls = callService.exportAll();
+        return ResponseEntity.ok(ApiResponse.success(calls));
+    }
+
+    @GetMapping("/export/excel")
+    public ResponseEntity<ApiResponse<List<CallResponse>>> exportExcel() {
+        List<CallResponse> calls = callService.exportAll();
+        return ResponseEntity.ok(ApiResponse.success(calls));
     }
 }

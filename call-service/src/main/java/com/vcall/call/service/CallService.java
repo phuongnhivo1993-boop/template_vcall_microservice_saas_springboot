@@ -13,6 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -182,6 +185,31 @@ public class CallService {
         call = callRepository.save(call);
         eventPublisher.publishEvent("SURVEY_SENT", call);
         return toResponse(call);
+    }
+
+    public Map<String, Object> getCallStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalCalls", callRepository.count());
+        stats.put("activeCalls", callRepository.countByStatus(Call.CallStatus.IN_PROGRESS));
+        stats.put("ringingCalls", callRepository.countByStatus(Call.CallStatus.RINGING));
+        stats.put("completedCalls", callRepository.countByStatus(Call.CallStatus.COMPLETED));
+        stats.put("onHoldCalls", callRepository.countByStatus(Call.CallStatus.ON_HOLD));
+        return stats;
+    }
+
+    public Page<CallResponse> searchCalls(String status, String direction, UUID agentId,
+                                           LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+        if (startDate == null) startDate = LocalDateTime.now().minusDays(30);
+        if (endDate == null) endDate = LocalDateTime.now();
+        if (status != null) {
+            return callRepository.findByStatusAndStartTimeBetween(
+                    Call.CallStatus.valueOf(status.toUpperCase()), startDate, endDate, pageable).map(this::toResponse);
+        }
+        return callRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    public List<CallResponse> exportAll() {
+        return callRepository.findAll().stream().map(this::toResponse).toList();
     }
 
     private CallResponse toResponse(Call call) {

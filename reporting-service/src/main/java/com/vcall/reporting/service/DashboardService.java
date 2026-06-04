@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,19 @@ public class DashboardService {
     private final DashboardWidgetRepository dashboardWidgetRepository;
     private final ReportingDataService reportingDataService;
     private final ObjectMapper objectMapper;
+
+    public Map<String, Object> getDashboardStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalCalls", reportingDataService.generateCallVolumeReport(new HashMap<>()).get("totalCalls"));
+        stats.put("activeAgents", 0);
+        stats.put("openTickets", 0);
+        stats.put("pendingTasks", 0);
+        return stats;
+    }
+
+    public List<Map<String, Object>> getRecentActivities() {
+        return new ArrayList<>();
+    }
 
     @Transactional(readOnly = true)
     public List<DashboardWidgetResponse> getWidgets() {

@@ -169,12 +169,36 @@ export default function TicketsPage() {
     fetchTickets(pagination.current, pagination.pageSize, filters);
   };
 
-  const handleExportCsv = () => {
-    message.info('CSV export triggered');
+  const handleExportCsv = async () => {
+    try {
+      const res = await ticketsApi.exportCsv();
+      const blob = new Blob([res.data], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tickets_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Tickets exported');
+    } catch {
+      message.error('Export failed');
+    }
   };
 
-  const handleExportExcel = () => {
-    message.info('Excel export triggered');
+  const handleExportExcel = async () => {
+    try {
+      const res = await ticketsApi.exportExcel();
+      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tickets_${new Date().toISOString().slice(0,10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Tickets exported');
+    } catch {
+      message.error('Export failed');
+    }
   };
 
   const columns: ColumnsType<Ticket> = [

@@ -1,29 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList,
-  StyleSheet, ScrollView,
+  View, Text, TextInput, TouchableOpacity, FlatList, ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
+import { ticketsApi } from '@/lib/api';
 import type { Ticket, TicketPriority, TicketStatus, TicketComment } from '../../../types';
-
-const MOCK_TICKET: Ticket = {
-  id: '1',
-  title: 'Cannot access email',
-  description: 'User reports inability to log into email account. They have tried resetting their password multiple times but receive no reset email. Their account is active and they can access other services.',
-  status: 'open',
-  priority: 'high',
-  customerId: 'c1',
-  customerName: 'John Doe',
-  slaDeadline: new Date(Date.now() + 7200000).toISOString(),
-  createdAt: new Date(Date.now() - 3600000).toISOString(),
-  updatedAt: new Date(Date.now() - 1800000).toISOString(),
-  comments: [
-    { id: 'cm1', ticketId: '1', authorId: 'c1', authorName: 'John Doe', authorType: 'customer', content: 'I haven\'t been able to log in since yesterday.', createdAt: new Date(Date.now() - 3600000).toISOString() },
-    { id: 'cm2', ticketId: '1', authorId: 'a1', authorName: 'Agent Smith', authorType: 'agent', content: 'I can see your account is active. Let me check the email logs.', createdAt: new Date(Date.now() - 3000000).toISOString() },
-  ],
-};
 
 const priorityColors: Record<TicketPriority, string> = {
   low: Colors.success,
@@ -55,15 +39,32 @@ function getSlaCountdown(deadline?: string): { label: string; color: string } | 
 
 export default function TicketDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [ticket] = useState<Ticket>(MOCK_TICKET);
+  const [ticket, setTicket] = useState<Ticket | null>(null);
   const [comment, setComment] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const sla = getSlaCountdown(ticket.slaDeadline);
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    ticketsApi.getTicket(id)
+      .then((res) => setTicket(res.data as Ticket))
+      .catch((err) => setError(err?.message || 'Failed to load ticket'))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const sla = ticket ? getSlaCountdown(ticket.slaDeadline) : null;
 
   const handleAddComment = () => {
-    if (!comment.trim()) return;
-    // In a real app, dispatch createComment thunk
+    if (!comment.trim() || !id) return;
+    const content = comment.trim();
     setComment('');
+    ticketsApi.createComment(id, { content, isInternal: false }).then((res) => {
+      setTicket((prev) => prev ? { ...prev, comments: [...prev.comments, res.data as TicketComment] } : prev);
+    }).catch(() => {
+      // silently fail
+    });
   };
 
   const renderComment = ({ item }: { item: TicketComment }) => {
@@ -78,6 +79,36 @@ export default function TicketDetailScreen() {
       </View>
     );
   };
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={styles.centerText}>Loading ticket...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <Ionicons name="alert-circle-outline" size={48} color={Colors.error} />
+        <Text style={[styles.centerText, { color: Colors.error, marginTop: 12 }]}>{error}</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => { setLoading(true); setError(null); ticketsApi.getTicket(id).then((res) => setTicket(res.data as Ticket)).catch((e) => setError(e?.message || 'Failed to load ticket')).finally(() => setLoading(false)); }}>
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!ticket) {
+    return (
+      <View style={styles.center}>
+        <Ionicons name="document-text-outline" size={48} color={Colors.textSecondary} />
+        <Text style={styles.centerText}>Ticket not found</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -151,6 +182,11 @@ export default function TicketDetailScreen() {
             </TouchableOpacity>
           </View>
         )}
+        ListEmptyComponent={
+          <View style={styles.emptyComments}>
+            <Text style={styles.emptyCommentsText}>No comments yet</Text>
+          </View>
+        }
       />
     </View>
   );
@@ -297,5 +333,38 @@ const styles = StyleSheet.create({
   },
   commentSendBtnDisabled: {
     backgroundColor: Colors.border,
+  },
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    padding: 24,
+  },
+  centerText: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  retryBtn: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: Colors.primary,
+  },
+  retryText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  emptyComments: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  emptyCommentsText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
   },
 });

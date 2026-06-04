@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Tag, Button, Space, Typography, Input, message, Alert, Tooltip, Divider } from 'antd';
+import { Card, Tag, Button, Space, Typography, Input, message, Alert, Tooltip, Divider, Form, Select } from 'antd';
 import { PlusOutlined, ThunderboltOutlined, EditOutlined, DeleteOutlined, PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
@@ -172,33 +172,37 @@ export default function AutomationPage() {
         onSubmit={handleSave}
         initialValues={editingRule || { name: '', description: '', trigger: '' }}
       >
-        <div style={{ padding: 8 }}>
-          <div style={{ marginBottom: 16 }}>
-            <label>Rule Name *</label>
-            <Input name="name" placeholder="e.g., Auto-assign High Priority Tickets" />
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <label>Description</label>
-            <Input name="description" placeholder="Describe what this rule does" />
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <label>Trigger Event *</label>
-            <select name="trigger" style={{ width: '100%', padding: 8, border: '1px solid #d9d9d9', borderRadius: 6 }}>
-              {Object.entries(
-                TRIGGER_OPTIONS.reduce((acc, t) => {
-                  (acc[t.group] = acc[t.group] || []).push(t);
-                  return acc;
-                }, {} as Record<string, typeof TRIGGER_OPTIONS>)
-              ).map(([group, options]) => (
-                <optgroup key={group} label={group}>
-                  {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                </optgroup>
-              ))}
-            </select>
-          </div>
-          <Divider>Conditions & Actions</Divider>
-          <Text type="secondary">Advanced conditions and actions configuration will be available in the next update.</Text>
-        </div>
+        <Form.Item name="name" label="Rule Name" rules={[{ required: true, message: 'Please enter rule name' }]}>
+          <Input placeholder="e.g., Auto-assign High Priority Tickets" />
+        </Form.Item>
+        <Form.Item name="description" label="Description">
+          <Input.TextArea rows={2} placeholder="Describe what this rule does" />
+        </Form.Item>
+        <Form.Item name="trigger" label="Trigger Event" rules={[{ required: true, message: 'Please select a trigger' }]}>
+          <Select placeholder="Select trigger event">
+            {TRIGGER_OPTIONS.map(opt => (
+              <Select.OptGroup key={opt.group} label={opt.group}>
+                <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>
+              </Select.OptGroup>
+            ))}
+          </Select>
+        </Form.Item>
+        <Form.Item name="conditions" label="Conditions" initialValue={[]}>
+          <Select mode="tags" placeholder="Select conditions (optional)" tokenSeparators={[',']}>
+            <Select.Option value="priority_high">Priority = High</Select.Option>
+            <Select.Option value="priority_urgent">Priority = Urgent</Select.Option>
+            <Select.Option value="category_billing">Category = Billing</Select.Option>
+            <Select.Option value="category_technical">Category = Technical</Select.Option>
+            <Select.Option value="customer_vip">Customer = VIP</Select.Option>
+          </Select>
+        </Form.Item>
+        <Form.Item name="actions" label="Actions" rules={[{ required: true, message: 'Please select at least one action' }]}>
+          <Select mode="multiple" placeholder="Select actions to perform">
+            {ACTION_OPTIONS.map(opt => (
+              <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>
+            ))}
+          </Select>
+        </Form.Item>
       </CommonForm>
     </div>
   );

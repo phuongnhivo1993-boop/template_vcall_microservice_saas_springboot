@@ -6,7 +6,7 @@ services:
     container_name: vcall-postgres
     environment:
       POSTGRES_USER: vcall
-      POSTGRES_PASSWORD: vcall@123
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vcall@123}
       POSTGRES_MULTIPLE_DATABASES: vcall_iam,vcall_agent,vcall_customer,vcall_crm,vcall_call,vcall_sip,vcall_pbx,vcall_recording,vcall_omnichannel,vcall_chat,vcall_email,vcall_sms,vcall_ticket,vcall_campaign,vcall_billing,vcall_cdr,vcall_reporting,vcall_notification,vcall_audit
     ports:
       - "5432:5432"
@@ -94,8 +94,8 @@ services:
     image: minio/minio:latest
     container_name: vcall-minio
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
