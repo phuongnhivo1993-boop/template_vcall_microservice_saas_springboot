@@ -1,5 +1,6 @@
 package com.vcall.common.config;
 
+import com.vcall.common.tenant.TenantContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
@@ -13,6 +14,6 @@ public class JpaAuditingConfig {
 
     @Bean
     public AuditorAware<String> auditorProvider() {
-        return () -> Optional.of("system");
+        return () -> Optional.ofNullable(TenantContext.getTenantId());
     }
 }

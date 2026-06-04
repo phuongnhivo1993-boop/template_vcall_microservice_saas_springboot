@@ -157,9 +157,9 @@ public class UserController {
         for (UUID id : ids) {
             try {
                 userService.deleteUser(id);
-                result.addSuccess(id);
+                result.addSuccess((Object) id);
             } catch (Exception e) {
-                result.addFailure(id, e.getMessage());
+                result.addFailure((Object) id, e.getMessage());
             }
         }
         return ResponseEntity.ok(ApiResponse.success("Bulk delete completed", result));
@@ -172,9 +172,9 @@ public class UserController {
         for (UUID id : request.getIds()) {
             try {
                 userService.updateUserStatus(id, request.getStatus());
-                result.addSuccess(id);
+                result.addSuccess((Object) id);
             } catch (Exception e) {
-                result.addFailure(id, e.getMessage());
+                result.addFailure((Object) id, e.getMessage());
             }
         }
         return ResponseEntity.ok(ApiResponse.success("Bulk status update completed", result));

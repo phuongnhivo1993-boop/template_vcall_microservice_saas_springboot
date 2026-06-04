@@ -13,8 +13,11 @@ import com.vcall.ticket.entity.TicketStatusHistory;
 import com.vcall.ticket.kafka.TicketEventPublisher;
 import com.vcall.ticket.repository.TicketRepository;
 import com.vcall.ticket.repository.TicketStatusHistoryRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -32,6 +35,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TicketService {
 
     private final TicketRepository ticketRepository;
@@ -41,6 +45,8 @@ public class TicketService {
 
     private static final AtomicLong ticketCounter = new AtomicLong(0);
 
+    @CircuitBreaker(name = "ticketService", fallbackMethod = "createTicketFallback")
+    @Retry(name = "ticketService")
     @Transactional
     public TicketResponse createTicket(TicketRequest request) {
         Ticket ticket = new Ticket();
@@ -260,5 +266,10 @@ public class TicketService {
                 .slaStatus(slaStatus)
                 .createdAt(ticket.getCreatedAt())
                 .build();
+    }
+
+    private TicketResponse createTicketFallback(TicketRequest request, Exception ex) {
+        log.error("Circuit breaker triggered for createTicket: {}", ex.getMessage());
+        throw new RuntimeException("Service temporarily unavailable. Please try again later.");
     }
 }

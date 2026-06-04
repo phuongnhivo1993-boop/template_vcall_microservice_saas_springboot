@@ -1,6 +1,7 @@
 package com.vcall.pbx.entity;
 
 import com.vcall.common.entity.BaseEntity;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;

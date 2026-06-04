@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Row, Col, Card, Input, List, Avatar, Badge, Typography, Space, Tag, Segmented, Spin, Alert, Button, Empty } from 'antd';
+import { Row, Col, Card, Input, List, Avatar, Badge, Typography, Space, Tag, Segmented, Spin, Alert, Button, Empty, message } from 'antd';
 import {
   MessageOutlined, MailOutlined, PhoneOutlined, SmileOutlined,
   SearchOutlined, SendOutlined,

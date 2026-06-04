@@ -157,7 +157,7 @@ class TicketServiceTests {
         request.setTitle("Updated Title");
         TicketResponse result = ticketService.updateTicket(ticket.getId(), request);
 
-        assertThat(result.getTitle()).isEqualTo("Test Ticket");
+        assertThat(result.getTitle()).isEqualTo("Updated Title");
         verify(ticketRepository).save(ticketCaptor.capture());
         assertThat(ticketCaptor.getValue().getTitle()).isEqualTo("Updated Title");
     }
@@ -200,7 +200,7 @@ class TicketServiceTests {
 
         TicketResponse result = ticketService.updateStatus(ticket.getId(), statusRequest);
 
-        assertThat(result.getStatus()).isEqualTo("OPEN");
+        assertThat(result.getStatus()).isEqualTo("IN_PROGRESS");
         verify(ticketRepository).save(ticketCaptor.capture());
         assertThat(ticketCaptor.getValue().getStatus()).isEqualTo(TicketStatus.IN_PROGRESS);
     }

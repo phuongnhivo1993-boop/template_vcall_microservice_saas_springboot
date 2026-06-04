@@ -110,10 +110,11 @@ public class RingGroupService {
         List<RingGroupMember> members = ringGroupMemberRepository.findByRingGroupIdOrderByPosition(ringGroupId);
         for (int i = 0; i < memberIds.size() && i < members.size(); i++) {
             Long memberId = memberIds.get(i);
+            final int index = i;
             members.stream()
                     .filter(m -> m.getId().equals(memberId))
                     .findFirst()
-                    .ifPresent(m -> m.setPosition(i));
+                    .ifPresent(m -> m.setPosition(index));
         }
         ringGroupMemberRepository.saveAll(members);
     }

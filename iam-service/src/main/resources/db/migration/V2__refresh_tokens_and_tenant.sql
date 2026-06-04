@@ -1,0 +1,19 @@
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    token VARCHAR(512) UNIQUE NOT NULL,
+    user_id UUID NOT NULL REFERENCES users(id),
+    family VARCHAR(100) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    revoked BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP,
+    created_by VARCHAR(100),
+    updated_by VARCHAR(100),
+    is_deleted BOOLEAN DEFAULT FALSE
+);
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(50);
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(50);
+ALTER TABLE user_roles ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(50);
+ALTER TABLE permissions ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(50);
+ALTER TABLE role_permissions ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(50);

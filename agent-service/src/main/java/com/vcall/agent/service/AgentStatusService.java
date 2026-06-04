@@ -4,6 +4,7 @@ import com.vcall.agent.dto.AgentStatusResponse;
 import com.vcall.agent.entity.Agent;
 import com.vcall.agent.entity.AgentStatus;
 import com.vcall.agent.repository.AgentStatusRepository;
+import com.vcall.agent.websocket.AgentStatusWebSocketHandler;
 import com.vcall.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 public class AgentStatusService {
 
     private final AgentStatusRepository agentStatusRepository;
+    private final AgentStatusWebSocketHandler webSocketHandler;
 
     @Transactional
     public AgentStatusResponse updateStatus(Agent agent, String status, String reason) {
@@ -28,7 +30,10 @@ public class AgentStatusService {
         agentStatus.setChangedAt(LocalDateTime.now());
         agentStatus.setReason(reason);
         agentStatus = agentStatusRepository.save(agentStatus);
-        return toResponse(agentStatus);
+
+        AgentStatusResponse response = toResponse(agentStatus);
+        webSocketHandler.broadcastStatusChange(response);
+        return response;
     }
 
     @Transactional(readOnly = true)

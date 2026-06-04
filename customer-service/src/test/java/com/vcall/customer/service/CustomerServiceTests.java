@@ -7,6 +7,7 @@ import com.vcall.customer.dto.CustomerResponse;
 import com.vcall.customer.entity.Customer;
 import com.vcall.customer.entity.CustomerTag;
 import com.vcall.customer.entity.CustomerTagMapping;
+import com.vcall.customer.mapper.CustomerMapper;
 import com.vcall.customer.repository.CustomerRepository;
 import com.vcall.customer.repository.CustomerTagMappingRepository;
 import com.vcall.customer.repository.CustomerTagRepository;
@@ -52,7 +53,7 @@ class CustomerServiceTests {
 
     @BeforeEach
     void setUp() {
-        customerService = new CustomerService(customerRepository, customerTagRepository, customerTagMappingRepository);
+        customerService = new CustomerService(customerRepository, customerTagRepository, customerTagMappingRepository, mock(CustomerMapper.class));
 
         customer = new Customer();
         customer.setId(UUID.randomUUID());

@@ -39,12 +39,8 @@ public class BulkOperationUtil {
         private final List<Object> successItems = new ArrayList<>();
         private final List<BulkError> errors = new ArrayList<>();
 
-        public void addSuccess(T item) { successItems.add(item); }
-        public void addSuccess(UUID id) { successItems.add(id); }
-        public void addSuccess(Long id) { successItems.add(id); }
-        public void addFailure(T item, String error) { errors.add(new BulkError(String.valueOf(item), error)); }
-        public void addFailure(UUID id, String error) { errors.add(new BulkError(id.toString(), error)); }
-        public void addFailure(Long id, String error) { errors.add(new BulkError(id.toString(), error)); }
+        public void addSuccess(Object item) { successItems.add(item); }
+        public void addFailure(Object item, String error) { errors.add(new BulkError(String.valueOf(item), error)); }
 
         public int getSuccessCount() { return successItems.size(); }
         public int getFailureCount() { return errors.size(); }

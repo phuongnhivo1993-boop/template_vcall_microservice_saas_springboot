@@ -2,29 +2,62 @@
 
 import { useState } from 'react';
 import { Form, Input, Button, Card, Typography, message } from 'antd';
-import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, SafetyOutlined } from '@ant-design/icons';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { connectSocket } from '@/lib/socket';
 
 const { Title, Text } = Typography;
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaToken, setMfaToken] = useState('');
+  const [mfaLoading, setMfaLoading] = useState(false);
   const router = useRouter();
 
-  const onFinish = async (values: { username: string; password: string }) => {
+  const onFinish = async (values: { username: string; password: string; company?: string }) => {
     setLoading(true);
     try {
+      const res = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: values.username, password: values.password, tenantId: values.company }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 423) {
+          message.error(`Account locked. Try again in ${Math.ceil((data.retryAfterSeconds || 1740) / 60)} minutes.`);
+        } else {
+          message.error(data.message || data.error || 'Invalid credentials');
+        }
+        return;
+      }
+
+      if (data.mfaRequired) {
+        setMfaToken(data.mfaToken);
+        setMfaRequired(true);
+        return;
+      }
+
       const result = await signIn('credentials', {
-        username: values.username,
-        password: values.password,
+        username: data.user?.username || '',
+        password: '',
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        userRole: data.user?.role || 'AGENT',
+        userId: data.user?.id || '',
+        userEmail: data.user?.email || '',
         redirect: false,
       });
 
       if (result?.error) {
-        message.error('Invalid username or password');
+        message.error('Login failed');
       } else {
         message.success('Login successful');
+        connectSocket(data.accessToken);
         router.push('/dashboard');
       }
     } catch {
@@ -33,6 +66,81 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  const handleMfaVerify = async (values: { code: string }) => {
+    setMfaLoading(true);
+    try {
+      const res = await fetch('/api/v1/auth/mfa-challenge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mfaToken, code: values.code }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        message.error(data.error || 'Invalid verification code');
+        return;
+      }
+
+      const result = await signIn('credentials', {
+        username: data.user?.username || '',
+        password: '',
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        userRole: data.user?.role || 'AGENT',
+        userId: data.user?.id || '',
+        userEmail: data.user?.email || '',
+        redirect: false,
+      });
+
+      if (result?.error) {
+        message.error('MFA verification failed');
+      } else {
+        message.success('Login successful');
+        router.push('/dashboard');
+      }
+    } catch {
+      message.error('An error occurred during verification');
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  if (mfaRequired) {
+    return (
+      <div className="login-container">
+        <Card className="login-card">
+          <div style={{ textAlign: 'center', marginBottom: 32 }}>
+            <SafetyOutlined style={{ fontSize: 48, color: '#1677ff', marginBottom: 16 }} />
+            <Title level={3} style={{ margin: 0 }}>Two-Factor Authentication</Title>
+            <Text type="secondary">Enter the 6-digit code from your authenticator app</Text>
+          </div>
+          <Form name="mfa" onFinish={handleMfaVerify} layout="vertical" size="large">
+            <Form.Item
+              name="code"
+              rules={[
+                { required: true, message: 'Please enter verification code' },
+                { len: 6, message: 'Code must be 6 digits' },
+                { pattern: /^\d{6}$/, message: 'Code must contain only digits' },
+              ]}
+            >
+              <Input.OTP length={6} />
+            </Form.Item>
+            <Form.Item>
+              <Button type="primary" htmlType="submit" loading={mfaLoading} block size="large">
+                Verify
+              </Button>
+            </Form.Item>
+            <div style={{ textAlign: 'center' }}>
+              <Button type="link" onClick={() => setMfaRequired(false)}>
+                Back to Login
+              </Button>
+            </div>
+          </Form>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="login-container">
@@ -49,6 +157,9 @@ export default function LoginPage() {
           size="large"
           autoComplete="off"
         >
+          <Form.Item name="company" label="Company">
+            <Input prefix={<UserOutlined />} placeholder="your-company" />
+          </Form.Item>
           <Form.Item
             name="username"
             rules={[{ required: true, message: 'Please enter your username' }]}
@@ -61,6 +172,9 @@ export default function LoginPage() {
           >
             <Input.Password prefix={<LockOutlined />} placeholder="Password" />
           </Form.Item>
+          <div style={{ textAlign: 'right', marginBottom: 16 }}>
+            <Link href="/auth/forgot-password">Forgot Password?</Link>
+          </div>
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={loading} block>
               Sign In
@@ -69,7 +183,7 @@ export default function LoginPage() {
         </Form>
         <div style={{ textAlign: 'center' }}>
           <Text type="secondary">
-            Healthcare Contact Center Solution
+            New to VCall? <Link href="/auth/signup">Create Account</Link>
           </Text>
         </div>
       </Card>

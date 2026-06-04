@@ -9,9 +9,25 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         username: { label: 'Username', type: 'text' },
         password: { label: 'Password', type: 'password' },
+        accessToken: { label: 'Access Token', type: 'text' },
+        refreshToken: { label: 'Refresh Token', type: 'text' },
+        userRole: { label: 'User Role', type: 'text' },
+        userId: { label: 'User ID', type: 'text' },
+        userEmail: { label: 'User Email', type: 'text' },
       },
       async authorize(credentials) {
         try {
+          if (credentials?.accessToken) {
+            return {
+              id: credentials.userId || 'mfa-user',
+              name: credentials.username || '',
+              email: credentials.userEmail || '',
+              role: credentials.userRole || 'AGENT',
+              accessToken: credentials.accessToken,
+              refreshToken: credentials.refreshToken || '',
+            };
+          }
+
           const res = await axios.post('http://localhost:8080/api/v1/auth/login', {
             username: credentials?.username,
             password: credentials?.password,

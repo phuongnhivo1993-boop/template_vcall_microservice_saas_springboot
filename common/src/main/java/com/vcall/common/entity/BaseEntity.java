@@ -1,8 +1,10 @@
 package com.vcall.common.entity;
 
+import com.vcall.common.tenant.TenantContext;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PrePersist;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -41,6 +43,19 @@ public abstract class BaseEntity {
     @Column(name = "updated_by")
     private String updatedBy;
 
+    @Column(name = "tenant_id", length = 50)
+    private String tenantId;
+
     @Column(name = "is_deleted")
     private Boolean isDeleted;
+
+    @PrePersist
+    public void prePersist() {
+        if (tenantId == null) {
+            tenantId = TenantContext.getTenantId();
+        }
+        if (isDeleted == null) {
+            isDeleted = false;
+        }
+    }
 }

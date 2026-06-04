@@ -12,6 +12,8 @@ import com.vcall.ticket.entity.Ticket.TicketStatus;
 import com.vcall.ticket.kafka.TicketEventPublisher;
 import com.vcall.ticket.repository.SlaBreachRepository;
 import com.vcall.ticket.repository.SlaRuleRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -178,6 +180,8 @@ public class SlaService {
         return "PENDING";
     }
 
+    @CircuitBreaker(name = "slaService", fallbackMethod = "checkSlaBreachFallback")
+    @Retry(name = "slaService")
     @Transactional
     public void checkSlaBreach(Ticket ticket) {
         SlaRule rule = findMatchingRule(ticket);
@@ -241,6 +245,10 @@ public class SlaService {
             breach.setNotified(true);
             slaBreachRepository.save(breach);
         }
+    }
+
+    private void checkSlaBreachFallback(Ticket ticket, Exception ex) {
+        log.warn("Circuit breaker triggered for checkSlaBreach on ticket {}: {}", ticket.getId(), ex.getMessage());
     }
 
     private SlaRule findMatchingRule(Ticket ticket) {

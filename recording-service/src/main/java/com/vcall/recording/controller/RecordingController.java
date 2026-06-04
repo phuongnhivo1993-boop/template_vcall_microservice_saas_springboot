@@ -6,6 +6,8 @@ import com.vcall.recording.dto.RecordingRequest;
 import com.vcall.recording.dto.RecordingResponse;
 import com.vcall.recording.dto.RecordingSearchRequest;
 import com.vcall.recording.service.RecordingService;
+import java.io.IOException;
+import java.net.MalformedURLException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
@@ -73,11 +75,16 @@ public class RecordingController {
     public ResponseEntity<Resource> downloadRecording(@PathVariable UUID id) {
         RecordingResponse response = recordingService.getRecording(id);
         String downloadUrl = recordingService.getDownloadUrl(id);
-        return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + response.getFileName() + "\"")
-                .body(new InputStreamResource(
-                        new java.net.URL(downloadUrl).openStream()));
+        try {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + response.getFileName() + "\"")
+                    .body(new InputStreamResource(new java.net.URL(downloadUrl).openStream()));
+        } catch (java.net.MalformedURLException e) {
+            throw new RuntimeException(e);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @GetMapping("/{id}/stream")
@@ -92,11 +99,16 @@ public class RecordingController {
             default -> "audio/mpeg";
         };
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + response.getFileName() + "\"")
-                .body(new InputStreamResource(
-                        new java.net.URL(downloadUrl).openStream()));
+        try {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + response.getFileName() + "\"")
+                    .body(new InputStreamResource(new java.net.URL(downloadUrl).openStream()));
+        } catch (java.net.MalformedURLException e) {
+            throw new RuntimeException(e);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @PostMapping

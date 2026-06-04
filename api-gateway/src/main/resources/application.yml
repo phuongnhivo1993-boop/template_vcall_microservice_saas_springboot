@@ -15,6 +15,12 @@ spring:
           uri: lb://customer360-service
           predicates:
             - Path=/api/v1/customer360/**
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+                methods: GET
         - id: iam-service
           uri: lb://iam-service
           predicates:
@@ -96,6 +102,33 @@ eureka:
   client:
     serviceUrl:
       defaultZone: http://localhost:8761/eureka/
+
+rate-limiter:
+  enabled: true
+  default-capacity: 100
+  default-refill-tokens: 10
+  default-refill-duration: 1
+  routes:
+    iam-service:
+      capacity: 50
+      refill-tokens: 5
+      refill-duration: 1
+    auth:
+      capacity: 20
+      refill-tokens: 3
+      refill-duration: 1
+    call-service:
+      capacity: 200
+      refill-tokens: 20
+      refill-duration: 1
+    ticket-service:
+      capacity: 150
+      refill-tokens: 15
+      refill-duration: 1
+    notification-service:
+      capacity: 30
+      refill-tokens: 5
+      refill-duration: 1
 
 springdoc:
   swagger-ui:

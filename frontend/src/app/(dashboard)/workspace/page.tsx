@@ -186,9 +186,9 @@ export default function WorkspacePage() {
                         renderItem={(call: any) => (
                           <List.Item
                             actions={[
-                              <Button type="primary" size="small" icon={<PhoneOutlined />}>Answer</Button>,
-                              <Button danger size="small" icon={<CloseCircleOutlined />}>End</Button>,
-                              <Tooltip title="More actions"><Button size="small" icon={<MoreOutlined />} /></Tooltip>,
+                              <Button key="answer" type="primary" size="small" icon={<PhoneOutlined />}>Answer</Button>,
+                              <Button key="end" danger size="small" icon={<CloseCircleOutlined />}>End</Button>,
+                              <Tooltip key="more" title="More actions"><Button size="small" icon={<MoreOutlined />} /></Tooltip>,
                             ]}
                           >
                             <List.Item.Meta
@@ -216,7 +216,7 @@ export default function WorkspacePage() {
                         renderItem={(chat: any) => (
                           <List.Item
                             actions={[
-                              <Button type="primary" size="small" icon={<MessageOutlined />}>Open</Button>,
+                              <Button key="open" type="primary" size="small" icon={<MessageOutlined />}>Open</Button>,
                             ]}
                           >
                             <List.Item.Meta
@@ -244,7 +244,7 @@ export default function WorkspacePage() {
                         renderItem={(ticket: any) => (
                           <List.Item
                             actions={[
-                              <Button type="primary" size="small">View</Button>,
+                              <Button key="view" type="primary" size="small">View</Button>,
                             ]}
                           >
                             <List.Item.Meta
@@ -279,7 +279,7 @@ export default function WorkspacePage() {
                   style={{ marginTop: 8 }}
                   renderItem={(customer: any) => (
                     <List.Item
-                      actions={[<Button size="small" icon={<PhoneOutlined />} />, <Button size="small" icon={<MessageOutlined />} />]}
+                      actions={[<Button key="call" size="small" icon={<PhoneOutlined />} />, <Button key="chat" size="small" icon={<MessageOutlined />} />]}
                     >
                       <List.Item.Meta
                         avatar={<Avatar icon={<UserOutlined />} />}

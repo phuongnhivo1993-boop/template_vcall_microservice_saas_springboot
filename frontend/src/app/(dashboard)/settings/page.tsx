@@ -32,6 +32,12 @@ export default function SettingsPage() {
   const [billingInfo, setBillingInfo] = useState<Record<string, any>>({});
   const [billingLoadingError, setBillingLoadingError] = useState<string | null>(null);
 
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [mfaVerifying, setMfaVerifying] = useState(false);
+  const [mfaQrCode, setMfaQrCode] = useState<string | null>(null);
+  const [mfaSecret, setMfaSecret] = useState<string | null>(null);
+
   const fetchProfile = useCallback(async () => {
     setProfileLoading(true);
     setError(null);
@@ -156,13 +162,87 @@ export default function SettingsPage() {
     try {
       const values = await securityForm.validateFields();
       setSecuritySaving(true);
+      if (values.currentPassword && values.newPassword) {
+        const res = await fetch('/api/v1/auth/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentPassword: values.currentPassword,
+            newPassword: values.newPassword,
+          }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message || data.error || 'Failed to change password');
+        }
+      }
       await settingsApi.updateSecurity(values);
       message.success('Security settings updated');
+      securityForm.resetFields(['currentPassword', 'newPassword', 'confirmPassword']);
     } catch (err: any) {
       if (err?.errorFields) return;
       message.error(err?.message || 'Failed to update security');
     } finally {
       setSecuritySaving(false);
+    }
+  };
+
+  const handleMfaToggle = async (checked: boolean) => {
+    if (checked) {
+      setMfaLoading(true);
+      try {
+        const res = await fetch('/api/v1/mfa/setup', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to setup MFA');
+        setMfaQrCode(data.data?.qrCodeUri ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(data.data.qrCodeUri)}&size=200x200` : null);
+        setMfaSecret(data.data?.secret);
+      } catch (err: any) {
+        message.error(err.message || 'Failed to setup MFA');
+      } finally {
+        setMfaLoading(false);
+      }
+    } else {
+      setMfaLoading(true);
+      try {
+        const res = await fetch('/api/v1/mfa/disable', { method: 'POST' });
+        if (!res.ok) throw new Error('Failed to disable MFA');
+        setMfaEnabled(false);
+        setMfaQrCode(null);
+        setMfaSecret(null);
+        message.success('MFA disabled');
+      } catch (err: any) {
+        message.error(err.message || 'Failed to disable MFA');
+      } finally {
+        setMfaLoading(false);
+      }
+    }
+  };
+
+  const handleMfaVerify = async () => {
+    const code = securityForm.getFieldValue('mfaCode');
+    if (!code || code.length !== 6) {
+      message.error('Please enter a valid 6-digit code');
+      return;
+    }
+    setMfaVerifying(true);
+    try {
+      const res = await fetch('/api/v1/mfa/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Invalid code');
+      }
+      setMfaEnabled(true);
+      setMfaQrCode(null);
+      setMfaSecret(null);
+      message.success('MFA enabled successfully');
+    } catch (err: any) {
+      message.error(err.message || 'Verification failed');
+    } finally {
+      setMfaVerifying(false);
     }
   };
 
@@ -321,23 +401,62 @@ export default function SettingsPage() {
           <Spin spinning={securityLoading}>
             <Title level={4}>Security Settings</Title>
             <Form form={securityForm} layout="vertical" style={{ maxWidth: 600 }}>
-              <Form.Item name="currentPassword" label="Current Password">
+              <Title level={5}>Change Password</Title>
+              <Form.Item name="currentPassword" label="Current Password"
+                rules={[{ required: true, message: 'Current password required' }]}>
                 <Input.Password />
               </Form.Item>
-              <Form.Item name="newPassword" label="New Password">
+              <Form.Item name="newPassword" label="New Password"
+                rules={[
+                  { required: true, message: 'New password required' },
+                  { min: 8, message: 'Min 8 characters' },
+                ]}>
                 <Input.Password />
               </Form.Item>
-              <Form.Item name="confirmPassword" label="Confirm Password">
+              <Form.Item name="confirmPassword" label="Confirm Password"
+                dependencies={['newPassword']}
+                rules={[
+                  { required: true, message: 'Confirm your password' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue('newPassword') === value) return Promise.resolve();
+                      return Promise.reject(new Error('Passwords do not match'));
+                    },
+                  }),
+                ]}>
                 <Input.Password />
               </Form.Item>
               <Divider />
+              <Title level={5}>Two-Factor Authentication</Title>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <div>
-                  <div style={{ fontWeight: 500 }}>Two-Factor Authentication</div>
-                  <div style={{ color: '#999', fontSize: 13 }}>Add an extra layer of security</div>
+                  <div style={{ fontWeight: 500 }}>Authenticator App</div>
+                  <div style={{ color: '#999', fontSize: 13 }}>Use Google Authenticator or similar TOTP app</div>
                 </div>
-                <Switch />
+                <Switch
+                  checked={mfaEnabled}
+                  loading={mfaLoading}
+                  onChange={handleMfaToggle}
+                />
               </div>
+              {mfaQrCode && (
+                <div style={{ textAlign: 'center', marginBottom: 16, padding: 16, background: '#f5f5f5', borderRadius: 8 }}>
+                  <p style={{ marginBottom: 8 }}>Scan this QR code with your authenticator app:</p>
+                  <img src={mfaQrCode} alt="MFA QR Code" style={{ width: 200, height: 200 }} />
+                  <p style={{ color: '#999', fontSize: 12, marginTop: 8 }}>Or enter the secret manually: <code>{mfaSecret}</code></p>
+                  <Form.Item
+                    name="mfaCode"
+                    label="Verify with 6-digit code"
+                    rules={[{ required: true, message: 'Enter code to confirm' }, { len: 6, message: '6 digits required' }]}
+                    style={{ maxWidth: 200, margin: '12px auto' }}
+                  >
+                    <Input placeholder="000000" maxLength={6} />
+                  </Form.Item>
+                  <Button type="primary" onClick={handleMfaVerify} loading={mfaVerifying}>Verify & Enable</Button>
+                </div>
+              )}
+              <Divider />
+              <Title level={5}>Session</Title>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <div>
                   <div style={{ fontWeight: 500 }}>Session Timeout</div>

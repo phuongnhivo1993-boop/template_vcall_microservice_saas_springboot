@@ -48,6 +48,7 @@ public class DashboardWidget extends BaseEntity {
     private boolean isActive = true;
 
     public enum WidgetType {
-        LINE_CHART, BAR_CHART, PIE_CHART, TABLE, NUMBER_CARD
+        LINE_CHART, BAR_CHART, PIE_CHART, TABLE, NUMBER_CARD,
+        CALL_VOLUME, AGENT_PERFORMANCE, SLA_COMPLIANCE, COST_ANALYSIS
     }
 }

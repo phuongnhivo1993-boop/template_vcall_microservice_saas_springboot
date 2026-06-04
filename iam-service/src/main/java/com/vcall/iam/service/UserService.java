@@ -2,6 +2,7 @@ package com.vcall.iam.service;
 
 import com.vcall.common.exception.DuplicateResourceException;
 import com.vcall.common.exception.ResourceNotFoundException;
+import com.vcall.common.security.PasswordPolicy;
 import com.vcall.iam.dto.UserRequest;
 import com.vcall.iam.dto.UserResponse;
 import com.vcall.iam.entity.Role;
@@ -22,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -37,6 +39,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserEventPublisher eventPublisher;
     private final UserMapper userMapper;
+    private final PasswordPolicy passwordPolicy;
 
     @Transactional
     public UserResponse createUser(UserRequest request) {
@@ -47,8 +50,11 @@ public class UserService {
             throw new DuplicateResourceException("Email already exists: " + request.getEmail());
         }
 
+        passwordPolicy.validate(request.getPassword());
+
         User user = userMapper.toEntity(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPasswordChangedAt(LocalDateTime.now());
 
         user = userRepository.save(user);
 
@@ -114,7 +120,9 @@ public class UserService {
 
         userMapper.updateEntity(request, user);
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            passwordPolicy.validate(request.getPassword());
             user.setPassword(passwordEncoder.encode(request.getPassword()));
+            user.setPasswordChangedAt(LocalDateTime.now());
         }
 
         user = userRepository.save(user);

@@ -110,16 +110,6 @@ export default function CustomersPage() {
     fetchCustomers(1, pagination.pageSize);
   };
 
-  const handleReset = () => {
-    setFilters({});
-    if (useMock) {
-      setCustomers(mockCustomers);
-      setPagination((prev) => ({ ...prev, total: mockCustomers.length }));
-    } else {
-      fetchCustomers(1, pagination.pageSize);
-    }
-  };
-
   const handleCreate = () => {
     setEditingCustomer(null);
     setModalOpen(true);

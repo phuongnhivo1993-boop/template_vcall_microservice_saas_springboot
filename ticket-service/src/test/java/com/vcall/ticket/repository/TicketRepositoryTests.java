@@ -46,6 +46,7 @@ class TicketRepositoryTests {
         ticket1.setPriority(TicketPriority.HIGH);
         ticket1.setStatus(TicketStatus.OPEN);
         ticket1.setIsDeleted(false);
+        ticket1.setCreatedAt(LocalDateTime.now());
         ticketRepository.save(ticket1);
 
         ticket2 = new Ticket();
@@ -59,6 +60,7 @@ class TicketRepositoryTests {
         ticket2.setStatus(TicketStatus.IN_PROGRESS);
         ticket2.setAssignedTo(UUID.randomUUID());
         ticket2.setIsDeleted(false);
+        ticket2.setCreatedAt(LocalDateTime.now());
         ticketRepository.save(ticket2);
 
         entityManager.flush();
@@ -167,6 +169,7 @@ class TicketRepositoryTests {
         ticket.setIsDeleted(true);
         ticketRepository.save(ticket);
         entityManager.flush();
+        entityManager.clear();
 
         Optional<Ticket> found = ticketRepository.findById(ticket1.getId());
         assertThat(found).isEmpty();
