@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Tabs, Tag, Typography, Space, Button, message, Row, Col, Statistic, Badge, Input, Form, Select } from 'antd';
+import { Card, Tabs, Tag, Typography, Space, Button, message, Row, Col, Statistic, Badge, Input, Form, Select, Modal } from 'antd';
 import {
   BellOutlined, SendOutlined, SettingOutlined,
   CheckCircleOutlined, MobileOutlined, PlusOutlined,
@@ -39,6 +39,9 @@ export default function NotificationsPage() {
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
   const [recipientId, setRecipientId] = useState('default');
   const [form] = Form.useForm();
+  const [selectedNotifKeys, setSelectedNotifKeys] = useState<string[]>([]);
+  const [selectedTemplateKeys, setSelectedTemplateKeys] = useState<number[]>([]);
+  const [selectedPrefKeys, setSelectedPrefKeys] = useState<string[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -60,6 +63,66 @@ export default function NotificationsPage() {
   }, [recipientId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleBulkDeleteNotifications = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều thông báo',
+      content: `Bạn có chắc chắn muốn xóa ${selectedNotifKeys.length} thông báo đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await notificationsApi.bulkDelete(selectedNotifKeys);
+          message.success(`Đã xóa ${selectedNotifKeys.length} thông báo`);
+          setSelectedNotifKeys([]);
+          fetchData();
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
+
+  const handleBulkDeleteTemplates = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều mẫu',
+      content: `Bạn có chắc chắn muốn xóa ${selectedTemplateKeys.length} mẫu đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await notificationsApi.bulkDeleteTemplates(selectedTemplateKeys);
+          message.success(`Đã xóa ${selectedTemplateKeys.length} mẫu`);
+          setSelectedTemplateKeys([]);
+          fetchData();
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
+
+  const handleBulkDeletePreferences = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều tùy chọn',
+      content: `Bạn có chắc chắn muốn xóa ${selectedPrefKeys.length} tùy chọn đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await notificationsApi.bulkDeletePreferences(selectedPrefKeys);
+          message.success(`Đã xóa ${selectedPrefKeys.length} tùy chọn`);
+          setSelectedPrefKeys([]);
+          fetchData();
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
 
   const handleMarkAsRead = async (id: string) => {
     try {
@@ -202,51 +265,75 @@ export default function NotificationsPage() {
     switch (key) {
       case 'inbox':
         return (
-          <CommonTable
-            columns={notifColumns}
-            dataSource={notifications}
-            loading={loading}
-            error={error}
-            rowKey="id"
-            pagination={{ pageSize: 10 }}
-            onRefresh={fetchData}
-            onExportCsv={handleExportCsv}
-            onExportExcel={handleExportExcel}
-            extra={
-              <Button type="primary" icon={<SendOutlined />} onClick={() => { form.resetFields(); setSendModalOpen(true); }}>
-                Send Notification
+          <>
+            {selectedNotifKeys.length > 0 && (
+              <Button danger onClick={handleBulkDeleteNotifications} style={{ marginBottom: 16 }}>
+                Xóa đã chọn ({selectedNotifKeys.length})
               </Button>
-            }
-          />
+            )}
+            <CommonTable
+              rowSelection={{ selectedRowKeys: selectedNotifKeys, onChange: (keys: React.Key[]) => setSelectedNotifKeys(keys as string[]) }}
+              columns={notifColumns}
+              dataSource={notifications}
+              loading={loading}
+              error={error}
+              rowKey="id"
+              pagination={{ pageSize: 10 }}
+              onRefresh={() => { setSelectedNotifKeys([]); fetchData(); }}
+              onExportCsv={handleExportCsv}
+              onExportExcel={handleExportExcel}
+              extra={
+                <Button type="primary" icon={<SendOutlined />} onClick={() => { form.resetFields(); setSendModalOpen(true); }}>
+                  Send Notification
+                </Button>
+              }
+            />
+          </>
         );
       case 'templates':
         return (
-          <CommonTable
-            columns={templateColumns}
-            dataSource={templates}
-            loading={loading}
-            error={error}
-            rowKey="id"
-            pagination={{ pageSize: 10 }}
-            onRefresh={fetchData}
-            extra={
-              <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateTemplate}>
-                Add Template
+          <>
+            {selectedTemplateKeys.length > 0 && (
+              <Button danger onClick={handleBulkDeleteTemplates} style={{ marginBottom: 16 }}>
+                Xóa đã chọn ({selectedTemplateKeys.length})
               </Button>
-            }
-          />
+            )}
+            <CommonTable
+              rowSelection={{ selectedRowKeys: selectedTemplateKeys, onChange: (keys: React.Key[]) => setSelectedTemplateKeys(keys as number[]) }}
+              columns={templateColumns}
+              dataSource={templates}
+              loading={loading}
+              error={error}
+              rowKey="id"
+              pagination={{ pageSize: 10 }}
+              onRefresh={() => { setSelectedTemplateKeys([]); fetchData(); }}
+              extra={
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateTemplate}>
+                  Add Template
+                </Button>
+              }
+            />
+          </>
         );
       case 'preferences':
         return (
-          <CommonTable
-            columns={preferenceColumns}
-            dataSource={preferences}
-            loading={loading}
-            error={error}
-            rowKey="id"
-            pagination={{ pageSize: 10 }}
-            onRefresh={fetchData}
-          />
+          <>
+            {selectedPrefKeys.length > 0 && (
+              <Button danger onClick={handleBulkDeletePreferences} style={{ marginBottom: 16 }}>
+                Xóa đã chọn ({selectedPrefKeys.length})
+              </Button>
+            )}
+            <CommonTable
+              rowSelection={{ selectedRowKeys: selectedPrefKeys, onChange: (keys: React.Key[]) => setSelectedPrefKeys(keys as string[]) }}
+              columns={preferenceColumns}
+              dataSource={preferences}
+              loading={loading}
+              error={error}
+              rowKey="id"
+              pagination={{ pageSize: 10 }}
+              onRefresh={() => { setSelectedPrefKeys([]); fetchData(); }}
+            />
+          </>
         );
       default:
         return null;

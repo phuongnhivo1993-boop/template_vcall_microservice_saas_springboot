@@ -88,6 +88,7 @@ export default function SupervisorPage() {
   const [agentsData, setAgentsData] = useState<Agent[]>([]);
   const [queueData, setQueueData] = useState<Queue[]>([]);
   const [activityData, setActivityData] = useState<Activity[]>([]);
+  const [stats, setStats] = useState<any>({});
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -100,6 +101,7 @@ export default function SupervisorPage() {
       ]);
 
       const stats = statsRes.data?.data || statsRes.data || {};
+      setStats(stats);
       setKpiData({
         activeCalls: stats.activeCalls ?? stats.activeCallsCount ?? 0,
         agentsOnline: stats.agentsOnline ?? 0,
@@ -274,13 +276,13 @@ export default function SupervisorPage() {
     },
   ];
 
-  const callVolumeChart = [
+  const callVolumeChart = stats.callVolume || [
     { day: 'T2', calls: 320 }, { day: 'T3', calls: 285 }, { day: 'T4', calls: 356 },
     { day: 'T5', calls: 298 }, { day: 'T6', calls: 412 }, { day: 'T7', calls: 278 },
     { day: 'CN', calls: 195 },
   ];
 
-  const maxCalls = Math.max(...callVolumeChart.map(d => d.calls));
+  const maxCalls = Math.max(...callVolumeChart.map((d: any) => d.calls));
 
   const agentChartData = agentsData.slice(0, 6).map(a => ({
     name: a.name,
@@ -419,7 +421,7 @@ export default function SupervisorPage() {
         <Col xs={24} lg={12}>
           <Card title={<Space><RiseOutlined />Xu hướng cuộc gọi (7 ngày)</Space>}>
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', padding: '16px 0', height: 180 }}>
-              {callVolumeChart.map(d => (
+              {callVolumeChart.map((d: { day: string; calls: number }) => (
                 <div key={d.day} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
                   <div style={{
                     width: 28, height: `${(d.calls / maxCalls) * 130}px`, background: 'linear-gradient(to top, #1677ff, #69b1ff)',

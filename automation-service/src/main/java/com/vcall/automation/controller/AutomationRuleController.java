@@ -1,0 +1,78 @@
+package com.vcall.automation.controller;
+
+import com.vcall.automation.dto.AutomationRuleRequest;
+import com.vcall.automation.dto.AutomationRuleResponse;
+import com.vcall.automation.service.AutomationRuleService;
+import com.vcall.common.dto.ApiResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/v1/automation/rules")
+public class AutomationRuleController {
+
+    private final AutomationRuleService automationRuleService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<AutomationRuleResponse>>> getAllRules(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Boolean isActive,
+            Pageable pageable) {
+        Page<AutomationRuleResponse> page = automationRuleService.getAllRules(name, isActive, pageable);
+        return ResponseEntity.ok(ApiResponse.success(page));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<AutomationRuleResponse>> getRule(@PathVariable Long id) {
+        AutomationRuleResponse rule = automationRuleService.getRule(id);
+        return ResponseEntity.ok(ApiResponse.success(rule));
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<AutomationRuleResponse>> createRule(
+            @Valid @RequestBody AutomationRuleRequest request) {
+        AutomationRuleResponse rule = automationRuleService.createRule(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Rule created successfully", rule));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<AutomationRuleResponse>> updateRule(
+            @PathVariable Long id,
+            @Valid @RequestBody AutomationRuleRequest request) {
+        AutomationRuleResponse rule = automationRuleService.updateRule(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Rule updated successfully", rule));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteRule(@PathVariable Long id) {
+        automationRuleService.deleteRule(id);
+        return ResponseEntity.ok(ApiResponse.success("Rule deleted successfully", null));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ApiResponse<AutomationRuleResponse>> toggleRule(
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> body) {
+        boolean isActive = body.getOrDefault("isActive", false);
+        AutomationRuleResponse rule = automationRuleService.toggleRule(id, isActive);
+        return ResponseEntity.ok(ApiResponse.success("Rule toggled successfully", rule));
+    }
+}

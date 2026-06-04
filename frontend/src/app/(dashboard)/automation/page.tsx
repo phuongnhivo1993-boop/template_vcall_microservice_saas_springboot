@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Tag, Button, Space, Typography, Input, message, Alert, Tooltip, Divider, Form, Select } from 'antd';
-import { PlusOutlined, ThunderboltOutlined, EditOutlined, DeleteOutlined, PauseCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { Card, Tag, Button, Space, Typography, Input, message, Alert, Tooltip, Divider, Form, Select, Modal } from 'antd';
+import { PlusOutlined, ThunderboltOutlined, EditOutlined, DeleteOutlined, PauseCircleOutlined, PlayCircleOutlined, CopyOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
@@ -54,6 +54,7 @@ export default function AutomationPage() {
   const [rules, setRules] = useState<AutomationRule[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<AutomationRule | null>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
 
   const fetchRules = useCallback(async () => {
     setLoading(true);
@@ -74,7 +75,7 @@ export default function AutomationPage() {
 
   const handleSave = async (values: any) => {
     try {
-      if (editingRule) {
+      if (editingRule?.id) {
         await automationApi.update(editingRule.id, values);
         message.success('Rule updated');
       } else {
@@ -89,6 +90,11 @@ export default function AutomationPage() {
     }
   };
 
+  const handleDuplicate = (record: AutomationRule) => {
+    setEditingRule({ ...record, id: '' } as AutomationRule);
+    setFormOpen(true);
+  };
+
   const toggleActive = async (rule: AutomationRule) => {
     try {
       await automationApi.toggle(rule.id, !rule.isActive);
@@ -97,6 +103,26 @@ export default function AutomationPage() {
     } catch (err: any) {
       message.error(err?.message || 'Failed to toggle rule');
     }
+  };
+
+  const handleBulkDelete = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều quy tắc',
+      content: `Bạn có chắc chắn muốn xóa ${selectedRowKeys.length} quy tắc đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await automationApi.bulkDelete(selectedRowKeys);
+          message.success(`Đã xóa ${selectedRowKeys.length} quy tắc`);
+          setSelectedRowKeys([]);
+          fetchRules();
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
   };
 
   const handleDeleteRule = async (id: string) => {
@@ -132,6 +158,7 @@ export default function AutomationPage() {
               onClick={() => toggleActive(record)} />
           </Tooltip>
           <Button size="small" icon={<EditOutlined />} onClick={() => { setEditingRule(record); setFormOpen(true); }} />
+          <Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(record)} />
           <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteRule(record.id)} />
         </Space>
       ),
@@ -154,20 +181,26 @@ export default function AutomationPage() {
           showIcon
           style={{ marginBottom: 16 }}
         />
+        {selectedRowKeys.length > 0 && (
+          <Button danger onClick={handleBulkDelete} style={{ marginBottom: 16 }}>
+            Xóa đã chọn ({selectedRowKeys.length})
+          </Button>
+        )}
         <CommonTable
+          rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]) }}
           columns={columns}
           dataSource={rules}
           rowKey="id"
           loading={loading}
           error={error}
-          onRefresh={fetchRules}
+          onRefresh={() => { setSelectedRowKeys([]); fetchRules(); }}
           pagination={false}
         />
       </Card>
 
       <CommonForm
         open={formOpen}
-        title={editingRule ? 'Edit Rule' : 'New Automation Rule'}
+        title={editingRule?.id ? 'Edit Rule' : 'New Automation Rule'}
         onClose={() => { setFormOpen(false); setEditingRule(null); }}
         onSubmit={handleSave}
         initialValues={editingRule || { name: '', description: '', trigger: '' }}

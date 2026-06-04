@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, Descriptions, Tag, Spin, Alert, Button, Space, Typography, Row, Col, Tabs, Statistic, Avatar, Divider, List, Timeline, Empty, Badge } from 'antd';
 import { ArrowLeftOutlined, MailOutlined, PhoneOutlined, EnvironmentOutlined, UserOutlined,
@@ -20,16 +20,12 @@ export default function CustomerDetailPage() {
   const [customer, setCustomer] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('overview');
 
-  useEffect(() => {
-    fetchCustomer360();
-  }, [params.id]);
-
   const [customerCalls, setCustomerCalls] = useState<any[]>([]);
   const [customerTickets, setCustomerTickets] = useState<any[]>([]);
   const [timeline, setTimeline] = useState<any[]>([]);
   const [subLoading, setSubLoading] = useState(false);
 
-  const fetchCustomer360 = async () => {
+  const fetchCustomer360 = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -43,7 +39,11 @@ export default function CustomerDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchCustomer360();
+  }, [fetchCustomer360]);
 
   const fetchCustomerSubData = async (customerId: string) => {
     setSubLoading(true);

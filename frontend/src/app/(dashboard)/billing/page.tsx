@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Tabs, Tag, Typography, Space, Button, message, Row, Col, Statistic, Input, Form, Select, Tooltip } from 'antd';
+import { Card, Tabs, Tag, Typography, Space, Button, message, Row, Col, Statistic, Input, Form, Select, Tooltip, Modal } from 'antd';
 import {
   PlusOutlined, DollarOutlined, CreditCardOutlined,
   FileTextOutlined, BarChartOutlined,
@@ -39,6 +39,10 @@ export default function BillingPage() {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [selectedSubscriber, setSelectedSubscriber] = useState('default');
   const [form] = Form.useForm();
+  const [selectedPlanKeys, setSelectedPlanKeys] = useState<number[]>([]);
+  const [selectedSubKeys, setSelectedSubKeys] = useState<string[]>([]);
+  const [selectedInvoiceKeys, setSelectedInvoiceKeys] = useState<string[]>([]);
+  const [selectedUsageKeys, setSelectedUsageKeys] = useState<string[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -85,6 +89,86 @@ export default function BillingPage() {
         await billingApi.deletePlan(id);
         message.success('Plan deleted');
         fetchData();
+      },
+    });
+  };
+
+  const handleBulkDeletePlans = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều gói',
+      content: `Bạn có chắc chắn muốn xóa ${selectedPlanKeys.length} gói đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await billingApi.bulkDeletePlans(selectedPlanKeys);
+          message.success(`Đã xóa ${selectedPlanKeys.length} gói`);
+          setSelectedPlanKeys([]);
+          fetchData();
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
+
+  const handleBulkDeleteSubscriptions = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều đăng ký',
+      content: `Bạn có chắc chắn muốn xóa ${selectedSubKeys.length} đăng ký đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await billingApi.bulkDeleteSubscriptions(selectedSubKeys);
+          message.success(`Đã xóa ${selectedSubKeys.length} đăng ký`);
+          setSelectedSubKeys([]);
+          fetchData();
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
+
+  const handleBulkDeleteInvoices = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều hóa đơn',
+      content: `Bạn có chắc chắn muốn xóa ${selectedInvoiceKeys.length} hóa đơn đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await billingApi.bulkDeleteInvoices(selectedInvoiceKeys);
+          message.success(`Đã xóa ${selectedInvoiceKeys.length} hóa đơn`);
+          setSelectedInvoiceKeys([]);
+          fetchData();
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
+
+  const handleBulkDeleteUsage = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều mục sử dụng',
+      content: `Bạn có chắc chắn muốn xóa ${selectedUsageKeys.length} mục sử dụng đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await billingApi.bulkDeleteUsage(selectedUsageKeys);
+          message.success(`Đã xóa ${selectedUsageKeys.length} mục sử dụng`);
+          setSelectedUsageKeys([]);
+          fetchData();
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
       },
     });
   };
@@ -226,69 +310,101 @@ export default function BillingPage() {
     switch (key) {
       case 'plans':
         return (
-          <CommonTable
-            columns={planColumns}
-            dataSource={plans}
-            loading={loading}
-            error={error}
-            rowKey="id"
-            pagination={{ pageSize: 10 }}
-            onRefresh={fetchData}
-            onExportCsv={handleExportCsv}
-            onExportExcel={handleExportExcel}
-            extra={
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => handleCreate('plan')}>
-                Add Plan
+          <>
+            {selectedPlanKeys.length > 0 && (
+              <Button danger onClick={handleBulkDeletePlans} style={{ marginBottom: 16 }}>
+                Xóa đã chọn ({selectedPlanKeys.length})
               </Button>
-            }
-          />
+            )}
+            <CommonTable
+              rowSelection={{ selectedRowKeys: selectedPlanKeys, onChange: (keys: React.Key[]) => setSelectedPlanKeys(keys as number[]) }}
+              columns={planColumns}
+              dataSource={plans}
+              loading={loading}
+              error={error}
+              rowKey="id"
+              pagination={{ pageSize: 10 }}
+              onRefresh={() => { setSelectedPlanKeys([]); fetchData(); }}
+              onExportCsv={handleExportCsv}
+              onExportExcel={handleExportExcel}
+              extra={
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => handleCreate('plan')}>
+                  Add Plan
+                </Button>
+              }
+            />
+          </>
         );
       case 'subscriptions':
         return (
-          <CommonTable
-            columns={subColumns}
-            dataSource={subscriptions}
-            loading={loading}
-            error={error}
-            rowKey="id"
-            pagination={{ pageSize: 10 }}
-            onRefresh={fetchData}
-            onExportCsv={handleExportCsv}
-            onExportExcel={handleExportExcel}
-            extra={
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => handleCreate('subscription')}>
-                New Subscription
+          <>
+            {selectedSubKeys.length > 0 && (
+              <Button danger onClick={handleBulkDeleteSubscriptions} style={{ marginBottom: 16 }}>
+                Xóa đã chọn ({selectedSubKeys.length})
               </Button>
-            }
-          />
+            )}
+            <CommonTable
+              rowSelection={{ selectedRowKeys: selectedSubKeys, onChange: (keys: React.Key[]) => setSelectedSubKeys(keys as string[]) }}
+              columns={subColumns}
+              dataSource={subscriptions}
+              loading={loading}
+              error={error}
+              rowKey="id"
+              pagination={{ pageSize: 10 }}
+              onRefresh={() => { setSelectedSubKeys([]); fetchData(); }}
+              onExportCsv={handleExportCsv}
+              onExportExcel={handleExportExcel}
+              extra={
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => handleCreate('subscription')}>
+                  New Subscription
+                </Button>
+              }
+            />
+          </>
         );
       case 'invoices':
         return (
-          <CommonTable
-            columns={invoiceColumns}
-            dataSource={invoices}
-            loading={loading}
-            error={error}
-            rowKey="id"
-            pagination={{ pageSize: 10 }}
-            onRefresh={fetchData}
-            onExportCsv={handleExportCsv}
-            onExportExcel={handleExportExcel}
-          />
+          <>
+            {selectedInvoiceKeys.length > 0 && (
+              <Button danger onClick={handleBulkDeleteInvoices} style={{ marginBottom: 16 }}>
+                Xóa đã chọn ({selectedInvoiceKeys.length})
+              </Button>
+            )}
+            <CommonTable
+              rowSelection={{ selectedRowKeys: selectedInvoiceKeys, onChange: (keys: React.Key[]) => setSelectedInvoiceKeys(keys as string[]) }}
+              columns={invoiceColumns}
+              dataSource={invoices}
+              loading={loading}
+              error={error}
+              rowKey="id"
+              pagination={{ pageSize: 10 }}
+              onRefresh={() => { setSelectedInvoiceKeys([]); fetchData(); }}
+              onExportCsv={handleExportCsv}
+              onExportExcel={handleExportExcel}
+            />
+          </>
         );
       case 'usage':
         return (
-          <CommonTable
-            columns={usageColumns}
-            dataSource={usage}
-            loading={loading}
-            error={error}
-            rowKey="id"
-            pagination={{ pageSize: 10 }}
-            onRefresh={fetchData}
-            onExportCsv={handleExportCsv}
-            onExportExcel={handleExportExcel}
-          />
+          <>
+            {selectedUsageKeys.length > 0 && (
+              <Button danger onClick={handleBulkDeleteUsage} style={{ marginBottom: 16 }}>
+                Xóa đã chọn ({selectedUsageKeys.length})
+              </Button>
+            )}
+            <CommonTable
+              rowSelection={{ selectedRowKeys: selectedUsageKeys, onChange: (keys: React.Key[]) => setSelectedUsageKeys(keys as string[]) }}
+              columns={usageColumns}
+              dataSource={usage}
+              loading={loading}
+              error={error}
+              rowKey="id"
+              pagination={{ pageSize: 10 }}
+              onRefresh={() => { setSelectedUsageKeys([]); fetchData(); }}
+              onExportCsv={handleExportCsv}
+              onExportExcel={handleExportExcel}
+            />
+          </>
         );
       default:
         return null;

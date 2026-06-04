@@ -26,9 +26,34 @@ export default function WorkspacePage() {
   const [screenPopVisible, setScreenPopVisible] = useState(false);
   const [incomingCallData, setIncomingCallData] = useState<any>(null);
 
+  const loadWorkspaceData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const results = await Promise.allSettled([
+        agentsApi.getProfile('current').catch(() => null),
+        callsApi.list({ status: 'ACTIVE', page: 0, size: 50 }).catch(() => null),
+        chatApi.getConversations({ status: 'ACTIVE' }).catch(() => null),
+        ticketsApi.list({ status: 'OPEN,PENDING', page: 0, size: 10 }).catch(() => null),
+      ]);
+
+      if (results[0].status === 'fulfilled') setAgent(results[0].value?.data?.data);
+      if (results[1].status === 'fulfilled') setActiveCalls(results[1].value?.data?.data?.content || []);
+      if (results[2].status === 'fulfilled') setActiveChats(results[2].value?.data?.data?.content || []);
+      if (results[3].status === 'fulfilled') setPendingTickets(results[3].value?.data?.data?.content || []);
+
+      const customersRes = await customersApi.list({ page: 0, size: 5 }).catch(() => null);
+      if (customersRes) setRecentCustomers(customersRes.data?.data?.content || []);
+    } catch (err) {
+      setError('Failed to load workspace data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadWorkspaceData();
-  }, []);
+  }, [loadWorkspaceData]);
 
   useEffect(() => {
     const ringing = activeCalls.find((c: any) => c.status === 'RINGING');
@@ -55,51 +80,6 @@ export default function WorkspacePage() {
       setScreenPopVisible(true);
     }
   }, [activeCalls]);
-
-  const loadWorkspaceData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const results = await Promise.allSettled([
-        agentsApi.getProfile('current').catch(() => null),
-        callsApi.list({ status: 'ACTIVE', page: 0, size: 50 }).catch(() => null),
-        chatApi.getConversations({ status: 'ACTIVE' }).catch(() => null),
-        ticketsApi.list({ status: 'OPEN,PENDING', page: 0, size: 10 }).catch(() => null),
-      ]);
-
-      if (results[0].status === 'fulfilled') setAgent(results[0].value?.data?.data);
-      if (results[1].status === 'fulfilled') setActiveCalls(results[1].value?.data?.data?.content || []);
-      if (results[2].status === 'fulfilled') setActiveChats(results[2].value?.data?.data?.content || []);
-      if (results[3].status === 'fulfilled') setPendingTickets(results[3].value?.data?.data?.content || []);
-
-      const customersRes = await customersApi.list({ page: 0, size: 5 }).catch(() => null);
-      if (customersRes) setRecentCustomers(customersRes.data?.data?.content || []);
-
-      if (!agent) {
-        setAgent({
-          id: 'current', fullName: 'Demo Agent', email: 'agent@vcall.com',
-          status: 'AVAILABLE', agentCode: 'AG-001',
-          currentSession: { loginTime: new Date().toISOString() },
-        });
-        setActiveCalls([
-          { id: '1', callerName: 'Nguyen Van A', callerNumber: '0909123456', status: 'RINGING', duration: 45, queueName: 'Support' },
-          { id: '2', callerName: 'Tran Thi B', callerNumber: '0909987654', status: 'IN_PROGRESS', duration: 320, queueName: 'Billing' },
-        ]);
-        setActiveChats([
-          { id: '1', customerName: 'Le Van C', lastMessage: 'Tôi cần hỗ trợ về hóa đơn', unread: 2, status: 'ACTIVE' },
-          { id: '2', customerName: 'Pham Thi D', lastMessage: 'Cảm ơn bạn đã hỗ trợ', unread: 0, status: 'ACTIVE' },
-        ]);
-        setPendingTickets([
-          { id: 'TK-001', title: 'Lỗi đăng nhập', priority: 'HIGH', status: 'OPEN', createdAt: new Date().toISOString() },
-          { id: 'TK-002', title: 'Yêu cầu nâng cấp gói', priority: 'MEDIUM', status: 'PENDING', createdAt: new Date().toISOString() },
-        ]);
-      }
-    } catch (err) {
-      setError('Failed to load workspace data');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const handleCustomerSearch = async (value: string) => {
     setCustomerSearch(value);

@@ -48,6 +48,7 @@ function ChartPlaceholder({ label, value, color }: { label: string; value: numbe
 
 export default function ReportsScreen() {
   const [reports, setReports] = useState<Report[]>([]);
+  const [analytics, setAnalytics] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,8 +58,18 @@ export default function ReportsScreen() {
     else setLoading(true);
     setError(null);
     try {
-      const res = await reportsApi.getAll();
-      setReports(res.data?.data?.content || res.data?.data || res.data || []);
+      const [reportsRes, analyticsRes] = await Promise.allSettled([
+        reportsApi.getAll(),
+        reportsApi.getAnalytics({ period: 'MONTHLY' }),
+      ]);
+      if (reportsRes.status === 'fulfilled') {
+        const res = reportsRes.value;
+        setReports(res.data?.data?.content || res.data?.data || res.data || []);
+      }
+      if (analyticsRes.status === 'fulfilled') {
+        const res = analyticsRes.value;
+        setAnalytics(res.data?.data || res.data || {});
+      }
     } catch (err: any) {
       setError(err?.message || 'Không thể tải báo cáo');
     } finally {
@@ -124,10 +135,10 @@ export default function ReportsScreen() {
           <View style={styles.chartSection}>
             <Text style={styles.sectionTitle}>Hiệu suất tháng này</Text>
             <View style={styles.chartCard}>
-              <ChartPlaceholder label="Cuộc gọi" value={75} color={Colors.primary} />
-              <ChartPlaceholder label="Phiếu yêu cầu" value={60} color={Colors.warning} />
-              <ChartPlaceholder label="Hài lòng KH" value={88} color={Colors.success} />
-              <ChartPlaceholder label="Phản hồi nhanh" value={92} color="#722ed1" />
+              <ChartPlaceholder label="Cuộc gọi" value={analytics.callVolume ?? 75} color={Colors.primary} />
+              <ChartPlaceholder label="Phiếu yêu cầu" value={analytics.tickets ?? 60} color={Colors.warning} />
+              <ChartPlaceholder label="Hài lòng KH" value={analytics.csat ?? 88} color={Colors.success} />
+              <ChartPlaceholder label="Phản hồi nhanh" value={analytics.responseRate ?? 92} color="#722ed1" />
             </View>
           </View>
         )}

@@ -7,7 +7,7 @@ import {
 } from 'antd';
 import {
   PlusOutlined, TeamOutlined, DollarOutlined, PhoneOutlined,
-  EditOutlined, DeleteOutlined, SwapOutlined, CheckCircleOutlined
+  EditOutlined, DeleteOutlined, SwapOutlined, CheckCircleOutlined, CopyOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import CommonTable from '@/components/common/CommonTable';
@@ -52,6 +52,10 @@ export default function CrmPage() {
   const [convertModalOpen, setConvertModalOpen] = useState(false);
   const [convertingLead, setConvertingLead] = useState<any>(null);
   const [filters, setFilters] = useState<Record<string, any>>({});
+  const [selectedLeadKeys, setSelectedLeadKeys] = useState<string[]>([]);
+  const [selectedOppKeys, setSelectedOppKeys] = useState<string[]>([]);
+  const [selectedActivityKeys, setSelectedActivityKeys] = useState<number[]>([]);
+  const [selectedNoteKeys, setSelectedNoteKeys] = useState<number[]>([]);
 
   const setTabLoading = (tab: string, val: boolean) =>
     setLoading((prev) => ({ ...prev, [tab]: val }));
@@ -63,25 +67,33 @@ export default function CrmPage() {
       setTabLoading('leads', true);
       const leadsRes = await crmApi.leads.list(params);
       setLeads(leadsRes.data?.data?.content || leadsRes.data?.content || []);
-    } catch { /* ignore */ } finally { setTabLoading('leads', false); }
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to load leads');
+    } finally { setTabLoading('leads', false); }
 
     try {
       setTabLoading('opportunities', true);
       const oppsRes = await crmApi.opportunities.list(params);
       setOpportunities(oppsRes.data?.data?.content || oppsRes.data?.content || []);
-    } catch { /* ignore */ } finally { setTabLoading('opportunities', false); }
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to load opportunities');
+    } finally { setTabLoading('opportunities', false); }
 
     try {
       setTabLoading('activities', true);
       const actsRes = await crmApi.activities.list(params);
       setActivities(actsRes.data?.data?.content || actsRes.data?.content || []);
-    } catch { /* ignore */ } finally { setTabLoading('activities', false); }
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to load activities');
+    } finally { setTabLoading('activities', false); }
 
     try {
       setTabLoading('notes', true);
       const notesRes = await crmApi.notes.list(params);
       setNotes(notesRes.data?.data?.content || notesRes.data?.content || []);
-    } catch { /* ignore */ } finally { setTabLoading('notes', false); }
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to load notes');
+    } finally { setTabLoading('notes', false); }
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -96,6 +108,92 @@ export default function CrmPage() {
     setModalType(type as any);
     setEditingItem(item);
     setModalOpen(true);
+  };
+
+  const handleDuplicate = (item: any, type: string) => {
+    setModalType(type as any);
+    setEditingItem({ ...item, id: '' });
+    setModalOpen(true);
+  };
+
+  const handleBulkDeleteLeads = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều lead',
+      content: `Bạn có chắc chắn muốn xóa ${selectedLeadKeys.length} lead đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await crmApi.leads.bulkDelete(selectedLeadKeys);
+          message.success(`Đã xóa ${selectedLeadKeys.length} lead`);
+          setSelectedLeadKeys([]);
+          fetchData(filters);
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
+
+  const handleBulkDeleteOpps = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều cơ hội',
+      content: `Bạn có chắc chắn muốn xóa ${selectedOppKeys.length} cơ hội đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await crmApi.opportunities.bulkDelete(selectedOppKeys);
+          message.success(`Đã xóa ${selectedOppKeys.length} cơ hội`);
+          setSelectedOppKeys([]);
+          fetchData(filters);
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
+
+  const handleBulkDeleteActivities = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều hoạt động',
+      content: `Bạn có chắc chắn muốn xóa ${selectedActivityKeys.length} hoạt động đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await crmApi.activities.bulkDelete(selectedActivityKeys);
+          message.success(`Đã xóa ${selectedActivityKeys.length} hoạt động`);
+          setSelectedActivityKeys([]);
+          fetchData(filters);
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
+
+  const handleBulkDeleteNotes = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều ghi chú',
+      content: `Bạn có chắc chắn muốn xóa ${selectedNoteKeys.length} ghi chú đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await crmApi.notes.bulkDelete(selectedNoteKeys);
+          message.success(`Đã xóa ${selectedNoteKeys.length} ghi chú`);
+          setSelectedNoteKeys([]);
+          fetchData(filters);
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
   };
 
   const handleDeleteConfirm = (id: string, type: string, label: string) => {
@@ -114,16 +212,16 @@ export default function CrmPage() {
 
   const handleFormSubmit = async (values: any) => {
     if (modalType === 'lead') {
-      if (editingItem) await crmApi.leads.update(editingItem.id, values);
+      if (editingItem?.id) await crmApi.leads.update(editingItem.id, values);
       else await crmApi.leads.create(values);
     } else if (modalType === 'opportunity') {
-      if (editingItem) await crmApi.opportunities.update(editingItem.id, values);
+      if (editingItem?.id) await crmApi.opportunities.update(editingItem.id, values);
       else await crmApi.opportunities.create(values);
     } else if (modalType === 'activity') {
-      if (editingItem) await crmApi.activities.update(editingItem.id, values);
+      if (editingItem?.id) await crmApi.activities.update(editingItem.id, values);
       else await crmApi.activities.create(values);
     } else if (modalType === 'note') {
-      if (editingItem) await crmApi.notes.update(editingItem.id, values);
+      if (editingItem?.id) await crmApi.notes.update(editingItem.id, values);
       else await crmApi.notes.create(values);
     }
     setModalOpen(false);
@@ -201,6 +299,7 @@ export default function CrmPage() {
             <Button size="small" icon={<SwapOutlined />} onClick={() => { setConvertingLead(r); setConvertModalOpen(true); }} />
           </Tooltip>
           <Tooltip title="Edit"><Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(r, 'lead')} /></Tooltip>
+          <Tooltip title="Nhân bản"><Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(r, 'lead')} /></Tooltip>
           <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteConfirm(r.id, 'lead', 'lead')} /></Tooltip>
         </Space>
       ),
@@ -360,48 +459,80 @@ export default function CrmPage() {
           </Button>
         } items={[
           { key: 'leads', label: `Leads (${leads.length})`, children: (
-            <CommonTable
-              columns={leadColumns}
-              dataSource={leads}
-              loading={loading.leads}
-              rowKey="id"
-              onRefresh={() => fetchData(filters)}
-              onExportCsv={handleExportCsv}
-              onExportExcel={handleExportExcel}
-            />
+            <>
+              {selectedLeadKeys.length > 0 && (
+                <Button danger onClick={handleBulkDeleteLeads} style={{ marginBottom: 16 }}>
+                  Xóa đã chọn ({selectedLeadKeys.length})
+                </Button>
+              )}
+              <CommonTable
+                rowSelection={{ selectedRowKeys: selectedLeadKeys, onChange: (keys: React.Key[]) => setSelectedLeadKeys(keys as string[]) }}
+                columns={leadColumns}
+                dataSource={leads}
+                loading={loading.leads}
+                rowKey="id"
+                onRefresh={() => { setSelectedLeadKeys([]); fetchData(filters); }}
+                onExportCsv={handleExportCsv}
+                onExportExcel={handleExportExcel}
+              />
+            </>
           )},
           { key: 'opportunities', label: `Opportunities (${opportunities.length})`, children: (
-            <CommonTable
-              columns={oppColumns}
-              dataSource={opportunities}
-              loading={loading.opportunities}
-              rowKey="id"
-              onRefresh={() => fetchData(filters)}
-              onExportCsv={handleExportCsv}
-              onExportExcel={handleExportExcel}
-            />
+            <>
+              {selectedOppKeys.length > 0 && (
+                <Button danger onClick={handleBulkDeleteOpps} style={{ marginBottom: 16 }}>
+                  Xóa đã chọn ({selectedOppKeys.length})
+                </Button>
+              )}
+              <CommonTable
+                rowSelection={{ selectedRowKeys: selectedOppKeys, onChange: (keys: React.Key[]) => setSelectedOppKeys(keys as string[]) }}
+                columns={oppColumns}
+                dataSource={opportunities}
+                loading={loading.opportunities}
+                rowKey="id"
+                onRefresh={() => { setSelectedOppKeys([]); fetchData(filters); }}
+                onExportCsv={handleExportCsv}
+                onExportExcel={handleExportExcel}
+              />
+            </>
           )},
           { key: 'activities', label: `Activities (${activities.length})`, children: (
-            <CommonTable
-              columns={activityColumns}
-              dataSource={activities}
-              loading={loading.activities}
-              rowKey="id"
-              onRefresh={() => fetchData(filters)}
-              onExportCsv={handleExportCsv}
-              onExportExcel={handleExportExcel}
-            />
+            <>
+              {selectedActivityKeys.length > 0 && (
+                <Button danger onClick={handleBulkDeleteActivities} style={{ marginBottom: 16 }}>
+                  Xóa đã chọn ({selectedActivityKeys.length})
+                </Button>
+              )}
+              <CommonTable
+                rowSelection={{ selectedRowKeys: selectedActivityKeys, onChange: (keys: React.Key[]) => setSelectedActivityKeys(keys as number[]) }}
+                columns={activityColumns}
+                dataSource={activities}
+                loading={loading.activities}
+                rowKey="id"
+                onRefresh={() => { setSelectedActivityKeys([]); fetchData(filters); }}
+                onExportCsv={handleExportCsv}
+                onExportExcel={handleExportExcel}
+              />
+            </>
           )},
           { key: 'notes', label: `Notes (${notes.length})`, children: (
-            <CommonTable
-              columns={noteColumns}
-              dataSource={notes}
-              loading={loading.notes}
-              rowKey="id"
-              onRefresh={() => fetchData(filters)}
-              onExportCsv={handleExportCsv}
-              onExportExcel={handleExportExcel}
-            />
+            <>
+              {selectedNoteKeys.length > 0 && (
+                <Button danger onClick={handleBulkDeleteNotes} style={{ marginBottom: 16 }}>
+                  Xóa đã chọn ({selectedNoteKeys.length})
+                </Button>
+              )}
+              <CommonTable
+                rowSelection={{ selectedRowKeys: selectedNoteKeys, onChange: (keys: React.Key[]) => setSelectedNoteKeys(keys as number[]) }}
+                columns={noteColumns}
+                dataSource={notes}
+                loading={loading.notes}
+                rowKey="id"
+                onRefresh={() => { setSelectedNoteKeys([]); fetchData(filters); }}
+                onExportCsv={handleExportCsv}
+                onExportExcel={handleExportExcel}
+              />
+            </>
           )},
         ]} />
       </Card>

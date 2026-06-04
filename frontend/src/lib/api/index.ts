@@ -37,6 +37,8 @@ export const agentsApi = {
   create: (data: Record<string, unknown>) => apiClient.post('/agents', data),
   update: (id: string, data: Record<string, unknown>) => apiClient.put(`/agents/${id}`, data),
   delete: (id: string) => apiClient.delete(`/agents/${id}`),
+  duplicate: (id: string) => apiClient.post(`/agents/${id}/duplicate`),
+  bulkDelete: (ids: string[]) => apiClient.post('/agents/bulk-delete', ids),
   updateStatus: (id: string, status: string) =>
     apiClient.patch(`/agents/${id}/status`, { status }),
   getByStatus: (status: string) => apiClient.get(`/agents/status/${status}`),
@@ -56,6 +58,8 @@ export const customersApi = {
   create: (data: Record<string, unknown>) => apiClient.post('/customers', data),
   update: (id: string, data: Record<string, unknown>) => apiClient.put(`/customers/${id}`, data),
   delete: (id: string) => apiClient.delete(`/customers/${id}`),
+  duplicate: (id: string) => apiClient.post(`/customers/${id}/duplicate`),
+  bulkDelete: (ids: string[]) => apiClient.post('/customers/bulk-delete', ids),
   search: (keyword: string, params?: Record<string, unknown>) =>
     apiClient.get('/customers/search', { params: { keyword, ...params } }),
   addContact: (id: string, data: Record<string, unknown>) =>
@@ -83,6 +87,8 @@ export const crmApi = {
     create: (data: Record<string, unknown>) => apiClient.post('/crm/leads', data),
     update: (id: string, data: Record<string, unknown>) => apiClient.put(`/crm/leads/${id}`, data),
     delete: (id: string) => apiClient.delete(`/crm/leads/${id}`),
+    duplicate: (id: string) => apiClient.post(`/crm/leads/${id}/duplicate`),
+    bulkDelete: (ids: string[]) => apiClient.post('/crm/leads/bulk-delete', ids),
     updateStatus: (id: string, status: string) =>
       apiClient.patch(`/crm/leads/${id}/status`, status, {
         headers: { 'Content-Type': 'application/json' },
@@ -96,6 +102,8 @@ export const crmApi = {
     create: (data: Record<string, unknown>) => apiClient.post('/crm/opportunities', data),
     update: (id: string, data: Record<string, unknown>) => apiClient.put(`/crm/opportunities/${id}`, data),
     delete: (id: string) => apiClient.delete(`/crm/opportunities/${id}`),
+    duplicate: (id: string) => apiClient.post(`/crm/opportunities/${id}/duplicate`),
+    bulkDelete: (ids: string[]) => apiClient.post('/crm/opportunities/bulk-delete', ids),
     updateStage: (id: string, stage: string) =>
       apiClient.patch(`/crm/opportunities/${id}/stage`, stage, {
         headers: { 'Content-Type': 'application/json' },
@@ -109,6 +117,7 @@ export const crmApi = {
     create: (data: Record<string, unknown>) => apiClient.post('/crm/activities', data),
     update: (id: number, data: Record<string, unknown>) => apiClient.put(`/crm/activities/${id}`, data),
     delete: (id: number) => apiClient.delete(`/crm/activities/${id}`),
+    bulkDelete: (ids: number[]) => apiClient.post('/crm/activities/bulk-delete', ids),
   },
   notes: {
     list: (params?: Record<string, unknown>) => apiClient.get('/crm/notes', { params }),
@@ -118,6 +127,7 @@ export const crmApi = {
     create: (data: Record<string, unknown>) => apiClient.post('/crm/notes', data),
     update: (id: number, data: Record<string, unknown>) => apiClient.put(`/crm/notes/${id}`, data),
     delete: (id: number) => apiClient.delete(`/crm/notes/${id}`),
+    bulkDelete: (ids: number[]) => apiClient.post('/crm/notes/bulk-delete', ids),
   },
   exportCsv: (type: string, params?: Record<string, unknown>) =>
     apiClient.get(`/crm/${type}/export/csv`, { params, responseType: 'blob' }),
@@ -136,6 +146,8 @@ export const callsApi = {
   update: (id: string, data: Record<string, unknown>) =>
     apiClient.put(`/calls/${id}`, data),
   delete: (id: string) => apiClient.delete(`/calls/${id}`),
+  duplicate: (id: string) => apiClient.post(`/calls/${id}/duplicate`),
+  bulkDelete: (ids: string[]) => apiClient.post('/calls/bulk-delete', ids),
   updateStatus: (id: string, data: Record<string, unknown>) =>
     apiClient.put(`/calls/${id}/status`, data),
   end: (id: string) => apiClient.post(`/calls/${id}/hangup`),
@@ -166,6 +178,8 @@ export const ticketsApi = {
   create: (data: Record<string, unknown>) => apiClient.post('/tickets', data),
   update: (id: string, data: Record<string, unknown>) => apiClient.put(`/tickets/${id}`, data),
   delete: (id: string) => apiClient.delete(`/tickets/${id}`),
+  duplicate: (id: string) => apiClient.post(`/tickets/${id}/duplicate`),
+  bulkDelete: (ids: string[]) => apiClient.post('/tickets/bulk-delete', ids),
   updateStatus: (id: string, status: string) =>
     apiClient.patch(`/tickets/${id}/status`, { status }),
   assign: (id: string, agentId: string) =>
@@ -227,6 +241,8 @@ export const campaignsApi = {
   create: (data: Record<string, unknown>) => apiClient.post('/campaigns', data),
   update: (id: string, data: Record<string, unknown>) => apiClient.put(`/campaigns/${id}`, data),
   delete: (id: string) => apiClient.delete(`/campaigns/${id}`),
+  duplicate: (id: string) => apiClient.post(`/campaigns/${id}/duplicate`),
+  bulkDelete: (ids: string[]) => apiClient.post('/campaigns/bulk-delete', ids),
   start: (id: string) => apiClient.post(`/campaigns/${id}/start`),
   pause: (id: string) => apiClient.post(`/campaigns/${id}/pause`),
   stop: (id: string) => apiClient.post(`/campaigns/${id}/stop`),
@@ -239,6 +255,8 @@ export const campaignsApi = {
     apiClient.post(`/campaigns/${campaignId}/members`, data),
   removeMember: (campaignId: string, memberId: number) =>
     apiClient.delete(`/campaigns/${campaignId}/members/${memberId}`),
+  bulkDeleteMembers: (campaignId: string, ids: number[]) =>
+    apiClient.post(`/campaigns/${campaignId}/members/bulk-delete`, ids),
   importMembers: (campaignId: string, formData: FormData) =>
     apiClient.post(`/campaigns/${campaignId}/members/import`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -261,6 +279,10 @@ export const billingApi = {
   updatePlan: (id: number, data: Record<string, unknown>) =>
     apiClient.put(`/billing/plans/${id}`, data),
   deletePlan: (id: number) => apiClient.delete(`/billing/plans/${id}`),
+  bulkDeletePlans: (ids: number[]) => apiClient.post('/billing/plans/bulk-delete', ids),
+  bulkDeleteSubscriptions: (ids: string[]) => apiClient.post('/billing/subscriptions/bulk-delete', ids),
+  bulkDeleteInvoices: (ids: string[]) => apiClient.post('/billing/invoices/bulk-delete', ids),
+  bulkDeleteUsage: (ids: string[]) => apiClient.post('/billing/usage/bulk-delete', ids),
   getActivePlans: (params?: Record<string, unknown>) =>
     apiClient.get('/billing/plans/active', { params }),
   getSubscriptions: (subscriberId: string, params?: Record<string, unknown>) =>
@@ -349,6 +371,9 @@ export const notificationsApi = {
   create: (data: Record<string, unknown>) => apiClient.post('/notifications', data),
   update: (id: string, data: Record<string, unknown>) => apiClient.put(`/notifications/${id}`, data),
   delete: (id: string) => apiClient.delete(`/notifications/${id}`),
+  bulkDelete: (ids: string[]) => apiClient.post('/notifications/bulk-delete', ids),
+  bulkDeleteTemplates: (ids: number[]) => apiClient.post('/notifications/templates/bulk-delete', ids),
+  bulkDeletePreferences: (ids: string[]) => apiClient.post('/notifications/preferences/bulk-delete', ids),
   getByRecipient: (recipientId: string, params?: Record<string, unknown>) =>
     apiClient.get(`/notifications/recipient/${recipientId}`, { params }),
   getUnread: (recipientId: string, params?: Record<string, unknown>) =>
@@ -383,6 +408,8 @@ export const knowledgeBaseApi = {
   create: (data: Record<string, unknown>) => apiClient.post('/knowledge-base/articles', data),
   update: (id: string, data: Record<string, unknown>) => apiClient.put(`/knowledge-base/articles/${id}`, data),
   delete: (id: string) => apiClient.delete(`/knowledge-base/articles/${id}`),
+  duplicate: (id: string) => apiClient.post(`/knowledge-base/articles/${id}/duplicate`),
+  bulkDelete: (ids: string[]) => apiClient.post('/knowledge-base/articles/bulk-delete', ids),
 };
 
 export const automationApi = {
@@ -391,6 +418,8 @@ export const automationApi = {
   create: (data: Record<string, unknown>) => apiClient.post('/automation/rules', data),
   update: (id: string, data: Record<string, unknown>) => apiClient.put(`/automation/rules/${id}`, data),
   delete: (id: string) => apiClient.delete(`/automation/rules/${id}`),
+  duplicate: (id: string) => apiClient.post(`/automation/rules/${id}/duplicate`),
+  bulkDelete: (ids: string[]) => apiClient.post('/automation/rules/bulk-delete', ids),
   toggle: (id: string, isActive: boolean) =>
     apiClient.patch(`/automation/rules/${id}`, { isActive }),
 };
@@ -401,6 +430,8 @@ export const webhooksApi = {
   create: (data: Record<string, unknown>) => apiClient.post('/webhooks', data),
   update: (id: string, data: Record<string, unknown>) => apiClient.put(`/webhooks/${id}`, data),
   delete: (id: string) => apiClient.delete(`/webhooks/${id}`),
+  duplicate: (id: string) => apiClient.post(`/webhooks/${id}/duplicate`),
+  bulkDelete: (ids: string[]) => apiClient.post('/webhooks/bulk-delete', ids),
   test: (id: string) => apiClient.post(`/webhooks/${id}/test`),
 };
 

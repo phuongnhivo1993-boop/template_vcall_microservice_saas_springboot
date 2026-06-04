@@ -76,6 +76,10 @@ export const billingApi = {
 
 export const reportsApi = {
   getAll: () => api.get('/reports'),
+  getAnalytics: (params?: { period?: string }) =>
+    api.get('/reports/analytics', { params }),
+  getAgentPerformance: (params?: { period?: string }) =>
+    api.get('/reports/agent-performance', { params }),
 };
 
 export const supervisorApi = {

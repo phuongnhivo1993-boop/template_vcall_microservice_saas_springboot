@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Row, Col, Typography, Tag, Spin, Alert, Button, Space, Tabs, Statistic, Empty, Descriptions } from 'antd';
+import { Card, Row, Col, Typography, Tag, Spin, Alert, Button, Space, Tabs, Statistic, Empty, Descriptions, Modal, Form, Input, Select, message } from 'antd';
 import {
   UserOutlined, FileTextOutlined, BookOutlined, PhoneOutlined,
   ClockCircleOutlined, CheckCircleOutlined,
@@ -48,6 +48,9 @@ export default function PortalPage() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [ticketModalOpen, setTicketModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [ticketForm] = Form.useForm();
 
   const fetchPortalData = useCallback(async () => {
     setLoading(true);
@@ -69,6 +72,26 @@ export default function PortalPage() {
   }, []);
 
   useEffect(() => { fetchPortalData(); }, [fetchPortalData]);
+
+  const handleCreateTicket = () => {
+    ticketForm.resetFields();
+    setTicketModalOpen(true);
+  };
+
+  const handleTicketSubmit = async (values: any) => {
+    setSubmitting(true);
+    try {
+      await ticketsApi.create(values);
+      message.success('Yêu cầu hỗ trợ đã được tạo');
+      setTicketModalOpen(false);
+      ticketForm.resetFields();
+      fetchPortalData();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Tạo yêu cầu thất bại');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const openTicketCount = tickets.filter((t) => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length;
   const resolvedTicketCount = tickets.filter((t) => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
@@ -176,7 +199,7 @@ export default function PortalPage() {
 
             <Card title="Hỗ trợ nhanh" style={{ marginTop: 16 }}>
               <Space direction="vertical" style={{ width: '100%' }}>
-                <Button type="primary" icon={<FileTextOutlined />} block>Tạo yêu cầu hỗ trợ</Button>
+                <Button type="primary" icon={<FileTextOutlined />} block onClick={handleCreateTicket}>Tạo yêu cầu hỗ trợ</Button>
                 <Button icon={<PhoneOutlined />} block>Gọi hỗ trợ: 1900 1234</Button>
                 <Button icon={<MessageOutlined />} block>Chat trực tuyến</Button>
               </Space>
@@ -217,12 +240,37 @@ export default function PortalPage() {
         </Col>
         <Col xs={12} sm={6}>
           <Card size="small">
-            <Statistic title="Cuộc gọi gần đây" value="5" prefix={<PhoneOutlined />} valueStyle={{ fontSize: 24 }} />
+            <Statistic title="Cuộc gọi gần đây" value={0} prefix={<PhoneOutlined />} valueStyle={{ fontSize: 24 }} />
           </Card>
         </Col>
       </Row>
 
       <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+
+      <Modal
+        title="Tạo yêu cầu hỗ trợ"
+        open={ticketModalOpen}
+        onCancel={() => setTicketModalOpen(false)}
+        onOk={() => ticketForm.submit()}
+        confirmLoading={submitting}
+        destroyOnClose
+      >
+        <Form form={ticketForm} layout="vertical" onFinish={handleTicketSubmit}>
+          <Form.Item name="subject" label="Tiêu đề" rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="description" label="Mô tả" rules={[{ required: true, message: 'Vui lòng nhập mô tả' }]}>
+            <Input.TextArea rows={4} />
+          </Form.Item>
+          <Form.Item name="priority" label="Mức độ ưu tiên" rules={[{ required: true }]} initialValue="MEDIUM">
+            <Select options={[
+              { value: 'LOW', label: 'Thấp' },
+              { value: 'MEDIUM', label: 'Trung bình' },
+              { value: 'HIGH', label: 'Cao' },
+            ]} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }

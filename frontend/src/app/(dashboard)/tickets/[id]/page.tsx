@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, Descriptions, Tag, Spin, Alert, Button, Space, Typography, Row, Col, Timeline, Progress, Divider, Empty } from 'antd';
 import { ArrowLeftOutlined, ClockCircleOutlined, UserOutlined, TeamOutlined, MessageOutlined, CheckCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
@@ -38,11 +38,19 @@ export default function TicketDetailPage() {
   const [comments, setComments] = useState<any[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
 
-  useEffect(() => {
-    fetchTicket();
+  const fetchComments = useCallback(async () => {
+    setCommentsLoading(true);
+    try {
+      const res = await ticketsApi.getComments(params.id as string);
+      setComments(res.data?.data?.content || res.data?.data || res.data || []);
+    } catch {
+      setComments([]);
+    } finally {
+      setCommentsLoading(false);
+    }
   }, [params.id]);
 
-  const fetchTicket = async () => {
+  const fetchTicket = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -54,19 +62,11 @@ export default function TicketDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id, fetchComments]);
 
-  const fetchComments = async () => {
-    setCommentsLoading(true);
-    try {
-      const res = await ticketsApi.getComments(params.id as string);
-      setComments(res.data?.data?.content || res.data?.content || res.data?.data || []);
-    } catch {
-      setComments([]);
-    } finally {
-      setCommentsLoading(false);
-    }
-  };
+  useEffect(() => {
+    fetchTicket();
+  }, [fetchTicket]);
 
   if (loading) {
     return (

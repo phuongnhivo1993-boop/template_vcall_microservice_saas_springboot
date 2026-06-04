@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Tag, Space, Badge, Form, Input, Select, message, Typography } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { useUrlState } from '@/lib/hooks/useUrlState';
+import { Button, Tag, Space, Badge, Form, Input, Select, message, Typography, Modal } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, CopyOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import CommonSearch from '@/components/common/CommonSearch';
@@ -49,14 +50,25 @@ export default function AgentsPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [urlParams, setUrlParams] = useUrlState({
+    name: '', status: '', group: '',
+    page: '1', pageSize: '10',
+  });
+  const filters = useMemo(() => {
+    const f: Record<string, any> = {};
+    if (urlParams.name) f.name = urlParams.name;
+    if (urlParams.status) f.status = urlParams.status;
+    if (urlParams.group) f.group = urlParams.group;
+    return f;
+  }, [urlParams]);
   const [pagination, setPagination] = useState<TablePaginationConfig>({
-    current: 1,
-    pageSize: 10,
+    current: parseInt(urlParams.page),
+    pageSize: parseInt(urlParams.pageSize),
     total: 0,
   });
   const [modalOpen, setModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
-  const [filters, setFilters] = useState<Record<string, any>>({});
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
 
   const fetchAgents = useCallback(async (page = 1, size = 10, params?: Record<string, any>) => {
     setLoading(true);
@@ -86,7 +98,8 @@ export default function AgentsPage() {
   }, []);
 
   useEffect(() => {
-    fetchAgents(1, pagination.pageSize);
+    fetchAgents(parseInt(urlParams.page), parseInt(urlParams.pageSize), filters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTableChange = (
@@ -94,6 +107,7 @@ export default function AgentsPage() {
     _filters: any,
     _sorter: SorterResult<Agent> | SorterResult<Agent>[],
   ) => {
+    setUrlParams({ page: String(pag.current), pageSize: String(pag.pageSize) });
     fetchAgents(pag.current, pag.pageSize, filters);
   };
 
@@ -104,12 +118,17 @@ export default function AgentsPage() {
         cleaned[key] = val;
       }
     });
-    setFilters(cleaned);
+    setUrlParams({
+      name: cleaned.name || '',
+      status: cleaned.status || '',
+      group: cleaned.group || '',
+      page: '1',
+    });
     fetchAgents(1, pagination.pageSize, cleaned);
   };
 
   const handleReset = () => {
-    setFilters({});
+    setUrlParams({ name: '', status: '', group: '', page: '1' });
     fetchAgents(1, pagination.pageSize);
   };
 
@@ -123,6 +142,26 @@ export default function AgentsPage() {
     }
   };
 
+  const handleBulkDelete = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều đại lý',
+      content: `Bạn có chắc chắn muốn xóa ${selectedRowKeys.length} đại lý đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await agentsApi.bulkDelete(selectedRowKeys);
+          message.success(`Đã xóa ${selectedRowKeys.length} đại lý`);
+          setSelectedRowKeys([]);
+          fetchAgents(pagination.current, pagination.pageSize, filters);
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
+
   const handleCreate = () => {
     setEditingAgent(null);
     setModalOpen(true);
@@ -130,6 +169,11 @@ export default function AgentsPage() {
 
   const handleEdit = (agent: Agent) => {
     setEditingAgent(agent);
+    setModalOpen(true);
+  };
+
+  const handleDuplicate = (record: Agent) => {
+    setEditingAgent({ ...record, id: '' } as Agent);
     setModalOpen(true);
   };
 
@@ -145,7 +189,7 @@ export default function AgentsPage() {
   };
 
   const handleFormSubmit = async (values: any) => {
-    if (editingAgent) {
+    if (editingAgent?.id) {
       await agentsApi.update(editingAgent.id, values);
     } else {
       await agentsApi.create(values);
@@ -246,6 +290,9 @@ export default function AgentsPage() {
               Edit
             </Button>
           </Can>
+          <Button type="link" icon={<CopyOutlined />} onClick={() => handleDuplicate(record)}>
+            Nhân bản
+          </Button>
           <Can I={Permissions.AGENT_DELETE}>
             <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)}>
               Delete
@@ -294,31 +341,43 @@ export default function AgentsPage() {
           onSearch={handleSearch}
           onReset={handleReset}
           loading={loading}
+          initialValues={filters}
         />
         <SavedFilters
           currentValues={filters}
           onApply={(values) => {
-            setFilters(values);
+            setUrlParams({
+              name: values.name || '',
+              status: values.status || '',
+              group: values.group || '',
+              page: '1',
+            });
             fetchAgents(1, pagination.pageSize, values);
           }}
           storageKey="vcall-saved-filters-agents"
         />
       </div>
+      {selectedRowKeys.length > 0 && (
+        <Button danger onClick={handleBulkDelete} style={{ marginBottom: 16 }}>
+          Xóa đã chọn ({selectedRowKeys.length})
+        </Button>
+      )}
       <CommonTable<Agent>
+        rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]) }}
         columns={columns}
         dataSource={agents}
         loading={loading}
         error={error}
         rowKey="id"
         pagination={pagination}
-        onRefresh={() => fetchAgents(pagination.current, pagination.pageSize, filters)}
+        onRefresh={() => { setSelectedRowKeys([]); fetchAgents(pagination.current, pagination.pageSize, filters); }}
         onExportCsv={handleExportCsv}
         onExportExcel={handleExportExcel}
         onTableChange={handleTableChange}
       />
       <CommonForm
         open={modalOpen}
-        title={editingAgent ? 'Edit Agent' : 'Add Agent'}
+        title={editingAgent?.id ? 'Edit Agent' : 'Add Agent'}
         onClose={() => { setModalOpen(false); setEditingAgent(null); }}
         onSubmit={handleFormSubmit}
         initialValues={editingAgent}

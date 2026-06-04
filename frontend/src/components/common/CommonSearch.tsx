@@ -2,7 +2,7 @@
 
 import { Input, Select, DatePicker, Space, Button, Form } from 'antd';
 import { SearchOutlined, ClearOutlined } from '@ant-design/icons';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 
 const { RangePicker } = DatePicker;
 
@@ -20,10 +20,19 @@ interface CommonSearchProps {
   onSearch: (values: any) => void;
   onReset: () => void;
   loading?: boolean;
+  initialValues?: Record<string, any>;
 }
 
-export default function CommonSearch({ fields, onSearch, onReset, loading }: CommonSearchProps) {
+export default function CommonSearch({ fields, onSearch, onReset, loading, initialValues }: CommonSearchProps) {
   const [form] = Form.useForm();
+  const hasSetInitial = useRef(false);
+
+  useEffect(() => {
+    if (initialValues && !hasSetInitial.current) {
+      form.setFieldsValue(initialValues);
+      hasSetInitial.current = true;
+    }
+  }, [initialValues, form]);
 
   const handleSearch = () => {
     const values = form.getFieldsValue();

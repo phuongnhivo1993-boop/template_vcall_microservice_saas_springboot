@@ -7,7 +7,7 @@ import {
 } from 'antd';
 import {
   PlusOutlined, PlayCircleOutlined, PauseCircleOutlined, StopOutlined,
-  UploadOutlined, TeamOutlined, BarChartOutlined, EditOutlined, DeleteOutlined
+  UploadOutlined, TeamOutlined, BarChartOutlined, EditOutlined, DeleteOutlined, CopyOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import CommonTable from '@/components/common/CommonTable';
@@ -44,6 +44,9 @@ export default function CampaignsPage() {
   const [editingCampaign, setEditingCampaign] = useState<any>(null);
   const [memberModalOpen, setMemberModalOpen] = useState(false);
   const [filters, setFilters] = useState<Record<string, any>>({});
+  const [selectedCampaignRowKeys, setSelectedCampaignRowKeys] = useState<string[]>([]);
+  const [selectedMemberRowKeys, setSelectedMemberRowKeys] = useState<number[]>([]);
+  const [selectedResultRowKeys, setSelectedResultRowKeys] = useState<string[]>([]);
 
   const fetchCampaigns = useCallback(async (params?: Record<string, any>) => {
     setLoading(true);
@@ -88,6 +91,71 @@ export default function CampaignsPage() {
     setCampaignModalOpen(true);
   };
 
+  const handleDuplicate = (record: any) => {
+    setEditingCampaign({ ...record, id: '' });
+    setCampaignModalOpen(true);
+  };
+
+  const handleBulkDeleteCampaigns = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều chiến dịch',
+      content: `Bạn có chắc chắn muốn xóa ${selectedCampaignRowKeys.length} chiến dịch đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await campaignsApi.bulkDelete(selectedCampaignRowKeys);
+          message.success(`Đã xóa ${selectedCampaignRowKeys.length} chiến dịch`);
+          setSelectedCampaignRowKeys([]);
+          fetchCampaigns(filters);
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
+
+  const handleBulkDeleteMembers = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều thành viên',
+      content: `Bạn có chắc chắn muốn xóa ${selectedMemberRowKeys.length} thành viên đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          if (selectedCampaign) {
+            await campaignsApi.bulkDeleteMembers(selectedCampaign.id, selectedMemberRowKeys);
+            message.success(`Đã xóa ${selectedMemberRowKeys.length} thành viên`);
+            setSelectedMemberRowKeys([]);
+            fetchCampaignDetail(selectedCampaign);
+          }
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
+
+  const handleBulkDeleteResults = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều kết quả',
+      content: `Bạn có chắc chắn muốn xóa ${selectedResultRowKeys.length} kết quả đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          message.success(`Đã xóa ${selectedResultRowKeys.length} kết quả`);
+          setSelectedResultRowKeys([]);
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
+
   const handleDelete = (campaign: any) => {
     showDeleteConfirm({
       title: 'Delete Campaign',
@@ -100,7 +168,7 @@ export default function CampaignsPage() {
   };
 
   const handleFormSubmit = async (values: any) => {
-    if (editingCampaign) {
+    if (editingCampaign?.id) {
       await campaignsApi.update(editingCampaign.id, values);
     } else {
       await campaignsApi.create(values);
@@ -239,6 +307,9 @@ export default function CampaignsPage() {
           <Tooltip title="Edit">
             <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)} />
           </Tooltip>
+          <Tooltip title="Nhân bản">
+            <Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(r)} />
+          </Tooltip>
           <Tooltip title="Delete">
             <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(r)} />
           </Tooltip>
@@ -338,13 +409,19 @@ export default function CampaignsPage() {
                     onReset={handleReset}
                     loading={loading}
                   />
+                  {selectedCampaignRowKeys.length > 0 && (
+                    <Button danger onClick={handleBulkDeleteCampaigns} style={{ marginBottom: 16 }}>
+                      Xóa đã chọn ({selectedCampaignRowKeys.length})
+                    </Button>
+                  )}
                   <CommonTable
+                    rowSelection={{ selectedRowKeys: selectedCampaignRowKeys, onChange: (keys: React.Key[]) => setSelectedCampaignRowKeys(keys as string[]) }}
                     columns={campaignColumns}
                     dataSource={campaigns}
                     loading={loading}
                     error={error}
                     rowKey="id"
-                    onRefresh={() => fetchCampaigns(filters)}
+                    onRefresh={() => { setSelectedCampaignRowKeys([]); fetchCampaigns(filters); }}
                     onExportCsv={handleExportCsv}
                     onExportExcel={handleExportExcel}
                   />
@@ -406,26 +483,42 @@ export default function CampaignsPage() {
                       key: 'members',
                       label: `Members (${members.length})`,
                       children: (
-                        <CommonTable
-                          columns={memberColumns}
-                          dataSource={members}
-                          loading={detailLoading}
-                          rowKey="id"
-                          onRefresh={() => fetchCampaignDetail(selectedCampaign)}
-                        />
+                        <>
+                          {selectedMemberRowKeys.length > 0 && (
+                            <Button danger onClick={handleBulkDeleteMembers} style={{ marginBottom: 16 }}>
+                              Xóa đã chọn ({selectedMemberRowKeys.length})
+                            </Button>
+                          )}
+                          <CommonTable
+                            rowSelection={{ selectedRowKeys: selectedMemberRowKeys, onChange: (keys: React.Key[]) => setSelectedMemberRowKeys(keys as number[]) }}
+                            columns={memberColumns}
+                            dataSource={members}
+                            loading={detailLoading}
+                            rowKey="id"
+                            onRefresh={() => { setSelectedMemberRowKeys([]); fetchCampaignDetail(selectedCampaign); }}
+                          />
+                        </>
                       ),
                     },
                     {
                       key: 'results',
                       label: `Results (${results.length})`,
                       children: (
-                        <CommonTable
-                          columns={resultColumns}
-                          dataSource={results}
-                          loading={detailLoading}
-                          rowKey="id"
-                          onRefresh={() => fetchCampaignDetail(selectedCampaign)}
-                        />
+                        <>
+                          {selectedResultRowKeys.length > 0 && (
+                            <Button danger onClick={handleBulkDeleteResults} style={{ marginBottom: 16 }}>
+                              Xóa đã chọn ({selectedResultRowKeys.length})
+                            </Button>
+                          )}
+                          <CommonTable
+                            rowSelection={{ selectedRowKeys: selectedResultRowKeys, onChange: (keys: React.Key[]) => setSelectedResultRowKeys(keys as string[]) }}
+                            columns={resultColumns}
+                            dataSource={results}
+                            loading={detailLoading}
+                            rowKey="id"
+                            onRefresh={() => { setSelectedResultRowKeys([]); fetchCampaignDetail(selectedCampaign); }}
+                          />
+                        </>
                       ),
                     },
                   ]} />
@@ -438,7 +531,7 @@ export default function CampaignsPage() {
 
       <CommonForm
         open={campaignModalOpen}
-        title={editingCampaign ? 'Edit Campaign' : 'Create Campaign'}
+        title={editingCampaign?.id ? 'Edit Campaign' : 'Create Campaign'}
         onClose={() => { setCampaignModalOpen(false); setEditingCampaign(null); }}
         onSubmit={handleFormSubmit}
         initialValues={editingCampaign}

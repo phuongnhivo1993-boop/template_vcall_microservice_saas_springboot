@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Row, Col, Card, Statistic, Table, Tag, Typography, Spin, Space } from 'antd';
-import { PhoneOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, TeamOutlined, RiseOutlined } from '@ant-design/icons';
+import { Row, Col, Card, Statistic, Table, Tag, Typography, Spin, Space, Alert, Button } from 'antd';
+import { PhoneOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, TeamOutlined, RiseOutlined, ReloadOutlined } from '@ant-design/icons';
 import { agentsApi, callsApi, ticketsApi } from '@/lib/api';
 
 const { Title, Text } = Typography;
@@ -17,6 +17,7 @@ const darkTheme = {
 
 export default function WallboardPage() {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [agentStats, setAgentStats] = useState<any>({});
   const [callStats, setCallStats] = useState<any>({});
   const [ticketStats, setTicketStats] = useState<any>({});
@@ -42,17 +43,8 @@ export default function WallboardPage() {
         const c = callRes.value?.data?.data || {};
         setCallStats({ total: c.totalElements || 0, active: 0, completed: 0 });
       }
-    } catch (e) {
-      setAgentStats({ totalAgents: 15, onlineCount: 8, busyCount: 4, offlineCount: 3, onBreakCount: 0, awayCount: 0 });
-      setCallStats({ total: 156, active: 5, completed: 142, avgDuration: '4m 32s' });
-      setTicketStats({ total: 23, open: 8, pending: 5, resolved: 10 });
-      setAgents([
-        { fullName: 'Nguyen Van A', status: 'AVAILABLE', totalCalls: 45 },
-        { fullName: 'Tran Thi B', status: 'BUSY', totalCalls: 38 },
-        { fullName: 'Le Van C', status: 'AVAILABLE', totalCalls: 52 },
-        { fullName: 'Pham Thi D', status: 'OFFLINE', totalCalls: 12 },
-        { fullName: 'Hoang Van E', status: 'BREAK', totalCalls: 28 },
-      ]);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to load wallboard data');
     } finally {
       setLoading(false);
     }
@@ -63,6 +55,21 @@ export default function WallboardPage() {
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  if (error) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: darkTheme.background }}>
+        <Alert
+          message="Error"
+          description={error}
+          type="error"
+          showIcon
+          action={<Button icon={<ReloadOutlined />} onClick={fetchData}>Retry</Button>}
+          style={{ maxWidth: 500 }}
+        />
+      </div>
+    );
+  }
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: darkTheme.background }}>

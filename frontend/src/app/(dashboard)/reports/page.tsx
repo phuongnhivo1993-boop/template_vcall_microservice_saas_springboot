@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Select, DatePicker, Row, Col, Typography, Tabs, Space, message, Button, Modal, Form, Input, Radio, Tag } from 'antd';
+import { Card, Select, DatePicker, Row, Col, Typography, Tabs, Space, message, Button, Modal, Form, Input, Radio, Tag, Spin } from 'antd';
 import { ScheduleOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import {
   BarChart,
@@ -208,7 +208,7 @@ export default function ReportsPage() {
       key: 'charts',
       label: 'Charts',
       children: chartsLoading ? (
-        <Card><div style={{ textAlign: 'center', padding: 60 }}><Typography.Text type="secondary">Loading chart data...</Typography.Text></div></Card>
+        <Card><div style={{ textAlign: 'center', padding: 60 }}><Spin size="large" /></div></Card>
       ) : (
         <Row gutter={[24, 24]}>
           <Col span={24}>

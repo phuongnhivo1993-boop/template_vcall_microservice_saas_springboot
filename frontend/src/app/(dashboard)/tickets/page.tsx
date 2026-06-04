@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Tag, Space, Typography, Form, Input, Select, message, Badge, Progress } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ClockCircleOutlined, EyeOutlined } from '@ant-design/icons';
+import { useUrlState } from '@/lib/hooks/useUrlState';
+import { Button, Tag, Space, Typography, Form, Input, Select, message, Badge, Progress, Modal } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ClockCircleOutlined, EyeOutlined, CopyOutlined } from '@ant-design/icons';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
 import dayjs from 'dayjs';
@@ -66,14 +67,26 @@ export default function TicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [urlParams, setUrlParams] = useUrlState({
+    subject: '', status: '', priority: '', category: '',
+    page: '1', pageSize: '10',
+  });
+  const filters = useMemo(() => {
+    const f: Record<string, any> = {};
+    if (urlParams.subject) f.subject = urlParams.subject;
+    if (urlParams.status) f.status = urlParams.status;
+    if (urlParams.priority) f.priority = urlParams.priority;
+    if (urlParams.category) f.category = urlParams.category;
+    return f;
+  }, [urlParams]);
   const [pagination, setPagination] = useState<TablePaginationConfig>({
-    current: 1,
-    pageSize: 10,
+    current: parseInt(urlParams.page),
+    pageSize: parseInt(urlParams.pageSize),
     total: 0,
   });
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<Ticket | null>(null);
-  const [filters, setFilters] = useState<Record<string, any>>({});
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const fetchTickets = useCallback(async (page = 1, size = 10, params?: Record<string, any>) => {
     setLoading(true);
     setError(null);
@@ -102,7 +115,8 @@ export default function TicketsPage() {
   }, []);
 
   useEffect(() => {
-    fetchTickets(1, pagination.pageSize);
+    fetchTickets(parseInt(urlParams.page), parseInt(urlParams.pageSize), filters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTableChange = (
@@ -110,6 +124,7 @@ export default function TicketsPage() {
     _filters: any,
     _sorter: SorterResult<Ticket> | SorterResult<Ticket>[],
   ) => {
+    setUrlParams({ page: String(pag.current), pageSize: String(pag.pageSize) });
     fetchTickets(pag.current, pag.pageSize, filters);
   };
 
@@ -120,12 +135,21 @@ export default function TicketsPage() {
         cleaned[key] = val;
       }
     });
-    setFilters(cleaned);
+    setUrlParams({
+      subject: cleaned.subject || '',
+      status: cleaned.status || '',
+      priority: cleaned.priority || '',
+      category: cleaned.category || '',
+      page: '1',
+    });
     fetchTickets(1, pagination.pageSize, cleaned);
   };
 
   const handleReset = () => {
-    setFilters({});
+    setUrlParams({
+      subject: '', status: '', priority: '', category: '',
+      page: '1',
+    });
     fetchTickets(1, pagination.pageSize);
   };
 
@@ -149,6 +173,31 @@ export default function TicketsPage() {
     setModalOpen(true);
   };
 
+  const handleDuplicate = (record: Ticket) => {
+    setEditingTicket({ ...record, id: '' } as Ticket);
+    setModalOpen(true);
+  };
+
+  const handleBulkDelete = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều vé',
+      content: `Bạn có chắc chắn muốn xóa ${selectedRowKeys.length} vé đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await ticketsApi.bulkDelete(selectedRowKeys);
+          message.success(`Đã xóa ${selectedRowKeys.length} vé`);
+          setSelectedRowKeys([]);
+          fetchTickets(pagination.current, pagination.pageSize, filters);
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
+
   const handleDelete = (ticket: Ticket) => {
     showDeleteConfirm({
       title: 'Delete Ticket',
@@ -161,7 +210,7 @@ export default function TicketsPage() {
   };
 
   const handleFormSubmit = async (values: any) => {
-    if (editingTicket) {
+    if (editingTicket?.id) {
       await ticketsApi.update(editingTicket.id, values);
     } else {
       await ticketsApi.create(values);
@@ -269,6 +318,9 @@ export default function TicketsPage() {
               Edit
             </Button>
           </Can>
+          <Button type="link" icon={<CopyOutlined />} onClick={() => handleDuplicate(record)}>
+            Nhân bản
+          </Button>
           <Can I={Permissions.TICKET_DELETE}>
             <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)}>
               Delete
@@ -320,31 +372,44 @@ export default function TicketsPage() {
           onSearch={handleSearch}
           onReset={handleReset}
           loading={loading}
+          initialValues={filters}
         />
         <SavedFilters
           currentValues={filters}
           onApply={(values) => {
-            setFilters(values);
+            setUrlParams({
+              subject: values.subject || '',
+              status: values.status || '',
+              priority: values.priority || '',
+              category: values.category || '',
+              page: '1',
+            });
             fetchTickets(1, pagination.pageSize, values);
           }}
           storageKey="vcall-saved-filters-tickets"
         />
       </div>
+      {selectedRowKeys.length > 0 && (
+        <Button danger onClick={handleBulkDelete} style={{ marginBottom: 16 }}>
+          Xóa đã chọn ({selectedRowKeys.length})
+        </Button>
+      )}
       <CommonTable<Ticket>
+        rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]) }}
         columns={columns}
         dataSource={tickets}
         loading={loading}
         error={error}
         rowKey="id"
         pagination={pagination}
-        onRefresh={() => fetchTickets(pagination.current, pagination.pageSize, filters)}
+        onRefresh={() => { setSelectedRowKeys([]); fetchTickets(pagination.current, pagination.pageSize, filters); }}
         onExportCsv={handleExportCsv}
         onExportExcel={handleExportExcel}
         onTableChange={handleTableChange}
       />
       <CommonForm
         open={modalOpen}
-        title={editingTicket ? 'Edit Ticket' : 'Create Ticket'}
+        title={editingTicket?.id ? 'Edit Ticket' : 'Create Ticket'}
         onClose={() => { setModalOpen(false); setEditingTicket(null); }}
         onSubmit={handleFormSubmit}
         initialValues={editingTicket}

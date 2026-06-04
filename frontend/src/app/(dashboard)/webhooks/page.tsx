@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Tag, Button, Space, Typography, Switch, Form, Input, Checkbox, message, Badge, Tooltip, Alert } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ApiOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Card, Tag, Button, Space, Typography, Switch, Form, Input, Checkbox, message, Badge, Tooltip, Alert, Modal } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ApiOutlined, ReloadOutlined, CopyOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
@@ -45,6 +45,7 @@ export default function WebhooksPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingWebhook, setEditingWebhook] = useState<Webhook | null>(null);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
 
   const fetchWebhooks = useCallback(async () => {
     setLoading(true);
@@ -75,7 +76,7 @@ export default function WebhooksPage() {
 
   const handleSave = async (values: any) => {
     try {
-      if (editingWebhook) {
+      if (editingWebhook?.id) {
         await webhooksApi.update(editingWebhook.id, values);
         message.success('Webhook updated');
       } else {
@@ -90,6 +91,11 @@ export default function WebhooksPage() {
     }
   };
 
+  const handleDuplicate = (record: Webhook) => {
+    setEditingWebhook({ ...record, id: '' } as Webhook);
+    setFormOpen(true);
+  };
+
   const testWebhook = async (webhook: Webhook) => {
     setTestResult(`Testing ${webhook.url}...`);
     try {
@@ -100,6 +106,26 @@ export default function WebhooksPage() {
       setTestResult(`❌ ${webhook.url} - ${err?.message || 'Connection failed'}`);
     }
     setTimeout(() => setTestResult(null), 3000);
+  };
+
+  const handleBulkDelete = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều webhook',
+      content: `Bạn có chắc chắn muốn xóa ${selectedRowKeys.length} webhook đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await webhooksApi.bulkDelete(selectedRowKeys);
+          message.success(`Đã xóa ${selectedRowKeys.length} webhook`);
+          setSelectedRowKeys([]);
+          fetchWebhooks();
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
   };
 
   const handleDeleteWebhook = async (id: string) => {
@@ -139,6 +165,7 @@ export default function WebhooksPage() {
             <Button size="small" icon={<ReloadOutlined />} onClick={() => testWebhook(record)} />
           </Tooltip>
           <Button size="small" icon={<EditOutlined />} onClick={() => { setEditingWebhook(record); setFormOpen(true); }} />
+          <Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(record)} />
           <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteWebhook(record.id)} />
         </Space>
       ),
@@ -159,12 +186,17 @@ export default function WebhooksPage() {
           <Alert message={testResult} type={testResult.includes('✅') ? 'success' : 'error'} closable
             onClose={() => setTestResult(null)} style={{ marginBottom: 16 }} />
         )}
-        <CommonTable columns={columns} dataSource={webhooks} rowKey="id" loading={loading} error={error} onRefresh={fetchWebhooks} pagination={false} />
+        {selectedRowKeys.length > 0 && (
+          <Button danger onClick={handleBulkDelete} style={{ marginBottom: 16 }}>
+            Xóa đã chọn ({selectedRowKeys.length})
+          </Button>
+        )}
+        <CommonTable rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]) }} columns={columns} dataSource={webhooks} rowKey="id" loading={loading} error={error} onRefresh={() => { setSelectedRowKeys([]); fetchWebhooks(); }} pagination={false} />
       </Card>
 
       <CommonForm
         open={formOpen}
-        title={editingWebhook ? 'Edit Webhook' : 'New Webhook'}
+        title={editingWebhook?.id ? 'Edit Webhook' : 'New Webhook'}
         onClose={() => { setFormOpen(false); setEditingWebhook(null); }}
         onSubmit={handleSave}
         initialValues={editingWebhook || { name: '', url: '', events: [], secret: '' }}

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Tag, Typography, Space, Button, message, Row, Col, Statistic, Form, Input, Select } from 'antd';
-import { SearchOutlined, PhoneOutlined, DownloadOutlined } from '@ant-design/icons';
+import { Card, Tag, Typography, Space, Button, message, Row, Col, Statistic, Form, Input, Select, Modal } from 'antd';
+import { SearchOutlined, PhoneOutlined, DownloadOutlined, CopyOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import CommonTable from '@/components/common/CommonTable';
 import CommonSearch from '@/components/common/CommonSearch';
@@ -42,6 +42,7 @@ export default function CallsPage() {
   const [searchParams, setSearchParams] = useState<Record<string, any>>({});
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCall, setEditingCall] = useState<any>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -71,6 +72,26 @@ export default function CallsPage() {
     setSearchParams({});
   };
 
+  const handleBulkDelete = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều cuộc gọi',
+      content: `Bạn có chắc chắn muốn xóa ${selectedRowKeys.length} cuộc gọi đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await callsApi.bulkDelete(selectedRowKeys);
+          message.success(`Đã xóa ${selectedRowKeys.length} cuộc gọi`);
+          setSelectedRowKeys([]);
+          fetchData();
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
+  };
+
   const handleCreate = () => {
     setEditingCall(null);
     setModalOpen(true);
@@ -81,8 +102,18 @@ export default function CallsPage() {
     setModalOpen(true);
   };
 
+  const handleDuplicate = (record: any) => {
+    setEditingCall({ ...record, id: '' });
+    setModalOpen(true);
+  };
+
   const handleDelete = (id: string) => {
     showDeleteConfirm({
+      title: 'Xóa cuộc gọi',
+      content: 'Bạn có chắc chắn muốn xóa cuộc gọi này?',
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
       onOk: async () => {
         await callsApi.delete(id);
         message.success('Call deleted');
@@ -92,11 +123,12 @@ export default function CallsPage() {
   };
 
   const handleSubmit = async (values: any) => {
-    if (editingCall) {
+    if (editingCall?.id) {
       await callsApi.update(editingCall.id, values);
     } else {
       await callsApi.create(values);
     }
+    setModalOpen(false);
     fetchData();
   };
 
@@ -178,6 +210,7 @@ export default function CallsPage() {
       render: (_: any, record: any) => (
         <Space>
           <Button size="small" onClick={() => handleEdit(record)}>Edit</Button>
+          <Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(record)}>Nhân bản</Button>
           <Button size="small" danger onClick={() => handleDelete(record.id)}>Delete</Button>
         </Space>
       ),
@@ -234,15 +267,23 @@ export default function CallsPage() {
       </Card>
 
       <div style={{ marginTop: 16 }}>
+        <div style={{ marginBottom: 16 }}>
+          {selectedRowKeys.length > 0 && (
+            <Button danger onClick={handleBulkDelete}>
+              Xóa đã chọn ({selectedRowKeys.length})
+            </Button>
+          )}
+        </div>
         <CommonTable
           title="Call Records"
+          rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]) }}
           columns={columns}
           dataSource={data}
           loading={loading}
           error={error}
           rowKey="id"
           pagination={{ pageSize: 10 }}
-          onRefresh={fetchData}
+          onRefresh={() => { setSelectedRowKeys([]); fetchData(); }}
           onExportCsv={handleExportCsv}
           onExportExcel={handleExportExcel}
           extra={
@@ -255,7 +296,7 @@ export default function CallsPage() {
 
       <CommonForm
         open={modalOpen}
-        title={editingCall ? 'Edit Call' : 'New Call'}
+        title={editingCall?.id ? 'Edit Call' : 'New Call'}
         onClose={() => setModalOpen(false)}
         onSubmit={handleSubmit}
         initialValues={editingCall}

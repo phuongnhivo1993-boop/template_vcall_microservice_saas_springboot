@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Tag, Space, Typography, Form, Input, Select, message } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { useUrlState } from '@/lib/hooks/useUrlState';
+import { Button, Tag, Space, Typography, Form, Input, Select, message, Modal } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, CopyOutlined } from '@ant-design/icons';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
 import CommonTable from '@/components/common/CommonTable';
@@ -47,14 +48,25 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [urlParams, setUrlParams] = useUrlState({
+    name: '', status: '', plan: '',
+    page: '1', pageSize: '10',
+  });
+  const filters = useMemo(() => {
+    const f: Record<string, any> = {};
+    if (urlParams.name) f.name = urlParams.name;
+    if (urlParams.status) f.status = urlParams.status;
+    if (urlParams.plan) f.plan = urlParams.plan;
+    return f;
+  }, [urlParams]);
   const [pagination, setPagination] = useState<TablePaginationConfig>({
-    current: 1,
-    pageSize: 10,
+    current: parseInt(urlParams.page),
+    pageSize: parseInt(urlParams.pageSize),
     total: 0,
   });
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [filters, setFilters] = useState<Record<string, any>>({});
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const fetchCustomers = useCallback(async (page = 1, size = 10, params?: Record<string, any>) => {
     setLoading(true);
     setError(null);
@@ -83,7 +95,8 @@ export default function CustomersPage() {
   }, []);
 
   useEffect(() => {
-    fetchCustomers(1, pagination.pageSize);
+    fetchCustomers(parseInt(urlParams.page), parseInt(urlParams.pageSize), filters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTableChange = (
@@ -91,6 +104,7 @@ export default function CustomersPage() {
     _filters: any,
     _sorter: SorterResult<Customer> | SorterResult<Customer>[],
   ) => {
+    setUrlParams({ page: String(pag.current), pageSize: String(pag.pageSize) });
     fetchCustomers(pag.current, pag.pageSize, filters);
   };
 
@@ -101,13 +115,38 @@ export default function CustomersPage() {
         cleaned[key] = val;
       }
     });
-    setFilters(cleaned);
+    setUrlParams({
+      name: cleaned.name || '',
+      status: cleaned.status || '',
+      plan: cleaned.plan || '',
+      page: '1',
+    });
     fetchCustomers(1, pagination.pageSize, cleaned);
   };
 
   const handleReset = () => {
-    setFilters({});
+    setUrlParams({ name: '', status: '', plan: '', page: '1' });
     fetchCustomers(1, pagination.pageSize);
+  };
+
+  const handleBulkDelete = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều khách hàng',
+      content: `Bạn có chắc chắn muốn xóa ${selectedRowKeys.length} khách hàng đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await customersApi.bulkDelete(selectedRowKeys);
+          message.success(`Đã xóa ${selectedRowKeys.length} khách hàng`);
+          setSelectedRowKeys([]);
+          fetchCustomers(pagination.current, pagination.pageSize, filters);
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
   };
 
   const handleCreate = () => {
@@ -117,6 +156,11 @@ export default function CustomersPage() {
 
   const handleEdit = (customer: Customer) => {
     setEditingCustomer(customer);
+    setModalOpen(true);
+  };
+
+  const handleDuplicate = (record: Customer) => {
+    setEditingCustomer({ ...record, id: '' } as Customer);
     setModalOpen(true);
   };
 
@@ -138,7 +182,7 @@ export default function CustomersPage() {
   };
 
   const handleFormSubmit = async (values: any) => {
-    if (editingCustomer) {
+    if (editingCustomer?.id) {
       await customersApi.update(editingCustomer.id, values);
     } else {
       await customersApi.create(values);
@@ -212,6 +256,9 @@ export default function CustomersPage() {
               Edit
             </Button>
           </Can>
+          <Button type="link" icon={<CopyOutlined />} onClick={() => handleDuplicate(record)}>
+            Nhân bản
+          </Button>
           <Can I={Permissions.CUSTOMER_DELETE}>
             <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)}>
               Delete
@@ -260,31 +307,43 @@ export default function CustomersPage() {
           onSearch={handleSearch}
           onReset={handleReset}
           loading={loading}
+          initialValues={filters}
         />
         <SavedFilters
           currentValues={filters}
           onApply={(values) => {
-            setFilters(values);
+            setUrlParams({
+              name: values.name || '',
+              status: values.status || '',
+              plan: values.plan || '',
+              page: '1',
+            });
             fetchCustomers(1, pagination.pageSize, values);
           }}
           storageKey="vcall-saved-filters-customers"
         />
       </div>
+      {selectedRowKeys.length > 0 && (
+        <Button danger onClick={handleBulkDelete} style={{ marginBottom: 16 }}>
+          Xóa đã chọn ({selectedRowKeys.length})
+        </Button>
+      )}
       <CommonTable<Customer>
+        rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]) }}
         columns={columns}
         dataSource={customers}
         loading={loading}
         error={error}
         rowKey="id"
         pagination={pagination}
-        onRefresh={() => fetchCustomers(pagination.current, pagination.pageSize, filters)}
+        onRefresh={() => { setSelectedRowKeys([]); fetchCustomers(pagination.current, pagination.pageSize, filters); }}
         onExportCsv={handleExportCsv}
         onExportExcel={handleExportExcel}
         onTableChange={handleTableChange}
       />
       <CommonForm
         open={modalOpen}
-        title={editingCustomer ? 'Edit Customer' : 'Add Customer'}
+        title={editingCustomer?.id ? 'Edit Customer' : 'Add Customer'}
         onClose={() => { setModalOpen(false); setEditingCustomer(null); }}
         onSubmit={handleFormSubmit}
         initialValues={editingCustomer}

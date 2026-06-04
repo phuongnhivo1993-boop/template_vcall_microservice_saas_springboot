@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Input, List, Typography, Space, Tag, Empty, Spin, Alert, Button, Row, Col, Breadcrumb, Divider, Rate, message } from 'antd';
-import { SearchOutlined, BookOutlined, FolderOutlined, ClockCircleOutlined, EyeOutlined, LikeOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Card, Input, List, Typography, Space, Tag, Empty, Spin, Alert, Button, Row, Col, Breadcrumb, Divider, Rate, message, Select, Form, Modal } from 'antd';
+import { SearchOutlined, BookOutlined, FolderOutlined, ClockCircleOutlined, EyeOutlined, LikeOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
@@ -44,6 +44,7 @@ export default function KnowledgeBasePage() {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
 
   const loadArticles = useCallback(async () => {
     setLoading(true);
@@ -76,7 +77,7 @@ export default function KnowledgeBasePage() {
 
   const handleSaveArticle = async (values: any) => {
     try {
-      if (editingArticle) {
+      if (editingArticle?.id) {
         await knowledgeBaseApi.update(editingArticle.id, values);
         message.success('Article updated');
       } else {
@@ -89,6 +90,31 @@ export default function KnowledgeBasePage() {
     } catch (err: any) {
       message.error(err?.message || 'Failed to save article');
     }
+  };
+
+  const handleDuplicate = (record: Article) => {
+    setEditingArticle({ ...record, id: '' } as Article);
+    setFormOpen(true);
+  };
+
+  const handleBulkDelete = () => {
+    Modal.confirm({
+      title: 'Xóa nhiều bài viết',
+      content: `Bạn có chắc chắn muốn xóa ${selectedRowKeys.length} bài viết đã chọn?`,
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await knowledgeBaseApi.bulkDelete(selectedRowKeys);
+          message.success(`Đã xóa ${selectedRowKeys.length} bài viết`);
+          setSelectedRowKeys([]);
+          loadArticles();
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Xóa thất bại');
+        }
+      },
+    });
   };
 
   const handleDeleteArticle = async (id: string) => {
@@ -156,6 +182,7 @@ export default function KnowledgeBasePage() {
           <Can I={Permissions.KNOWLEDGE_EDIT}>
             <Button size="small" icon={<EditOutlined />} onClick={() => { setEditingArticle(record); setFormOpen(true); }}>Edit</Button>
           </Can>
+          <Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(record)}>Nhân bản</Button>
           <Can I={Permissions.KNOWLEDGE_DELETE}>
             <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteArticle(record.id)}>Delete</Button>
           </Can>
@@ -202,7 +229,13 @@ export default function KnowledgeBasePage() {
               </Space>
             }
           >
+            {selectedRowKeys.length > 0 && (
+              <Button danger onClick={handleBulkDelete} style={{ marginBottom: 16 }}>
+                Xóa đã chọn ({selectedRowKeys.length})
+              </Button>
+            )}
             <CommonTable
+              rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]) }}
               columns={articlesColumns}
               dataSource={filteredArticles}
               rowKey="id"
@@ -215,31 +248,23 @@ export default function KnowledgeBasePage() {
 
       <CommonForm
         open={formOpen}
-        title={editingArticle ? 'Edit Article' : 'New Article'}
+        title={editingArticle?.id ? 'Edit Article' : 'New Article'}
         onClose={() => { setFormOpen(false); setEditingArticle(null); }}
         onSubmit={handleSaveArticle}
         initialValues={editingArticle || { title: '', content: '', category: 'faq', tags: [] }}
       >
-        <div style={{ padding: 8 }}>
-          <div style={{ marginBottom: 16 }}>
-            <label>Title *</label>
-            <Input name="title" placeholder="Article title" />
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <label>Category *</label>
-            <select name="category" style={{ width: '100%', padding: 8, border: '1px solid #d9d9d9', borderRadius: 6 }}>
-              {CATEGORIES.filter(c => c.key !== 'all').map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
-            </select>
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <label>Content *</label>
-            <textarea name="content" rows={8} style={{ width: '100%', padding: 8, border: '1px solid #d9d9d9', borderRadius: 6 }} placeholder="Article content..." />
-          </div>
-          <div style={{ marginBottom: 16 }}>
-            <label>Tags (comma separated)</label>
-            <Input name="tags" placeholder="tag1, tag2, tag3" />
-          </div>
-        </div>
+        <Form.Item name="title" label="Title *" rules={[{ required: true, message: 'Please enter title' }]}>
+          <Input placeholder="Article title" />
+        </Form.Item>
+        <Form.Item name="category" label="Category *" rules={[{ required: true, message: 'Please select category' }]}>
+          <Select options={CATEGORIES.filter(c => c.key !== 'all').map(c => ({ label: c.label, value: c.key }))} />
+        </Form.Item>
+        <Form.Item name="content" label="Content *" rules={[{ required: true, message: 'Please enter content' }]}>
+          <Input.TextArea rows={8} placeholder="Article content..." />
+        </Form.Item>
+        <Form.Item name="tags" label="Tags (comma separated)">
+          <Input placeholder="tag1, tag2, tag3" />
+        </Form.Item>
       </CommonForm>
     </div>
   );

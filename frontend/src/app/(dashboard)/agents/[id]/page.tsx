@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, Descriptions, Tag, Spin, Alert, Button, Space, Typography, Row, Col, Statistic, Tabs } from 'antd';
 import { ArrowLeftOutlined, PhoneOutlined, CheckCircleOutlined, StarOutlined, ClockCircleOutlined, TeamOutlined } from '@ant-design/icons';
@@ -24,11 +24,7 @@ export default function AgentDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [agent, setAgent] = useState<any>(null);
 
-  useEffect(() => {
-    fetchAgent();
-  }, [params.id]);
-
-  const fetchAgent = async () => {
+  const fetchAgent = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -39,7 +35,11 @@ export default function AgentDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchAgent();
+  }, [fetchAgent]);
 
   if (loading) {
     return (
