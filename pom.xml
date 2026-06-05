@@ -38,6 +38,19 @@
         <module>audit-service</module>
         <module>scheduling-service</module>
         <module>survey-service</module>
+        <!-- XR Platform Microservices -->
+        <module>tenant-service</module>
+        <module>asset-service</module>
+        <module>scene-service</module>
+        <module>video-service</module>
+        <module>streaming-service</module>
+        <module>xr-service</module>
+        <module>ai-service</module>
+        <module>analytics-service</module>
+        <module>collaboration-service</module>
+        <module>digital-twin-service</module>
+        <module>bim-cad-service</module>
+        <module>gis-service</module>
     </modules>
 
     <parent>
@@ -105,6 +118,23 @@
             <dependency>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-core</artifactId>
+            </dependency>
+            <!-- MongoDB for Scene Graph storage -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-data-mongodb</artifactId>
+            </dependency>
+            <!-- MinIO SDK for object storage -->
+            <dependency>
+                <groupId>io.minio</groupId>
+                <artifactId>minio</artifactId>
+                <version>8.5.9</version>
+            </dependency>
+            <!-- WebRTC for real-time collaboration -->
+            <dependency>
+                <groupId>dev.onvoid.webrtc</groupId>
+                <artifactId>webrtc-java</artifactId>
+                <version>0.8.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

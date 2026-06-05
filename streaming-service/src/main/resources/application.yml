@@ -1,0 +1,77 @@
+spring:
+  application:
+    name: streaming-service
+  profiles:
+    active: dev
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+server:
+  port: 8124
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+spring.cloud:
+  config:
+    uri: http://localhost:8888
+    fail-fast: false
+
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket: vcall-streaming-assets
+
+cdn:
+  enabled: true
+  origin: https://stream.vcall.local
+  cache-ttl: 86400
+  cors-allowed-origins:
+    - "*"
+  cors-allowed-methods:
+    - GET
+    - HEAD
+  cors-allowed-headers:
+    - "*"
+
+streaming:
+  hls:
+    segment-duration: 6
+    playlist-size: 5
+    target-duration: 6
+    master-playlist: master.m3u8
+    output-dir: /opt/streaming/hls
+  dash:
+    segment-duration: 6
+    minimum-buffer: 2
+    minimum-update-period: 1
+    manifest: manifest.mpd
+    output-dir: /opt/streaming/dash
+  storage:
+    bucket: vcall-streaming-assets
+    prefix: streams
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html

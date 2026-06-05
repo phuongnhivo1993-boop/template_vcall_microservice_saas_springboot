@@ -144,6 +144,45 @@ services:
     networks:
       - vcall-network
 
+  mongodb:
+    image: mongo:7.0
+    container_name: vcall-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-vcall}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-vcall@123}
+      MONGO_INITDB_DATABASE: xr_scene_graphs
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
+    networks:
+      - vcall-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: vcall-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin};
+      mc mb --ignore-existing local/xr-assets;
+      mc mb --ignore-existing local/xr-videos;
+      mc mb --ignore-existing local/xr-models;
+      mc mb --ignore-existing local/xr-audio;
+      mc mb --ignore-existing local/xr-thumbnails;
+      mc mb --ignore-existing local/xr-scenes;
+      mc anonymous set download local/xr-assets;
+      echo 'MinIO buckets initialized';
+      "
+
 volumes:
   postgres-data:
   redis-data:
@@ -151,6 +190,8 @@ volumes:
   elasticsearch-data:
   minio-data:
   clickhouse-data:
+  mongodb-data:
+  mongodb-config:
 
 networks:
   vcall-network:
