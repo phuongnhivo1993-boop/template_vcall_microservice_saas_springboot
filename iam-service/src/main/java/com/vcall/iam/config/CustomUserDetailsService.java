@@ -24,7 +24,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         com.vcall.iam.entity.User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
+        List<SimpleGrantedAuthority> authorities = user.getUserRoles().stream()
                 .map(userRole -> {
                     Role role = userRole.getRole();
                     return new SimpleGrantedAuthority("ROLE_" + role.getName().name());

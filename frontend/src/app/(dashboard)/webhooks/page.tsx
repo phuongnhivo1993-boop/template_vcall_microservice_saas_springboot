@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, Tag, Button, Space, Typography, Switch, Form, Input, Checkbox, message, Badge, Tooltip, Alert, Modal } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ApiOutlined, ReloadOutlined, CopyOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
@@ -45,14 +45,24 @@ export default function WebhooksPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingWebhook, setEditingWebhook] = useState<Webhook | null>(null);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const testTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
-  const fetchWebhooks = useCallback(async () => {
+  const fetchWebhooks = useCallback(async (page = 1, size = 10) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await webhooksApi.list({ page: 0, size: 100 });
-      setWebhooks(res.data?.data?.content || res.data?.content || []);
+      const res = await webhooksApi.list({ page: page - 1, size });
+      const data = res.data;
+      if (data.content) {
+        setWebhooks(data.content);
+        setPagination(prev => ({ ...prev, current: data.page + 1, pageSize: data.size, total: data.totalElements }));
+      } else if (Array.isArray(data)) {
+        setWebhooks(data);
+      } else if (data.data) {
+        setWebhooks(Array.isArray(data.data) ? data.data : []);
+      }
     } catch (err: any) {
       setError(err?.message || 'Failed to load webhooks');
     } finally {
@@ -62,13 +72,20 @@ export default function WebhooksPage() {
 
   useEffect(() => {
     fetchWebhooks();
+    return () => {
+      if (testTimerRef.current) clearTimeout(testTimerRef.current);
+    };
   }, [fetchWebhooks]);
+
+  const handleTableChange = (pag: any) => {
+    fetchWebhooks(pag.current, pag.pageSize);
+  };
 
   const toggleWebhook = async (webhook: Webhook) => {
     try {
       await webhooksApi.update(webhook.id, { isActive: !webhook.isActive });
       message.success(`${webhook.name} ${webhook.isActive ? 'disabled' : 'enabled'}`);
-      fetchWebhooks();
+      fetchWebhooks(pagination.current, pagination.pageSize);
     } catch (err: any) {
       message.error(err?.message || 'Failed to toggle webhook');
     }
@@ -85,7 +102,7 @@ export default function WebhooksPage() {
       }
       setFormOpen(false);
       setEditingWebhook(null);
-      fetchWebhooks();
+      fetchWebhooks(pagination.current, pagination.pageSize);
     } catch (err: any) {
       message.error(err?.message || 'Failed to save webhook');
     }
@@ -101,11 +118,12 @@ export default function WebhooksPage() {
     try {
       const res = await webhooksApi.test(webhook.id);
       setTestResult(`✅ ${webhook.url} - ${res.status} OK`);
-      fetchWebhooks();
+      fetchWebhooks(pagination.current, pagination.pageSize);
     } catch (err: any) {
       setTestResult(`❌ ${webhook.url} - ${err?.message || 'Connection failed'}`);
     }
-    setTimeout(() => setTestResult(null), 3000);
+    if (testTimerRef.current) clearTimeout(testTimerRef.current);
+    testTimerRef.current = setTimeout(() => setTestResult(null), 3000);
   };
 
   const handleBulkDelete = () => {
@@ -120,7 +138,7 @@ export default function WebhooksPage() {
           await webhooksApi.bulkDelete(selectedRowKeys);
           message.success(`Đã xóa ${selectedRowKeys.length} webhook`);
           setSelectedRowKeys([]);
-          fetchWebhooks();
+          fetchWebhooks(pagination.current, pagination.pageSize);
         } catch (err: any) {
           message.error(err?.response?.data?.message || 'Xóa thất bại');
         }
@@ -135,7 +153,7 @@ export default function WebhooksPage() {
       onOk: async () => {
         await webhooksApi.delete(id);
         message.success('Webhook deleted');
-        fetchWebhooks();
+        fetchWebhooks(pagination.current, pagination.pageSize);
       },
     });
   };
@@ -191,7 +209,7 @@ export default function WebhooksPage() {
             Xóa đã chọn ({selectedRowKeys.length})
           </Button>
         )}
-        <CommonTable rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]) }} columns={columns} dataSource={webhooks} rowKey="id" loading={loading} error={error} onRefresh={() => { setSelectedRowKeys([]); fetchWebhooks(); }} pagination={false} />
+        <CommonTable rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]) }} columns={columns} dataSource={webhooks} rowKey="id" loading={loading} error={error} pagination={pagination} onTableChange={handleTableChange} onRefresh={() => { setSelectedRowKeys([]); fetchWebhooks(pagination.current, pagination.pageSize); }} />
       </Card>
 
       <CommonForm

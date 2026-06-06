@@ -2,6 +2,7 @@ package com.vcall.ticket.controller;
 
 import com.vcall.common.dto.ApiResponse;
 import com.vcall.common.dto.BulkStatusRequest;
+import com.vcall.common.dto.PagedResponse;
 import com.vcall.common.util.BulkOperationUtil;
 import com.vcall.common.util.CsvExportUtil;
 import com.vcall.common.util.ExcelExportUtil;
@@ -59,9 +60,17 @@ public class TicketController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<TicketResponse>>> getAllTickets(Pageable pageable) {
+    public ResponseEntity<ApiResponse<PagedResponse<TicketResponse>>> getAllTickets(Pageable pageable) {
         Page<TicketResponse> tickets = ticketService.getAllTickets(pageable);
-        return ResponseEntity.ok(ApiResponse.success(tickets));
+        PagedResponse<TicketResponse> paged = PagedResponse.<TicketResponse>builder()
+                .content(tickets.getContent())
+                .page(tickets.getNumber())
+                .size(tickets.getSize())
+                .totalElements(tickets.getTotalElements())
+                .totalPages(tickets.getTotalPages())
+                .last(tickets.isLast())
+                .build();
+        return ResponseEntity.ok(ApiResponse.success(paged));
     }
 
     @GetMapping("/{id}")
@@ -111,7 +120,7 @@ public class TicketController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<Page<TicketResponse>>> search(
+    public ResponseEntity<ApiResponse<PagedResponse<TicketResponse>>> search(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String priority,
@@ -122,7 +131,15 @@ public class TicketController {
             @RequestParam(defaultValue = "20") int size) {
         Page<TicketResponse> results = ticketService.search(q, status, priority, assignedTo, startDate, endDate,
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
-        return ResponseEntity.ok(ApiResponse.success(results));
+        PagedResponse<TicketResponse> paged = PagedResponse.<TicketResponse>builder()
+                .content(results.getContent())
+                .page(results.getNumber())
+                .size(results.getSize())
+                .totalElements(results.getTotalElements())
+                .totalPages(results.getTotalPages())
+                .last(results.isLast())
+                .build();
+        return ResponseEntity.ok(ApiResponse.success(paged));
     }
 
     @GetMapping("/stats/by-status")

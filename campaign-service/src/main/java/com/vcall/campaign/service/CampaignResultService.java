@@ -105,6 +105,13 @@ public class CampaignResultService {
         return campaignResultRepository.findAll(spec, pageable).map(this::toResponse);
     }
 
+    @Transactional
+    public void deleteResult(Long resultId) {
+        CampaignResult result = campaignResultRepository.findById(resultId)
+                .orElseThrow(() -> new ResourceNotFoundException("Campaign result not found with id: " + resultId));
+        campaignResultRepository.delete(result);
+    }
+
     @Transactional(readOnly = true)
     public Map<String, Long> getStats(Long campaignId) {
         List<CampaignResult> results = campaignResultRepository.findByCampaignId(campaignId);

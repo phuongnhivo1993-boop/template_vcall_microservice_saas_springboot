@@ -10,6 +10,7 @@ import com.vcall.agent.service.AgentService;
 import com.vcall.agent.service.AgentStatusService;
 import com.vcall.common.dto.ApiResponse;
 import com.vcall.common.dto.BulkStatusRequest;
+import com.vcall.common.dto.PagedResponse;
 import com.vcall.common.util.BulkOperationUtil;
 import com.vcall.common.util.CsvExportUtil;
 import com.vcall.common.util.ExcelExportUtil;
@@ -66,9 +67,17 @@ public class AgentController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Page<AgentResponse>>> getAllAgents(Pageable pageable) {
+    public ResponseEntity<ApiResponse<PagedResponse<AgentResponse>>> getAllAgents(Pageable pageable) {
         Page<AgentResponse> agents = agentService.getAllAgents(pageable);
-        return ResponseEntity.ok(ApiResponse.success(agents));
+        PagedResponse<AgentResponse> paged = PagedResponse.<AgentResponse>builder()
+                .content(agents.getContent())
+                .page(agents.getNumber())
+                .size(agents.getSize())
+                .totalElements(agents.getTotalElements())
+                .totalPages(agents.getTotalPages())
+                .last(agents.isLast())
+                .build();
+        return ResponseEntity.ok(ApiResponse.success(paged));
     }
 
     @GetMapping("/{id}")
@@ -121,7 +130,7 @@ public class AgentController {
 
     @GetMapping("/search")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Page<AgentResponse>>> searchAgents(
+    public ResponseEntity<ApiResponse<PagedResponse<AgentResponse>>> searchAgents(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Long groupId,
@@ -154,8 +163,16 @@ public class AgentController {
                 return cb.in(root.get("id")).value(subquery);
             });
         }
-        Page<AgentResponse> response = agentService.searchAgents(spec, pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        Page<AgentResponse> searchResult = agentService.searchAgents(spec, pageable);
+        PagedResponse<AgentResponse> paged = PagedResponse.<AgentResponse>builder()
+                .content(searchResult.getContent())
+                .page(searchResult.getNumber())
+                .size(searchResult.getSize())
+                .totalElements(searchResult.getTotalElements())
+                .totalPages(searchResult.getTotalPages())
+                .last(searchResult.isLast())
+                .build();
+        return ResponseEntity.ok(ApiResponse.success(paged));
     }
 
     @GetMapping("/export/csv")

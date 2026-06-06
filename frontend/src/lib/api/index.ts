@@ -90,9 +90,7 @@ export const crmApi = {
     duplicate: (id: string) => apiClient.post(`/crm/leads/${id}/duplicate`),
     bulkDelete: (ids: string[]) => apiClient.post('/crm/leads/bulk-delete', ids),
     updateStatus: (id: string, status: string) =>
-      apiClient.patch(`/crm/leads/${id}/status`, status, {
-        headers: { 'Content-Type': 'application/json' },
-      }),
+      apiClient.patch(`/crm/leads/${id}/status`, { status }),
     convert: (id: string, data: Record<string, unknown>) =>
       apiClient.post(`/crm/leads/${id}/convert`, data),
   },
@@ -105,9 +103,7 @@ export const crmApi = {
     duplicate: (id: string) => apiClient.post(`/crm/opportunities/${id}/duplicate`),
     bulkDelete: (ids: string[]) => apiClient.post('/crm/opportunities/bulk-delete', ids),
     updateStage: (id: string, stage: string) =>
-      apiClient.patch(`/crm/opportunities/${id}/stage`, stage, {
-        headers: { 'Content-Type': 'application/json' },
-      }),
+      apiClient.patch(`/crm/opportunities/${id}/stage`, { stage }),
   },
   activities: {
     list: (params?: Record<string, unknown>) => apiClient.get('/crm/activities', { params }),
@@ -141,7 +137,6 @@ export const callsApi = {
   getById: (id: string) => apiClient.get(`/calls/${id}`),
   getAgentCalls: (agentId: string, params?: Record<string, unknown>) =>
     apiClient.get(`/calls/agent/${agentId}`, { params }),
-  start: (data: Record<string, unknown>) => apiClient.post('/calls', data),
   create: (data: Record<string, unknown>) => apiClient.post('/calls', data),
   update: (id: string, data: Record<string, unknown>) =>
     apiClient.put(`/calls/${id}`, data),
@@ -149,7 +144,7 @@ export const callsApi = {
   duplicate: (id: string) => apiClient.post(`/calls/${id}/duplicate`),
   bulkDelete: (ids: string[]) => apiClient.post('/calls/bulk-delete', ids),
   updateStatus: (id: string, data: Record<string, unknown>) =>
-    apiClient.put(`/calls/${id}/status`, data),
+    apiClient.patch(`/calls/${id}/status`, data),
   end: (id: string) => apiClient.post(`/calls/${id}/hangup`),
   mute: (id: string) => apiClient.post(`/calls/${id}/mute`),
   unmute: (id: string) => apiClient.post(`/calls/${id}/unmute`),
@@ -205,7 +200,6 @@ export const ticketsApi = {
 };
 
 export const reportsApi = {
-  getAll: (params?: Record<string, unknown>) => apiClient.get('/reports/definitions', { params }),
   list: (params?: Record<string, unknown>) => apiClient.get('/reports/definitions', { params }),
   getById: (id: number) => apiClient.get(`/reports/definitions/${id}`),
   create: (data: Record<string, unknown>) => apiClient.post('/reports/definitions', data),
@@ -265,6 +259,12 @@ export const campaignsApi = {
     apiClient.get(`/campaigns/${campaignId}/results`, { params }),
   getAgentResults: (campaignId: string, agentId: string, params?: Record<string, unknown>) =>
     apiClient.get(`/campaigns/${campaignId}/results/agent/${agentId}`, { params }),
+  searchResults: (campaignId: string, params?: Record<string, unknown>) =>
+    apiClient.get(`/campaigns/${campaignId}/results/search`, { params }),
+  deleteResult: (campaignId: string, resultId: number) =>
+    apiClient.delete(`/campaigns/${campaignId}/results/${resultId}`),
+  bulkDeleteResults: (campaignId: string, ids: number[]) =>
+    apiClient.post(`/campaigns/${campaignId}/results/bulk-delete`, ids),
   exportCsv: (params?: Record<string, unknown>) =>
     apiClient.get('/campaigns/export/csv', { params, responseType: 'blob' }),
   exportExcel: (params?: Record<string, unknown>) =>
@@ -323,12 +323,8 @@ export const settingsApi = {
 };
 
 export const auditApi = {
-  getAll: (params?: Record<string, unknown>) => apiClient.get('/audit/logs', { params }),
   list: (params?: Record<string, unknown>) => apiClient.get('/audit/logs', { params }),
   getById: (id: string) => apiClient.get(`/audit/logs/${id}`),
-  create: (data: Record<string, unknown>) => apiClient.post('/audit/logs', data),
-  update: (id: string, data: Record<string, unknown>) => apiClient.put(`/audit/logs/${id}`, data),
-  delete: (id: string) => apiClient.delete(`/audit/logs/${id}`),
   search: (params?: Record<string, unknown>) => apiClient.get('/audit/logs/search', { params }),
   getByActor: (actorId: string, params?: Record<string, unknown>) =>
     apiClient.get(`/audit/logs/actor/${actorId}`, { params }),
@@ -365,7 +361,6 @@ export const dashboardApi = {
 };
 
 export const notificationsApi = {
-  getAll: (params?: Record<string, unknown>) => apiClient.get('/notifications', { params }),
   list: (params?: Record<string, unknown>) => apiClient.get('/notifications', { params }),
   getById: (id: string) => apiClient.get(`/notifications/${id}`),
   create: (data: Record<string, unknown>) => apiClient.post('/notifications', data),
@@ -410,6 +405,12 @@ export const knowledgeBaseApi = {
   delete: (id: string) => apiClient.delete(`/knowledge-base/articles/${id}`),
   duplicate: (id: string) => apiClient.post(`/knowledge-base/articles/${id}/duplicate`),
   bulkDelete: (ids: string[]) => apiClient.post('/knowledge-base/articles/bulk-delete', ids),
+  search: (params?: Record<string, unknown>) => apiClient.get('/knowledge-base/articles/search', { params }),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/knowledge-base/articles/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/knowledge-base/articles/export/excel', { params, responseType: 'blob' }),
+  getStats: () => apiClient.get('/knowledge-base/articles/stats'),
 };
 
 export const automationApi = {
@@ -422,6 +423,12 @@ export const automationApi = {
   bulkDelete: (ids: string[]) => apiClient.post('/automation/rules/bulk-delete', ids),
   toggle: (id: string, isActive: boolean) =>
     apiClient.patch(`/automation/rules/${id}`, { isActive }),
+  search: (params?: Record<string, unknown>) => apiClient.get('/automation/rules/search', { params }),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/automation/rules/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/automation/rules/export/excel', { params, responseType: 'blob' }),
+  getStats: () => apiClient.get('/automation/rules/stats'),
 };
 
 export const webhooksApi = {
@@ -433,6 +440,12 @@ export const webhooksApi = {
   duplicate: (id: string) => apiClient.post(`/webhooks/${id}/duplicate`),
   bulkDelete: (ids: string[]) => apiClient.post('/webhooks/bulk-delete', ids),
   test: (id: string) => apiClient.post(`/webhooks/${id}/test`),
+  search: (params?: Record<string, unknown>) => apiClient.get('/webhooks/search', { params }),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/webhooks/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/webhooks/export/excel', { params, responseType: 'blob' }),
+  getStats: () => apiClient.get('/webhooks/stats'),
 };
 
 export const chatApi = {

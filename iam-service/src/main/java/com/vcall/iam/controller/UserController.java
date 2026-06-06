@@ -2,6 +2,7 @@ package com.vcall.iam.controller;
 
 import com.vcall.common.dto.ApiResponse;
 import com.vcall.common.dto.BulkStatusRequest;
+import com.vcall.common.dto.PagedResponse;
 import com.vcall.common.util.BulkOperationUtil;
 import com.vcall.common.util.CsvExportUtil;
 import com.vcall.iam.dto.UserRequest;
@@ -61,9 +62,17 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<UserResponse>>> getAllUsers(Pageable pageable) {
-        Page<UserResponse> response = userService.getAllUsers(pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+    public ResponseEntity<ApiResponse<PagedResponse<UserResponse>>> getAllUsers(Pageable pageable) {
+        Page<UserResponse> users = userService.getAllUsers(pageable);
+        PagedResponse<UserResponse> paged = PagedResponse.<UserResponse>builder()
+                .content(users.getContent())
+                .page(users.getNumber())
+                .size(users.getSize())
+                .totalElements(users.getTotalElements())
+                .totalPages(users.getTotalPages())
+                .last(users.isLast())
+                .build();
+        return ResponseEntity.ok(ApiResponse.success(paged));
     }
 
     @GetMapping("/by-username")
@@ -96,7 +105,7 @@ public class UserController {
 
     @GetMapping("/search")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
-    public ResponseEntity<ApiResponse<Page<UserResponse>>> searchUsers(
+    public ResponseEntity<ApiResponse<PagedResponse<UserResponse>>> searchUsers(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String email,
@@ -124,8 +133,16 @@ public class UserController {
             spec = spec.and((root, query, cb) ->
                     cb.like(root.get("phone"), "%" + phone + "%"));
         }
-        Page<UserResponse> response = userService.searchUsers(spec, pageable);
-        return ResponseEntity.ok(ApiResponse.success(response));
+        Page<UserResponse> searchResult = userService.searchUsers(spec, pageable);
+        PagedResponse<UserResponse> paged = PagedResponse.<UserResponse>builder()
+                .content(searchResult.getContent())
+                .page(searchResult.getNumber())
+                .size(searchResult.getSize())
+                .totalElements(searchResult.getTotalElements())
+                .totalPages(searchResult.getTotalPages())
+                .last(searchResult.isLast())
+                .build();
+        return ResponseEntity.ok(ApiResponse.success(paged));
     }
 
     @GetMapping("/export/csv")

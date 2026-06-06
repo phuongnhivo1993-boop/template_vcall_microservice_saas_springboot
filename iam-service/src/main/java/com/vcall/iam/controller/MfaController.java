@@ -34,7 +34,7 @@ public class MfaController {
             return ResponseEntity.ok(ApiResponse.success("MFA enabled successfully", "verified"));
         }
         return ResponseEntity.badRequest()
-                .body(ApiResponse.error("Invalid verification code", "INVALID_CODE"));
+                .body(ApiResponse.error(400, "Invalid verification code"));
     }
 
     @PostMapping("/disable")

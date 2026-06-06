@@ -88,7 +88,7 @@ export default function ReportsPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await reportsApi.getAll({ page: 0, size: 100 });
+      const res = await reportsApi.list({ page: 0, size: 100 });
       setReportDefinitions(res.data?.data?.content || res.data?.content || []);
     } catch (err: any) {
       setError(err?.message || 'Failed to load report definitions');

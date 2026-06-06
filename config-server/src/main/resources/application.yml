@@ -4,13 +4,13 @@ server:
 spring:
   application:
     name: config-server
+  profiles:
+    active: native
   cloud:
     config:
       server:
-        git:
-          uri: https://github.com/vcall/config-repo
-          default-label: main
-          search-paths: '{application}'
+        native:
+          searchLocations: file:///tmp/config-repo
 
 eureka:
   client:

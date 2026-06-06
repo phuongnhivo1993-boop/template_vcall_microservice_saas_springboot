@@ -3,6 +3,7 @@ package com.vcall.campaign.controller;
 import com.vcall.campaign.dto.CampaignResultResponse;
 import com.vcall.campaign.service.CampaignResultService;
 import com.vcall.common.dto.ApiResponse;
+import com.vcall.common.util.BulkOperationUtil;
 import com.vcall.common.util.CsvExportUtil;
 import com.vcall.common.util.ExcelExportUtil;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,8 +13,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -82,5 +86,26 @@ public class CampaignResultController {
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats(@PathVariable Long campaignId) {
         return ResponseEntity.ok(ApiResponse.success(campaignResultService.getStats(campaignId)));
+    }
+
+    @DeleteMapping("/{resultId}")
+    public ResponseEntity<ApiResponse<Void>> deleteResult(@PathVariable Long resultId) {
+        campaignResultService.deleteResult(resultId);
+        return ResponseEntity.ok(ApiResponse.success("Result deleted", null));
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<Long>>> bulkDelete(
+            @PathVariable Long campaignId, @RequestBody List<Long> ids) {
+        BulkOperationUtil.BulkResult<Long> result = new BulkOperationUtil.BulkResult<>();
+        for (Long id : ids) {
+            try {
+                campaignResultService.deleteResult(id);
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk delete completed", result));
     }
 }

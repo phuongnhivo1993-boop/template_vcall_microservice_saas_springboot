@@ -139,6 +139,7 @@ export default function CampaignsPage() {
   };
 
   const handleBulkDeleteResults = () => {
+    if (!selectedCampaign) return;
     Modal.confirm({
       title: 'Xóa nhiều kết quả',
       content: `Bạn có chắc chắn muốn xóa ${selectedResultRowKeys.length} kết quả đã chọn?`,
@@ -147,8 +148,10 @@ export default function CampaignsPage() {
       cancelText: 'Hủy',
       onOk: async () => {
         try {
+          await campaignsApi.bulkDeleteResults(selectedCampaign.id, selectedResultRowKeys.map(Number));
           message.success(`Đã xóa ${selectedResultRowKeys.length} kết quả`);
           setSelectedResultRowKeys([]);
+          fetchCampaignDetail(selectedCampaign);
         } catch (err: any) {
           message.error(err?.response?.data?.message || 'Xóa thất bại');
         }

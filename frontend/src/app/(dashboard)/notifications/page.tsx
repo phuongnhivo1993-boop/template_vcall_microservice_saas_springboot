@@ -48,7 +48,7 @@ export default function NotificationsPage() {
     setError(null);
     try {
       const [notifRes, tmplRes, prefRes] = await Promise.all([
-        notificationsApi.getAll({ page: 0, size: 100 }),
+        notificationsApi.list({ page: 0, size: 100 }),
         notificationsApi.getTemplates({ page: 0, size: 100 }).catch(() => ({ data: { content: [] } })),
         notificationsApi.getPreferences(recipientId).catch(() => ({ data: { content: [] } })),
       ]);

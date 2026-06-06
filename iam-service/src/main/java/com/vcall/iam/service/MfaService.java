@@ -4,6 +4,7 @@ import com.vcall.iam.dto.MfaSetupResponse;
 import com.vcall.iam.dto.MfaVerifyRequest;
 import com.vcall.iam.entity.User;
 import com.vcall.iam.repository.UserRepository;
+import dev.samstevens.totp.code.HashingAlgorithm;
 import dev.samstevens.totp.code.CodeGenerator;
 import dev.samstevens.totp.code.CodeVerifier;
 import dev.samstevens.totp.code.DefaultCodeGenerator;
@@ -44,7 +45,7 @@ public class MfaService {
                 .label(user.getEmail())
                 .secret(secret)
                 .issuer(ISSUER)
-                .algorithm(QrData.Algorithm.SHA1)
+                .algorithm(HashingAlgorithm.SHA1)
                 .digits(6)
                 .period(30)
                 .build();

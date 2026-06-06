@@ -44,7 +44,7 @@ export default function AuditPage() {
     setError(null);
     try {
       const [logsRes, secRes, fraudRes, recRes] = await Promise.all([
-        auditApi.search({ ...searchParams, page: 0, size: 100 }).catch(() => auditApi.getAll({ page: 0, size: 100 })),
+        auditApi.search({ ...searchParams, page: 0, size: 100 }).catch(() => auditApi.list({ page: 0, size: 100 })),
         auditApi.getSecurityLogs({ page: 0, size: 100 }).catch(() => ({ data: { content: [] } })),
         auditApi.getFraudAlerts({ page: 0, size: 100 }).catch(() => ({ data: { content: [] } })),
         auditApi.getReconciliations({ page: 0, size: 100 }).catch(() => ({ data: { content: [] } })),
