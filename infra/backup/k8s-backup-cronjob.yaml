@@ -1,0 +1,129 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backup-scripts
+  namespace: vcall
+data:
+  pg_dump_all.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    BACKUP_DIR=/tmp/backups
+    PG_HOST=postgresql.vcall.svc.cluster.local
+    PG_PORT=5432
+    PG_USER=vcall
+    PG_PASSWORD=$(cat /etc/db-secret/password)
+    PG_DATABASES=vcall_iam,vcall_agent,vcall_customer,vcall_crm,vcall_call,vcall_sip,vcall_pbx,vcall_recording,vcall_omnichannel,vcall_chat,vcall_email,vcall_sms,vcall_ticket,vcall_campaign,vcall_billing,vcall_cdr,vcall_reporting,vcall_notification,vcall_audit,vcall_scheduling,vcall_survey,vcall_tenant,vcall_asset,vcall_scene,vcall_video,vcall_xr,vcall_automation,vcall_webhooks,vcall_knowledge_base
+    RETENTION_DAYS=30
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    BACKUP_PATH=${BACKUP_DIR}/${TIMESTAMP}
+    
+    MINIO_ENDPOINT=http://minio.vcall.svc.cluster.local:9000
+    MINIO_ACCESS_KEY=minioadmin
+    MINIO_SECRET_KEY=minioadmin
+    MINIO_BUCKET=vcall-db-backups
+    
+    export PGPASSWORD="${PG_PASSWORD}"
+    mkdir -p "${BACKUP_PATH}"
+    
+    if ! command -v mc &>/dev/null; then
+      curl -sL https://dl.min.io/client/mc/release/linux-amd64/mc -o /usr/local/bin/mc
+      chmod +x /usr/local/bin/mc
+    fi
+    
+    IFS=',' read -ra DATABASES <<< "${PG_DATABASES}"
+    for DB in "${DATABASES[@]}"; do
+      pg_dump -h "${PG_HOST}" -p "${PG_PORT}" -U "${PG_USER}" -d "${DB}" \
+        --format=custom --compress=9 --file="${BACKUP_PATH}/${DB}.dump"
+    done
+    
+    cat > "${BACKUP_PATH}/manifest.json" << EOF
+    {"timestamp":"${TIMESTAMP}","host":"${PG_HOST}","retention_days":${RETENTION_DAYS}}
+    EOF
+    
+    ARCHIVE="${BACKUP_DIR}/vcall-pg-${TIMESTAMP}.tar.gz"
+    tar -czf "${ARCHIVE}" -C "${BACKUP_DIR}" "${TIMESTAMP}"
+    
+    mc alias set vcall-backup "${MINIO_ENDPOINT}" "${MINIO_ACCESS_KEY}" "${MINIO_SECRET_KEY}"
+    mc mb --ignore-existing "vcall-backup/${MINIO_BUCKET}"
+    mc cp "${ARCHIVE}" "vcall-backup/${MINIO_BUCKET}/postgresql/"
+    mc cp "${BACKUP_PATH}/manifest.json" "vcall-backup/${MINIO_BUCKET}/postgresql/${TIMESTAMP}-manifest.json"
+    
+    find "${BACKUP_DIR}" -name "vcall-pg-*.tar.gz" -mtime "+${RETENTION_DAYS}" -delete 2>/dev/null || true
+    
+    echo "Backup completed: ${TIMESTAMP}"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-backup
+  namespace: vcall
+spec:
+  schedule: "0 2 * * *"        # Daily at 02:00
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: backup-sa
+          restartPolicy: OnFailure
+          containers:
+          - name: pg-backup
+            image: postgres:16-alpine
+            command:
+            - /bin/bash
+            - -c
+            - /scripts/pg_dump_all.sh
+            env:
+            - name: BACKUP_DIR
+              value: /tmp/backups
+            - name: PG_HOST
+              value: postgresql.vcall.svc.cluster.local
+            volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+            - name: db-secret
+              mountPath: /etc/db-secret
+              readOnly: true
+          volumes:
+          - name: scripts
+            configMap:
+              name: backup-scripts
+              defaultMode: 0755
+          - name: db-secret
+            secret:
+              secretName: vcall-db-secret
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backup-sa
+  namespace: vcall
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: backup-role
+  namespace: vcall
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backup-role-binding
+  namespace: vcall
+subjects:
+- kind: ServiceAccount
+  name: backup-sa
+  namespace: vcall
+roleRef:
+  kind: Role
+  name: backup-role
+  apiGroup: rbac.authorization.k8s.io

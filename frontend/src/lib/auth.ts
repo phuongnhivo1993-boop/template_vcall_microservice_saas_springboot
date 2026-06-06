@@ -28,20 +28,22 @@ export const authOptions: NextAuthOptions = {
             };
           }
 
-          const res = await axios.post('http://localhost:8080/api/v1/auth/login', {
+          const gatewayUrl = process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://localhost:8080';
+          const res = await axios.post(`${gatewayUrl}/api/v1/auth/login`, {
             username: credentials?.username,
             password: credentials?.password,
           });
 
           const data = res.data;
-          if (data.user && data.accessToken) {
+          const loginData = data.data || data;
+          if (loginData.user && loginData.accessToken) {
             return {
-              id: data.user.id,
-              name: data.user.username,
-              email: data.user.email,
-              role: data.user.role,
-              accessToken: data.accessToken,
-              refreshToken: data.refreshToken,
+              id: loginData.user.id,
+              name: loginData.user.username,
+              email: loginData.user.email,
+              role: loginData.user.role,
+              accessToken: loginData.accessToken,
+              refreshToken: loginData.refreshToken,
             };
           }
           return null;

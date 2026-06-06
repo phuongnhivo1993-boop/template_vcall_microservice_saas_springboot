@@ -1,0 +1,159 @@
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: iam-service
+          uri: http://localhost:8101
+          predicates:
+            - Path=/api/v1/auth/**, /api/v1/users/**
+        - id: agent-service
+          uri: http://localhost:8102
+          predicates:
+            - Path=/api/v1/agents/**, /api/v1/agent-sessions/**
+        - id: customer-service
+          uri: http://localhost:8103
+          predicates:
+            - Path=/api/v1/customers/**
+        - id: crm-service
+          uri: http://localhost:8104
+          predicates:
+            - Path=/api/v1/crm/**
+        - id: call-service
+          uri: http://localhost:8105
+          predicates:
+            - Path=/api/v1/calls/**, /api/v1/call-queues/**, /api/v1/ivr-flows/**, /api/v1/routing-rules/**
+        - id: sip-service
+          uri: http://localhost:8106
+          predicates:
+            - Path=/api/v1/sip/**
+        - id: pbx-service
+          uri: http://localhost:8107
+          predicates:
+            - Path=/api/v1/pbx/**
+        - id: recording-service
+          uri: http://localhost:8108
+          predicates:
+            - Path=/api/v1/recordings/**
+        - id: omnichannel-service
+          uri: http://localhost:8109
+          predicates:
+            - Path=/api/v1/omnichannel/**
+        - id: chat-service
+          uri: http://localhost:8110
+          predicates:
+            - Path=/api/v1/chat/**
+        - id: email-service
+          uri: http://localhost:8111
+          predicates:
+            - Path=/api/v1/email/**
+        - id: sms-service
+          uri: http://localhost:8112
+          predicates:
+            - Path=/api/v1/sms/**
+        - id: ticket-service
+          uri: http://localhost:8113
+          predicates:
+            - Path=/api/v1/tickets/**, /api/v1/sla-rules/**, /api/v1/sla/**
+        - id: campaign-service
+          uri: http://localhost:8114
+          predicates:
+            - Path=/api/v1/campaigns/**
+        - id: billing-service
+          uri: http://localhost:8115
+          predicates:
+            - Path=/api/v1/billing/**
+        - id: cdr-service
+          uri: http://localhost:8116
+          predicates:
+            - Path=/api/v1/cdr/**
+        - id: reporting-service
+          uri: http://localhost:8117
+          predicates:
+            - Path=/api/v1/reports/**, /api/v1/dashboard/**
+        - id: notification-service
+          uri: http://localhost:8118
+          predicates:
+            - Path=/api/v1/notifications/**
+        - id: audit-service
+          uri: http://localhost:8119
+          predicates:
+            - Path=/api/v1/audit/**
+        - id: scheduling-service
+          uri: http://localhost:8120
+          predicates:
+            - Path=/api/v1/scheduling/**
+        - id: survey-service
+          uri: http://localhost:8121
+          predicates:
+            - Path=/api/v1/survey/**
+        - id: automation-service
+          uri: http://localhost:8122
+          predicates:
+            - Path=/api/v1/automation/**
+        - id: webhooks-service
+          uri: http://localhost:8123
+          predicates:
+            - Path=/api/v1/webhooks/**
+        - id: knowledge-base-service
+          uri: http://localhost:8124
+          predicates:
+            - Path=/api/v1/knowledge-base/**
+        - id: tenant-service
+          uri: http://localhost:8201
+          predicates:
+            - Path=/api/v1/tenants/**
+        - id: asset-service
+          uri: http://localhost:8202
+          predicates:
+            - Path=/api/v1/assets/**
+        - id: scene-service
+          uri: http://localhost:8203
+          predicates:
+            - Path=/api/v1/scenes/**
+        - id: video-service
+          uri: http://localhost:8204
+          predicates:
+            - Path=/api/v1/videos/**
+        - id: streaming-service
+          uri: http://localhost:8205
+          predicates:
+            - Path=/api/v1/streaming/**
+        - id: xr-service
+          uri: http://localhost:8206
+          predicates:
+            - Path=/api/v1/xr/**, /api/v1/xr-sessions/**
+        - id: collaboration-service
+          uri: http://localhost:8207
+          predicates:
+            - Path=/api/v1/collaboration/**, /api/v1/xr/collaboration/**
+        - id: ai-service
+          uri: http://localhost:8208
+          predicates:
+            - Path=/api/v1/ai/**
+        - id: analytics-service
+          uri: http://localhost:8209
+          predicates:
+            - Path=/api/v1/analytics/**
+        - id: digital-twin-service
+          uri: http://localhost:8210
+          predicates:
+            - Path=/api/v1/digital-twins/**
+        - id: bim-cad-service
+          uri: http://localhost:8211
+          predicates:
+            - Path=/api/v1/bim-cad/**
+        - id: gis-service
+          uri: http://localhost:8212
+          predicates:
+            - Path=/api/v1/gis/**
+        - id: customer360-service
+          uri: http://localhost:8213
+          predicates:
+            - Path=/api/v1/customer360/**
+
+eureka:
+  client:
+    enabled: false

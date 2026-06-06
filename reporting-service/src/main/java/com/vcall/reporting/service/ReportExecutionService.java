@@ -67,9 +67,27 @@ public class ReportExecutionService {
 
     @Transactional(readOnly = true)
     public ReportExecutionResponse getExecution(Long id) {
-        ReportExecution execution = reportExecutionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Report execution not found with id: " + id));
+        ReportExecution execution = getExecutionEntity(id);
         return toResponse(execution);
+    }
+
+    @Transactional(readOnly = true)
+    public ReportExecution getExecutionEntity(Long id) {
+        return reportExecutionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Report execution not found with id: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getExecutionData(Long id) {
+        ReportExecution execution = getExecutionEntity(id);
+        if (execution.getResultData() != null) {
+            try {
+                return objectMapper.readValue(execution.getResultData(), Map.class);
+            } catch (Exception e) {
+                return Map.of("raw", execution.getResultData());
+            }
+        }
+        return Map.of();
     }
 
     @Transactional(readOnly = true)

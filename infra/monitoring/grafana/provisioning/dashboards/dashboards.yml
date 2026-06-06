@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: 'VCall Dashboards'
+    orgId: 1
+    folder: 'VCall'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/dashboards

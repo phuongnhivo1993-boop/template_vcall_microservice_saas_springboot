@@ -1,0 +1,92 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+rule_files:
+  - "alerts/*.yml"
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'service-registry'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['service-registry:8761']
+
+  - job_name: 'config-server'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['config-server:8888']
+
+  - job_name: 'api-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['api-gateway:8080']
+
+  - job_name: 'contact-center-services'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets:
+          - 'iam-service:8101'
+          - 'agent-service:8102'
+          - 'customer-service:8103'
+          - 'crm-service:8104'
+          - 'call-service:8105'
+          - 'sip-service:8106'
+          - 'pbx-service:8107'
+          - 'recording-service:8108'
+          - 'omnichannel-service:8109'
+          - 'chat-service:8110'
+          - 'email-service:8111'
+          - 'sms-service:8112'
+          - 'ticket-service:8113'
+          - 'campaign-service:8114'
+          - 'billing-service:8115'
+          - 'cdr-service:8116'
+          - 'reporting-service:8117'
+          - 'notification-service:8118'
+          - 'audit-service:8119'
+          - 'scheduling-service:8120'
+          - 'survey-service:8121'
+          - 'automation-service:8224'
+          - 'webhooks-service:8225'
+          - 'knowledge-base-service:8226'
+
+  - job_name: 'xr-platform-services'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets:
+          - 'tenant-service:8201'
+          - 'asset-service:8202'
+          - 'scene-service:8203'
+          - 'video-service:8204'
+          - 'streaming-service:8124'
+          - 'xr-service:8125'
+          - 'ai-service:8126'
+          - 'analytics-service:8127'
+          - 'collaboration-service:8128'
+          - 'digital-twin-service:8205'
+          - 'bim-cad-service:8206'
+          - 'gis-service:8207'
+
+  - job_name: 'infrastructure'
+    static_configs:
+      - targets:
+          - 'postgresql:9187'
+          - 'redis:9121'
+          - 'kafka:9308'
+          - 'elasticsearch:9114'
+          - 'minio:9000'
+          - 'mongodb:9216'
+
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']

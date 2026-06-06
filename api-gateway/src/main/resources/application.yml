@@ -149,6 +149,69 @@ spring:
           uri: lb://knowledge-base-service
           predicates:
             - Path=/api/v1/knowledge-base/**
+        # ========== XR Platform Routes ==========
+        - id: tenant-service
+          uri: lb://tenant-service
+          predicates:
+            - Path=/api/v1/tenants/**
+        - id: asset-service
+          uri: lb://asset-service
+          predicates:
+            - Path=/api/v1/assets/**
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,SERVICE_UNAVAILABLE
+                methods: GET
+        - id: scene-service
+          uri: lb://scene-service
+          predicates:
+            - Path=/api/v1/scenes/**
+        - id: video-service
+          uri: lb://video-service
+          predicates:
+            - Path=/api/v1/videos/**
+        - id: streaming-service
+          uri: lb://streaming-service
+          predicates:
+            - Path=/api/v1/streaming/**
+        - id: xr-service
+          uri: lb://xr-service
+          predicates:
+            - Path=/api/v1/xr/**
+        - id: xr-sessions
+          uri: lb://xr-service
+          predicates:
+            - Path=/api/v1/xr-sessions/**
+        - id: xr-collaboration
+          uri: lb://collaboration-service
+          predicates:
+            - Path=/api/v1/xr/collaboration/**
+        - id: ai-service
+          uri: lb://ai-service
+          predicates:
+            - Path=/api/v1/ai/**
+        - id: analytics-service
+          uri: lb://analytics-service
+          predicates:
+            - Path=/api/v1/analytics/**
+        - id: collaboration-service
+          uri: lb://collaboration-service
+          predicates:
+            - Path=/api/v1/collaboration/**
+        - id: digital-twin-service
+          uri: lb://digital-twin-service
+          predicates:
+            - Path=/api/v1/digital-twins/**
+        - id: bim-cad-service
+          uri: lb://bim-cad-service
+          predicates:
+            - Path=/api/v1/bim-cad/**
+        - id: gis-service
+          uri: lb://gis-service
+          predicates:
+            - Path=/api/v1/gis/**
 
 eureka:
   client:
@@ -180,6 +243,26 @@ rate-limiter:
     notification-service:
       capacity: 30
       refill-tokens: 5
+      refill-duration: 1
+    asset-service:
+      capacity: 100
+      refill-tokens: 10
+      refill-duration: 1
+    video-service:
+      capacity: 50
+      refill-tokens: 5
+      refill-duration: 1
+    streaming-service:
+      capacity: 50
+      refill-tokens: 5
+      refill-duration: 1
+    xr-service:
+      capacity: 100
+      refill-tokens: 10
+      refill-duration: 1
+    ai-service:
+      capacity: 30
+      refill-tokens: 3
       refill-duration: 1
 
 jwt:

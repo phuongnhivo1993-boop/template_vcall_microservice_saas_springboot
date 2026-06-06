@@ -23,5 +23,6 @@ public class UserResponse {
     private String avatar;
     private String status;
     private Set<String> roles;
+    private boolean emailVerified;
     private LocalDateTime createdAt;
 }

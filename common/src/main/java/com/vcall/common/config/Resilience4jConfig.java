@@ -3,10 +3,12 @@ package com.vcall.common.config;
 import io.github.resilience4j.bulkhead.BulkheadConfig;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
-import io.github.resilience4j.retry.RetryConfig;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
+import io.github.resilience4j.timelimiter.TimeLimiterRegistry;
 import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JCircuitBreakerFactory;
 import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JConfigBuilder;
+import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4jBulkheadProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,8 +18,12 @@ import java.time.Duration;
 public class Resilience4jConfig {
 
     @Bean
-    public Resilience4JCircuitBreakerFactory defaultCircuitBreakerFactory() {
-        Resilience4JCircuitBreakerFactory factory = new Resilience4JCircuitBreakerFactory();
+    public Resilience4JCircuitBreakerFactory defaultCircuitBreakerFactory(
+            CircuitBreakerRegistry circuitBreakerRegistry,
+            TimeLimiterRegistry timeLimiterRegistry,
+            Resilience4jBulkheadProvider bulkheadProvider) {
+        Resilience4JCircuitBreakerFactory factory = new Resilience4JCircuitBreakerFactory(
+                circuitBreakerRegistry, timeLimiterRegistry, bulkheadProvider);
 
         CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerConfig.custom()
                 .slidingWindowSize(10)
@@ -27,18 +33,13 @@ public class Resilience4jConfig {
                 .permittedNumberOfCallsInHalfOpenState(3)
                 .build();
 
-        RetryConfig retryConfig = RetryConfig.custom()
-                .maxAttempts(3)
-                .waitDuration(Duration.ofMillis(500))
-                .retryExceptions(Exception.class)
+        TimeLimiterConfig timeLimiterConfig = TimeLimiterConfig.custom()
+                .timeoutDuration(Duration.ofSeconds(4))
                 .build();
 
         factory.configureDefault(id -> new Resilience4JConfigBuilder(id)
                 .circuitBreakerConfig(circuitBreakerConfig)
-                .retryConfig(retryConfig)
-                .timeLimiterConfig(TimeLimiterConfig.custom()
-                        .timeoutDuration(Duration.ofSeconds(4))
-                        .build())
+                .timeLimiterConfig(timeLimiterConfig)
                 .build());
 
         return factory;

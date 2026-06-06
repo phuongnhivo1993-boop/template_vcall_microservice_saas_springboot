@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: velero-restic-config
+  namespace: velero
+data:
+  restic-timeout: "4h"
+---
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: vcall-backups
+  namespace: velero
+spec:
+  provider: aws
+  objectStorage:
+    bucket: vcall-velero-backups
+  config:
+    region: us-east-1
+    s3ForcePathStyle: "true"
+    s3Url: http://minio.vcall.svc.cluster.local:9000
+    publicUrl: http://minio.vcall.svc.cluster.local:9000
+  credential:
+    name: velero-minio-credentials
+    key: cloud
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: velero-minio-credentials
+  namespace: velero
+type: Opaque
+stringData:
+  cloud: |
+    [default]
+    aws_access_key_id=minioadmin
+    aws_secret_access_key=minioadmin
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: vcall-daily-backup
+  namespace: velero
+spec:
+  schedule: "0 1 * * *"
+  template:
+    includedNamespaces:
+    - vcall
+    includedResources:
+    - deployments
+    - statefulsets
+    - configmaps
+    - secrets
+    - persistentvolumeclaims
+    - services
+    - ingresses
+    ttl: 720h
+    defaultVolumesToRestic: true
+    storageLocation: vcall-backups
+---
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: vcall-pv-backup
+  namespace: velero
+spec:
+  schedule: "0 3 * * *"
+  template:
+    includedNamespaces:
+    - vcall
+    includedResources:
+    - persistentvolumeclaims
+    snapshotVolumes: true
+    ttl: 720h
+    storageLocation: vcall-backups

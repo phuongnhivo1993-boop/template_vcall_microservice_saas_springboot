@@ -8,6 +8,7 @@ import com.vcall.iam.dto.RefreshTokenRequest;
 import com.vcall.iam.dto.ResetPasswordRequest;
 import com.vcall.iam.dto.UserResponse;
 import com.vcall.iam.service.AuthService;
+import com.vcall.iam.service.EmailVerificationService;
 import com.vcall.iam.service.PasswordResetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
@@ -28,6 +30,8 @@ public class AuthController {
 
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
+    private final EmailVerificationService emailVerificationService;
+    private final com.vcall.iam.service.UserService userService;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
@@ -65,5 +69,26 @@ public class AuthController {
             @Valid @RequestBody ResetPasswordRequest request) {
         passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.ok(ApiResponse.success("Password has been reset successfully", null));
+    }
+
+    @PostMapping("/send-verification")
+    public ResponseEntity<ApiResponse<Void>> sendVerificationEmail(Authentication authentication) {
+        String username = authentication.getName();
+        com.vcall.iam.dto.UserResponse userResponse = userService.getUserByUsername(username);
+        emailVerificationService.sendVerificationEmailForUser(userResponse.getId());
+        return ResponseEntity.ok(ApiResponse.success("Verification email sent", null));
+    }
+
+    @PostMapping("/send-verification-by-email")
+    public ResponseEntity<ApiResponse<Void>> sendVerificationByEmail(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+        emailVerificationService.sendVerificationEmail(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.success("If the email exists, a verification link has been sent.", null));
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(@RequestParam String token) {
+        emailVerificationService.verifyEmail(token);
+        return ResponseEntity.ok(ApiResponse.success("Email verified successfully", null));
     }
 }

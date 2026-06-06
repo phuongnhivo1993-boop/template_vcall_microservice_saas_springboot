@@ -29,16 +29,26 @@ spring:
       properties:
         spring.json.trusted.packages: "${KAFKA_TRUSTED_PACKAGES:com.vcall.common.dto}"
   mail:
-    host: smtp.example.com
-    port: 587
+    host: ${MAIL_HOST:smtp.example.com}
+    port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
-          auth: true
+          auth: ${MAIL_SMTP_AUTH:true}
           starttls:
-            enable: true
+            enable: ${MAIL_SMTP_STARTTLS:true}
+          connectiontimeout: ${MAIL_CONNECTION_TIMEOUT:5000}
+          timeout: ${MAIL_TIMEOUT:5000}
+          writetimeout: ${MAIL_WRITE_TIMEOUT:5000}
+    default-encoding: UTF-8
+
+firebase:
+  config-path: ${FIREBASE_CONFIG_PATH:}
+  database-url: ${FIREBASE_DATABASE_URL:}
+  project-id: ${FIREBASE_PROJECT_ID:}
+  credentials-json: ${FIREBASE_CREDENTIALS_JSON:}
 
 eureka:
   client:

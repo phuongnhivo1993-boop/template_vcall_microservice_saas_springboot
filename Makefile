@@ -1,4 +1,4 @@
-.PHONY: build build-all clean build-docker up down deploy test
+.PHONY: build build-all clean build-docker up down deploy test backup-db backup-minio backup-all monitoring-up monitoring-down
 
 # Build all services
 build-all:
@@ -18,7 +18,7 @@ clean:
 # Build Docker images - Contact Center services
 build-docker-contact:
 	@echo "Building Contact Center Docker images..."
-	@for service in service-registry config-server api-gateway iam-service agent-service customer-service crm-service call-service sip-service pbx-service recording-service omnichannel-service chat-service email-service sms-service ticket-service campaign-service billing-service cdr-service reporting-service notification-service audit-service; do \
+	@for service in service-registry config-server api-gateway iam-service agent-service customer-service crm-service call-service sip-service pbx-service recording-service omnichannel-service chat-service email-service sms-service ticket-service campaign-service billing-service cdr-service reporting-service notification-service audit-service scheduling-service survey-service automation-service webhooks-service knowledge-base-service; do \
 		echo "Building $$service..."; \
 		docker build -t vcall/$$service:latest ./$$service; \
 	done
@@ -66,6 +66,25 @@ frontend-dev:
 frontend-build:
 	cd frontend && npm run build
 
+# Backup
+backup-db:
+	@echo "Running database backup..."
+	bash infra/backup/pg_dump_all.sh
+
+backup-minio:
+	@echo "Running MinIO backup..."
+	bash infra/backup/minio_backup.sh
+
+backup-all: backup-db backup-minio
+	@echo "All backups completed"
+
+# Monitoring
+monitoring-up:
+	docker-compose -f infra/docker-compose.yml up -d prometheus grafana
+
+monitoring-down:
+	docker-compose -f infra/docker-compose.yml stop prometheus grafana
+
 # Help
 help:
 	@echo "Available targets:"
@@ -79,6 +98,11 @@ help:
 	@echo "  infra-down          - Stop infrastructure"
 	@echo "  up                  - Start all services locally"
 	@echo "  deploy              - Deploy to Kubernetes"
+	@echo "  backup-db           - Run PostgreSQL database backup"
+	@echo "  backup-minio        - Run MinIO backup"
+	@echo "  backup-all          - Run all backups"
+	@echo "  monitoring-up       - Start Prometheus & Grafana"
+	@echo "  monitoring-down     - Stop Prometheus & Grafana"
 	@echo "  test                - Run tests"
 	@echo "  frontend-dev        - Start Next.js dev server"
 	@echo "  frontend-build      - Build Next.js frontend"

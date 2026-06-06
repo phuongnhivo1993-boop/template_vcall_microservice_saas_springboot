@@ -30,6 +30,8 @@ export default function LoginPage() {
       if (!res.ok) {
         if (res.status === 423) {
           message.error(`Account locked. Try again in ${Math.ceil((data.retryAfterSeconds || 1740) / 60)} minutes.`);
+        } else if (res.status === 503) {
+          message.error('Service temporarily unavailable. Please ensure all backend services are running and try again.');
         } else {
           message.error(data.message || data.error || 'Invalid credentials');
         }
@@ -42,14 +44,16 @@ export default function LoginPage() {
         return;
       }
 
+      const loginData = data.data || data;
+
       const result = await signIn('credentials', {
-        username: data.user?.username || '',
+        username: loginData.user?.username || '',
         password: '',
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        userRole: data.user?.role || 'AGENT',
-        userId: data.user?.id || '',
-        userEmail: data.user?.email || '',
+        accessToken: loginData.accessToken,
+        refreshToken: loginData.refreshToken,
+        userRole: loginData.user?.role || 'AGENT',
+        userId: loginData.user?.id || '',
+        userEmail: loginData.user?.email || '',
         redirect: false,
       });
 
@@ -57,7 +61,7 @@ export default function LoginPage() {
         message.error('Login failed');
       } else {
         message.success('Login successful');
-        connectSocket(data.accessToken);
+        connectSocket(loginData.accessToken);
         router.push('/dashboard');
       }
     } catch {
@@ -82,14 +86,16 @@ export default function LoginPage() {
         return;
       }
 
+      const mfaLoginData = data.data || data;
+
       const result = await signIn('credentials', {
-        username: data.user?.username || '',
+        username: mfaLoginData.user?.username || '',
         password: '',
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        userRole: data.user?.role || 'AGENT',
-        userId: data.user?.id || '',
-        userEmail: data.user?.email || '',
+        accessToken: mfaLoginData.accessToken,
+        refreshToken: mfaLoginData.refreshToken,
+        userRole: mfaLoginData.user?.role || 'AGENT',
+        userId: mfaLoginData.user?.id || '',
+        userEmail: mfaLoginData.user?.email || '',
         redirect: false,
       });
 
@@ -156,6 +162,7 @@ export default function LoginPage() {
           layout="vertical"
           size="large"
           autoComplete="off"
+          initialValues={{ username: 'admin', password: 'admin@123', company: 'vcall' }}
         >
           <Form.Item name="company" label="Company">
             <Input prefix={<UserOutlined />} placeholder="your-company" />
