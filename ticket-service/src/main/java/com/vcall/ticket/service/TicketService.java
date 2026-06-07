@@ -29,6 +29,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -44,6 +45,15 @@ public class TicketService {
     private final SlaService slaService;
 
     private static final AtomicLong ticketCounter = new AtomicLong(0);
+
+    private static final Map<TicketStatus, Set<TicketStatus>> VALID_TRANSITIONS = Map.of(
+        TicketStatus.OPEN, Set.of(TicketStatus.IN_PROGRESS, TicketStatus.CLOSED),
+        TicketStatus.IN_PROGRESS, Set.of(TicketStatus.WAITING, TicketStatus.RESOLVED, TicketStatus.CLOSED),
+        TicketStatus.WAITING, Set.of(TicketStatus.IN_PROGRESS, TicketStatus.RESOLVED),
+        TicketStatus.RESOLVED, Set.of(TicketStatus.REOPENED, TicketStatus.CLOSED),
+        TicketStatus.CLOSED, Set.of(TicketStatus.REOPENED),
+        TicketStatus.REOPENED, Set.of(TicketStatus.IN_PROGRESS, TicketStatus.CLOSED)
+    );
 
     @CircuitBreaker(name = "ticketService", fallbackMethod = "createTicketFallback")
     @Retry(name = "ticketService")
@@ -141,6 +151,11 @@ public class TicketService {
 
         if (newStatus == oldStatus) {
             return toResponse(ticket);
+        }
+
+        Set<TicketStatus> allowed = VALID_TRANSITIONS.getOrDefault(oldStatus, Set.of());
+        if (!allowed.contains(newStatus)) {
+            throw new IllegalStateException("Invalid status transition from " + oldStatus + " to " + newStatus);
         }
 
         ticket.setStatus(newStatus);

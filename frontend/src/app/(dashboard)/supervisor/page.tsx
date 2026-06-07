@@ -6,13 +6,14 @@ import {
   PhoneOutlined, TeamOutlined, ClockCircleOutlined, CheckCircleOutlined,
   CloseCircleOutlined, StarOutlined, RiseOutlined, UserSwitchOutlined,
   ArrowUpOutlined, ArrowDownOutlined, MinusCircleOutlined, FileTextOutlined,
-  DownloadOutlined, ReloadOutlined
+  ReloadOutlined
 } from '@ant-design/icons';
 import { callsApi, agentsApi, dashboardApi } from '@/lib/api';
 import LoadingSkeleton from '@/components/common/LoadingSkeleton';
+import PageHeader from '@/components/common/PageHeader';
 import dayjs from 'dayjs';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 interface Agent {
   id: string;
@@ -296,7 +297,7 @@ export default function SupervisorPage() {
   if (loading) {
     return (
       <div>
-        <Title level={3} style={{ marginBottom: 16 }}>Supervisor Dashboard</Title>
+        <PageHeader title="Giám sát" subtitle="Dashboard giám sát thời gian thực" onExportCsv={handleExportCsv} />
         <LoadingSkeleton type="stats" rows={5} />
       </div>
     );
@@ -305,7 +306,7 @@ export default function SupervisorPage() {
   if (error) {
     return (
       <div>
-        <Title level={3} style={{ marginBottom: 16 }}>Supervisor Dashboard</Title>
+        <PageHeader title="Giám sát" subtitle="Dashboard giám sát thời gian thực" onExportCsv={handleExportCsv} />
         <Alert type="error" message={error} showIcon action={<Button onClick={fetchData} icon={<ReloadOutlined />}>Retry</Button>} />
       </div>
     );
@@ -313,13 +314,12 @@ export default function SupervisorPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Title level={3} style={{ margin: 0 }}>Supervisor Dashboard</Title>
-        <Space>
-          <Button icon={<DownloadOutlined />} onClick={handleExportCsv}>Export CSV</Button>
-          <Button icon={<ReloadOutlined />} onClick={fetchData}>Refresh</Button>
-        </Space>
-      </div>
+      <PageHeader
+        title="Giám sát"
+        subtitle="Dashboard giám sát thời gian thực"
+        onExportCsv={handleExportCsv}
+        extra={<Button icon={<ReloadOutlined />} onClick={fetchData}>Làm mới</Button>}
+      />
 
       <Row gutter={[12, 12]}>
         <Col xs={12} sm={8} lg={3}>

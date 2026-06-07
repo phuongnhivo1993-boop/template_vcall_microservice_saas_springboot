@@ -17,6 +17,7 @@ import com.vcall.crm.service.LeadService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -52,6 +53,9 @@ import java.util.UUID;
 public class LeadController {
 
     private final LeadService leadService;
+
+    @Value("${app.export.max-size:1000}")
+    private int maxExportSize;
 
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR') or hasRole('AGENT')")
@@ -119,7 +123,7 @@ public class LeadController {
     public void exportLeadsCsv(@RequestParam(required = false) String keyword,
                                @RequestParam(required = false) LeadStatus status,
                                HttpServletResponse response) throws IOException {
-        Pageable pageable = PageRequest.of(0, 5000, Sort.by("createdAt").descending());
+        Pageable pageable = PageRequest.of(0, Math.min(maxExportSize, 1000), Sort.by("createdAt").descending());
         Specification<com.vcall.crm.entity.Lead> spec = Specification.where(null);
         if (keyword != null && !keyword.isEmpty()) {
             spec = spec.and((root, query, cb) ->
@@ -145,7 +149,7 @@ public class LeadController {
     public void exportLeadsExcel(@RequestParam(required = false) String keyword,
                                  @RequestParam(required = false) LeadStatus status,
                                  HttpServletResponse response) throws IOException {
-        Pageable pageable = PageRequest.of(0, 5000, Sort.by("createdAt").descending());
+        Pageable pageable = PageRequest.of(0, Math.min(maxExportSize, 1000), Sort.by("createdAt").descending());
         Specification<com.vcall.crm.entity.Lead> spec = Specification.where(null);
         if (keyword != null && !keyword.isEmpty()) {
             spec = spec.and((root, query, cb) ->

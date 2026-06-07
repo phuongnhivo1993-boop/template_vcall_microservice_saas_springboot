@@ -1,0 +1,508 @@
+{
+  "meta": {
+    "project": "VCall Contact Center Frontend",
+    "auditDate": "2026-06-07",
+    "scope": "Areas 1-3: UI, UX, CRUD",
+    "filesRead": 44,
+    "pagesAudited": 37,
+    "commonComponentsAudited": 12,
+    "layoutFilesAudited": 5,
+    "themeFilesAudited": 2
+  },
+  "summary": {
+    "critical": 3,
+    "high": 8,
+    "medium": 12,
+    "low": 6,
+    "total": 29
+  },
+  "findings": [
+    {
+      "id": "CRIT-001",
+      "severity": "critical",
+      "area": "UX",
+      "category": "Hardcoded Mock Data",
+      "file": "frontend/src/app/(dashboard)/reports/page.tsx",
+      "line": "61-90",
+      "description": "FALLBACK_CALL_VOLUME, FALLBACK_AGENT_PERF, FALLBACK_SLA, FALLBACK_TOP_CUSTOMERS are hardcoded mock data arrays that ALWAYS display when any API endpoint fails. Since all endpoints use .catch() fallbacks, users will see realistic-looking fake data with no indication it is not real.",
+      "impact": "Users make business decisions based on fake data. No visual indicator distinguishes real from mock data.",
+      "recommendation": "Remove fallback data entirely. Show an Empty or Alert state when API fails. If fallback data is needed for demo mode, gate it behind an explicit feature flag and display a prominent 'DEMO DATA' banner."
+    },
+    {
+      "id": "CRIT-002",
+      "severity": "critical",
+      "area": "UX",
+      "category": "Hardcoded Mock Data",
+      "file": "frontend/src/app/(dashboard)/collaboration/page.tsx",
+      "line": "188-191",
+      "description": "Scene dropdown in create-room modal uses hardcoded options: 'scene1' → 'Office Tour VR', 'scene2' → 'Product Showroom'. These are fake scene IDs that will be sent to the API, likely causing backend errors or creating rooms linked to non-existent scenes.",
+      "impact": "Create room will fail or create orphaned records. No real scene data is fetched.",
+      "recommendation": "Fetch scenes from the XR scenes API (xrScenesApi.list) and populate the Select dynamically. Show loading state while fetching."
+    },
+    {
+      "id": "CRIT-003",
+      "severity": "critical",
+      "area": "UX",
+      "category": "Missing Error Handling",
+      "files": [
+        "frontend/src/app/(dashboard)/tours/page.tsx:89-97",
+        "frontend/src/app/(dashboard)/assets/page.tsx:60-75"
+      ],
+      "description": "handleFormSubmit in tours/page.tsx (lines 89-97) and handleUpload in assets/page.tsx (lines 60-75) call API methods without try/catch. If xrToursApi.create/update or xrAssetsApi.upload throws, the error propagates unhandled, potentially crashing the component.",
+      "impact": "Unhandled promise rejection. Modal may not close. User gets no error feedback. React error boundary may catch and blank the page.",
+      "recommendation": "Wrap all API calls in try/catch with message.error() for user feedback. Ensure modal closes on error."
+    },
+    {
+      "id": "HIGH-001",
+      "severity": "high",
+      "area": "UX",
+      "category": "Duplicate Success Messages",
+      "file": "frontend/src/components/common/CommonForm.tsx",
+      "line": "44",
+      "description": "CommonForm calls message.success('Created successfully' / 'Updated successfully') after onSubmit() resolves. However, most page-level handleFormSubmit functions also call their own message.success() before returning. This results in duplicate success toasts for every create/update operation.",
+      "impact": "Double success notification on every form submission across all pages using CommonForm.",
+      "recommendation": "Remove message.success from CommonForm. Let callers handle success messaging. Or document that callers should NOT call message.success."
+    },
+    {
+      "id": "HIGH-002",
+      "severity": "high",
+      "area": "UI",
+      "category": "Inconsistent Loading States",
+      "files": [
+        "frontend/src/app/(dashboard)/agents/[id]/page.tsx",
+        "frontend/src/app/(dashboard)/customers/[id]/page.tsx",
+        "frontend/src/app/(dashboard)/tickets/[id]/page.tsx",
+        "frontend/src/app/(dashboard)/calls/[id]/page.tsx",
+        "frontend/src/app/(dashboard)/analytics/page.tsx",
+        "frontend/src/app/(dashboard)/collaboration/page.tsx"
+      ],
+      "description": "Detail pages use raw <Spin> wrapper while list pages and dashboard use <LoadingSkeleton>. This creates inconsistent loading UX — some pages show a spinner, others show skeleton placeholders that better represent the coming layout.",
+      "impact": "Inconsistent perceived performance. Skeleton loading is a better UX pattern for structured content.",
+      "recommendation": "Standardize on LoadingSkeleton for all loading states. Use type='detail' for detail pages, type='table' for list pages, type='stats' for dashboards."
+    },
+    {
+      "id": "HIGH-003",
+      "severity": "high",
+      "area": "UX",
+      "category": "Hardcoded Vietnamese Text (i18n)",
+      "files": [
+        "frontend/src/components/layout/menuConfig.tsx:22-49",
+        "frontend/src/components/common/FileUpload.tsx:38,113",
+        "frontend/src/components/common/CustomerTimeline.tsx:69",
+        "frontend/src/components/common/RecordingPlayer.tsx:91",
+        "frontend/src/app/(dashboard)/inbox/page.tsx"
+      ],
+      "description": "Multiple files contain hardcoded Vietnamese text: menuConfig.tsx has all menu labels in Vietnamese ('Tổng quan', 'Hộp thư đến', 'Nhân viên', etc.), FileUpload.tsx has Vietnamese placeholders ('Kéo thả file vào đây', 'Hỗ trợ:', 'Tối đa'), CustomerTimeline.tsx uses vi-VN locale, RecordingPlayer.tsx uses vi-VN locale. No i18n framework is integrated.",
+      "impact": "Application is not localizable. English-speaking users cannot use the navigation. Violates i18n best practices.",
+      "recommendation": "Integrate next-intl or similar i18n framework. Extract all hardcoded strings to translation files. Use translation keys everywhere."
+    },
+    {
+      "id": "HIGH-004",
+      "severity": "high",
+      "area": "UX",
+      "category": "Fake Recording Playback",
+      "file": "frontend/src/components/common/RecordingPlayer.tsx",
+      "line": "51-66",
+      "description": "RecordingPlayer's togglePlay function uses setInterval to simulate playback progress rather than connecting to an actual audio element or streaming URL. The waveform is also random Math.random() bars. Users think they are listening to a recording but hear nothing.",
+      "impact": "Core feature (call recording playback) is non-functional. Misleading UI.",
+      "recommendation": "Integrate actual HTML5 Audio element with the recording URL. Use real audio duration for progress. Generate waveform from actual audio data or use a waveform visualization library."
+    },
+    {
+      "id": "HIGH-005",
+      "severity": "high",
+      "area": "UX",
+      "category": "Placeholder Heatmap",
+      "file": "frontend/src/app/(dashboard)/analytics/page.tsx",
+      "line": "278-302",
+      "description": "Interaction Heatmap card shows a static gradient background with text 'Heatmap visualization will render here' and a 'Placeholder' tag. This is unfinished UI shipped to production.",
+      "impact": "Incomplete feature visible to users. Professional credibility impacted.",
+      "recommendation": "Either implement the heatmap or remove the card entirely. If it's a planned feature, hide it behind a feature flag."
+    },
+    {
+      "id": "HIGH-006",
+      "severity": "high",
+      "area": "UX",
+      "category": "Theme Color Mismatch",
+      "files": [
+        "frontend/src/lib/theme.tsx:65",
+        "frontend/src/app/globals.css:6"
+      ],
+      "description": "ThemeProvider sets Ant Design colorPrimary to '#1890ff' (line 65) while globals.css defines CSS variable --primary as '#1677ff' (line 6). These are two different blues. Components using CSS variables will not match Ant Design component colors.",
+      "impact": "Visual inconsistency. Buttons, links, and Ant Design components use #1890ff while custom CSS uses #1677ff.",
+      "recommendation": "Unify to a single primary color. Update theme.tsx token.colorPrimary to '#1677ff' or update globals.css --primary to '#1890ff'."
+    },
+    {
+      "id": "HIGH-007",
+      "severity": "high",
+      "area": "UX",
+      "category": "Silent Error Swallowing",
+      "files": [
+        "frontend/src/components/common/SavedFilters.tsx:30",
+        "frontend/src/components/layout/NotificationBadge.tsx:34,43,51"
+      ],
+      "description": "SavedFilters.tsx line 30 has empty catch {} when parsing localStorage. NotificationBadge.tsx has catch blocks that only console.warn — WebSocket connection failures and API fetch failures are silently swallowed with no user feedback.",
+      "impact": "Users are not notified when notifications fail to load or when saved filters are corrupted. Silent failures are hard to debug.",
+      "recommendation": "Add message.warning() for user-facing errors. Log full error details for debugging. Consider a toast notification system for background failures."
+    },
+    {
+      "id": "HIGH-008",
+      "severity": "high",
+      "area": "UX",
+      "category": "Sidebar Navigation Bug",
+      "file": "frontend/src/components/layout/Sidebar.tsx",
+      "line": "46",
+      "description": "selectedKey is computed as pathname.split('/')[1] || 'dashboard'. For routes like /agents/123 or /tickets/456, this correctly selects 'agents' or 'tickets'. However, for the root path '/' it falls back to 'dashboard' even though the user may not be on the dashboard page.",
+      "impact": "Minor: root path always highlights dashboard menu item.",
+      "recommendation": "Handle root path mapping explicitly or redirect '/' to '/dashboard' in the app router."
+    },
+    {
+      "id": "MED-001",
+      "severity": "medium",
+      "area": "UX",
+      "category": "Missing Confirmation on Bulk Actions",
+      "files": [
+        "frontend/src/app/(dashboard)/tours/page.tsx:199-213",
+        "frontend/src/app/(dashboard)/assets/page.tsx:161-163"
+      ],
+      "description": "Bulk delete operations use Popconfirm which is a lightweight inline confirmation. For destructive bulk operations (deleting multiple items), a Modal.confirm with explicit warning text provides better protection against accidental deletion.",
+      "impact": "Users may accidentally delete multiple items with a single click.",
+      "recommendation": "Use Modal.confirm (via showDeleteConfirm) for bulk destructive operations with explicit count and 'cannot be undone' warning."
+    },
+    {
+      "id": "MED-002",
+      "severity": "medium",
+      "area": "UX",
+      "category": "Missing Pagination on Some Pages",
+      "files": [
+        "frontend/src/app/(dashboard)/tours/page.tsx:39",
+        "frontend/src/app/(dashboard)/collaboration/page.tsx:39"
+      ],
+      "description": "Tours and Collaboration pages fetch with size: 100 and display all results without server-side pagination. For large datasets this will cause performance issues.",
+      "impact": "Slow page loads with large datasets. No way to navigate through pages of results.",
+      "recommendation": "Implement server-side pagination using CommonTable's pagination prop with useUrlState, consistent with agents/customers/tickets pages."
+    },
+    {
+      "id": "MED-003",
+      "severity": "medium",
+      "area": "UI",
+      "category": "Missing PageHeader Component Usage",
+      "files": [
+        "frontend/src/app/(dashboard)/tours/page.tsx",
+        "frontend/src/app/(dashboard)/assets/page.tsx",
+        "frontend/src/app/(dashboard)/analytics/page.tsx",
+        "frontend/src/app/(dashboard)/collaboration/page.tsx"
+      ],
+      "description": "Tours, Assets, Analytics, and Collaboration pages use raw <Title level={3}> for page headers instead of the reusable PageHeader component which provides back button, breadcrumb, create button with permission wrapper, and export buttons.",
+      "impact": "Inconsistent page header styling. Missing breadcrumb navigation. Missing permission-wrapped create buttons.",
+      "recommendation": "Replace raw Title elements with PageHeader component for consistent layout and built-in features."
+    },
+    {
+      "id": "MED-004",
+      "severity": "medium",
+      "area": "UX",
+      "category": "Missing Empty States on Some Pages",
+      "files": [
+        "frontend/src/app/(dashboard)/tours/page.tsx",
+        "frontend/src/app/(dashboard)/analytics/page.tsx"
+      ],
+      "description": "Tours page uses raw <Table> which has built-in empty text, but Analytics page shows nothing when data arrays are empty — charts simply render with no data and no empty state message.",
+      "impact": "Users see blank charts with no explanation when no data is available.",
+      "recommendation": "Add conditional Empty component when data arrays are empty. Show a message like 'No analytics data available for this period'."
+    },
+    {
+      "id": "MED-005",
+      "severity": "medium",
+      "area": "UX",
+      "category": "Missing Tooltips on Icon-Only Buttons",
+      "files": [
+        "frontend/src/components/common/SavedFilters.tsx:87-88",
+        "frontend/src/components/layout/NotificationBadge.tsx:93-95"
+      ],
+      "description": "SavedFilters button 'Saved Filters (N)' has no tooltip explaining what it does. NotificationBadge bell icon has no tooltip. These are discoverability issues for new users.",
+      "impact": "New users may not understand the purpose of these buttons.",
+      "recommendation": "Add Tooltip wrappers: 'Manage saved search filters' and 'View notifications'."
+    },
+    {
+      "id": "MED-006",
+      "severity": "medium",
+      "area": "UX",
+      "category": "Missing Loading State on Form Submit",
+      "file": "frontend/src/components/common/CommonForm.tsx",
+      "line": "39-51",
+      "description": "CommonForm shows confirmLoading on the OK button during submit, but the form fields themselves remain editable during submission. Users can modify values while the API call is in progress.",
+      "impact": "Race condition: user changes values after submit starts but before response returns.",
+      "recommendation": "Disable form fields during submission by passing disabled state to children or using Form context."
+    },
+    {
+      "id": "MED-007",
+      "severity": "medium",
+      "area": "UX",
+      "category": "Missing Error Boundary",
+      "files": [
+        "frontend/src/app/(dashboard)/tours/page.tsx",
+        "frontend/src/app/(dashboard)/assets/page.tsx",
+        "frontend/src/app/(dashboard)/analytics/page.tsx",
+        "frontend/src/app/(dashboard)/collaboration/page.tsx"
+      ],
+      "description": "These pages have no React Error Boundary. If a runtime error occurs (e.g., accessing property of undefined), the entire page crashes with a blank screen or React's default error UI.",
+      "impact": "Poor error recovery. Users see unhelpful error messages.",
+      "recommendation": "Wrap page content in an ErrorBoundary component that shows a user-friendly error state with retry option."
+    },
+    {
+      "id": "MED-008",
+      "severity": "medium",
+      "area": "UX",
+      "category": "Missing Keyboard Shortcuts",
+      "files": [
+        "frontend/src/components/common/CommonSearch.tsx",
+        "frontend/src/components/common/CommonForm.tsx"
+      ],
+      "description": "CommonSearch does not support Enter key to trigger search. CommonForm modal does not support Ctrl+Enter to submit. These are expected power-user interactions.",
+      "impact": "Users must use mouse for all interactions. Slower workflow for keyboard-oriented users.",
+      "recommendation": "Add onPressEnter handler to search inputs. Add onKeyDown handler for Ctrl+Enter submit in modals."
+    },
+    {
+      "id": "MED-009",
+      "severity": "medium",
+      "area": "UX",
+      "category": "Missing Responsive Design on Some Pages",
+      "files": [
+        "frontend/src/app/(dashboard)/tours/page.tsx:176-192",
+        "frontend/src/app/(dashboard)/analytics/page.tsx:157-188"
+      ],
+      "description": "Statistics row in Tours and Analytics uses fixed Col sm={8} which stacks on mobile but loses horizontal layout. The action bar in Tours uses flex without wrapping, which may overflow on narrow screens.",
+      "impact": "Poor mobile experience. Buttons may overflow or stack awkwardly.",
+      "recommendation": "Use responsive Col breakpoints (xs/sm/md/lg). Add flexWrap to action bars. Test on mobile viewport."
+    },
+    {
+      "id": "MED-010",
+      "severity": "medium",
+      "area": "UX",
+      "category": "Missing Accessibility Attributes",
+      "files": [
+        "frontend/src/components/common/RecordingPlayer.tsx:101-107",
+        "frontend/src/components/common/ScreenPop.tsx:53-57"
+      ],
+      "description": "Play/pause button in RecordingPlayer uses icon-only with onClick but no aria-label. Answer/Reject buttons in ScreenPop have no aria-label. These fail WCAG 2.1 Level A requirements.",
+      "impact": "Screen readers cannot identify button purposes. Accessibility audit will fail.",
+      "recommendation": "Add aria-label to all icon-only and action buttons. Use role='button' where needed."
+    },
+    {
+      "id": "MED-011",
+      "severity": "medium",
+      "area": "UX",
+      "category": "Missing Search/Filter on Some Pages",
+      "files": [
+        "frontend/src/app/(dashboard)/tours/page.tsx",
+        "frontend/src/app/(dashboard)/collaboration/page.tsx"
+      ],
+      "description": "Tours and Collaboration pages have no search or filter functionality. Users cannot search by name, filter by status, or sort columns. Compare with agents/customers/tickets which have CommonSearch + SavedFilters.",
+      "impact": "Difficult to find specific items in large lists.",
+      "recommendation": "Add CommonSearch with name input and status Select filter. Add column sorters. Consider SavedFilters for frequently used combinations."
+    },
+    {
+      "id": "MED-012",
+      "severity": "medium",
+      "area": "UX",
+      "category": "Missing Export Functionality",
+      "files": [
+        "frontend/src/app/(dashboard)/tours/page.tsx",
+        "frontend/src/app/(dashboard)/collaboration/page.tsx",
+        "frontend/src/app/(dashboard)/assets/page.tsx"
+      ],
+      "description": "Tours, Collaboration, and Assets pages have no CSV/Excel export functionality. Compare with agents/customers/tickets which have export buttons via CommonTable or PageHeader.",
+      "impact": "Users cannot export data for offline analysis or reporting.",
+      "recommendation": "Add onExportCsv/onExportExcel handlers using a utility function or API endpoint. Connect to CommonTable or PageHeader export props."
+    },
+    {
+      "id": "LOW-001",
+      "severity": "low",
+      "area": "UX",
+      "category": "Inconsistent Date Formatting",
+      "files": [
+        "frontend/src/components/common/CustomerTimeline.tsx:69",
+        "frontend/src/components/common/RecordingPlayer.tsx:91",
+        "frontend/src/app/(dashboard)/tours/page.tsx:141"
+      ],
+      "description": "CustomerTimeline and RecordingPlayer use toLocaleString('vi-VN') for Vietnamese date format. Tours page uses toLocaleDateString() with no locale. No consistent date format across the application.",
+      "impact": "Dates display in different formats on different pages. Confusing for users.",
+      "recommendation": "Create a shared date formatting utility (e.g., formatDateTime, formatDate) that uses a consistent locale and format. Apply everywhere."
+    },
+    {
+      "id": "LOW-002",
+      "severity": "low",
+      "area": "UX",
+      "category": "Missing Dark Mode Support on Some Components",
+      "files": [
+        "frontend/src/components/common/RecordingPlayer.tsx:119-132",
+        "frontend/src/app/(dashboard)/analytics/page.tsx:282-301"
+      ],
+      "description": "RecordingPlayer waveform uses hardcoded '#f0f0f0' and '#d9d9d9' colors. Analytics heatmap uses hardcoded gradient background. These do not adapt to dark mode theme.",
+      "impact": "Visual artifacts in dark mode. Hardcoded light colors clash with dark backgrounds.",
+      "recommendation": "Use CSS variables or Ant Design theme tokens for colors. Check components in dark mode."
+    },
+    {
+      "id": "LOW-003",
+      "severity": "low",
+      "area": "UX",
+      "category": "Missing Page Title/Meta",
+      "files": [
+        "frontend/src/app/(dashboard)/tours/page.tsx",
+        "frontend/src/app/(dashboard)/assets/page.tsx",
+        "frontend/src/app/(dashboard)/analytics/page.tsx",
+        "frontend/src/app/(dashboard)/collaboration/page.tsx"
+      ],
+      "description": "These pages do not set document title or meta description. Browser tab shows generic 'VCall' for all pages.",
+      "impact": "Poor SEO. Users cannot distinguish pages in browser tabs.",
+      "recommendation": "Use Next.js generateMetadata or a document title hook (e.g., useDocumentTitle) to set descriptive titles per page."
+    },
+    {
+      "id": "LOW-004",
+      "severity": "low",
+      "area": "UX",
+      "category": "Missing Confirmation on Status Changes",
+      "files": [
+        "frontend/src/app/(dashboard)/tours/page.tsx:79-87"
+      ],
+      "description": "handlePublish publishes a tour immediately on click with no confirmation dialog. Publishing is a significant state change that should be confirmed.",
+      "impact": "Accidental publishing of draft content.",
+      "recommendation": "Add Modal.confirm or Popconfirm before publishing action."
+    },
+    {
+      "id": "LOW-005",
+      "severity": "low",
+      "area": "UX",
+      "category": "Missing Keyboard Navigation in Modals",
+      "files": [
+        "frontend/src/components/common/CommonForm.tsx",
+        "frontend/src/components/common/CallDisposition.tsx",
+        "frontend/src/components/common/ScreenPop.tsx"
+      ],
+      "description": "Modal forms do not focus the first input on open. Tab order may not be optimal. No Escape key handling beyond default modal behavior.",
+      "impact": "Keyboard users must click to focus first field. Slower form completion.",
+      "recommendation": "Add autoFocused field or use form ref to focus first input on modal open."
+    },
+    {
+      "id": "LOW-006",
+      "severity": "low",
+      "area": "UX",
+      "category": "Missing Undo Capability",
+      "files": [
+        "frontend/src/components/common/CommonConfirmDelete.tsx"
+      ],
+      "description": "showDeleteConfirm permanently deletes items with no undo capability. While 'cannot be undone' is mentioned in the confirmation text, there is no soft-delete or trash/recover mechanism.",
+      "impact": "Accidental deletions are irreversible. Users may lose important data.",
+      "recommendation": "Consider implementing soft-delete with a trash/recycle bin feature. Or add a brief undo window (5 seconds) after deletion."
+    }
+  ],
+  "crudMatrix": {
+    "note": "CRUD operations matrix for 22 modules. ✓ = implemented, ✗ = missing, N/A = not applicable (read-only module)",
+    "modules": {
+      "agents": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✓", "search": "✓", "filter": "✓", "export": "✓", "pagination": "✓", "notes": "Uses CommonTable, CommonForm, CommonSearch, SavedFilters, showDeleteConfirm, Can wrapper" },
+      "customers": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✓", "search": "✓", "filter": "✓", "export": "✓", "pagination": "✓", "notes": "360° view with sub-data tabs. Uses CommonTable, CommonForm, CommonSearch, SavedFilters, showDeleteConfirm, Can wrapper" },
+      "leads": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✓", "filter": "✓", "export": "✗", "pagination": "✓", "notes": "Under CRM page tabs. Has convert-lead modal. Uses Can wrapper" },
+      "opportunities": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✓", "filter": "✓", "export": "✗", "pagination": "✓", "notes": "Under CRM page tabs. Uses Can wrapper" },
+      "activities": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✓", "filter": "✓", "export": "✗", "pagination": "✓", "notes": "Under CRM page tabs. Uses Can wrapper" },
+      "notes": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✗", "filter": "✗", "export": "✗", "pagination": "✓", "notes": "Under CRM page tabs. Uses Can wrapper" },
+      "calls": { "list": "✓", "create": "✗", "read": "✓", "update": "✗", "delete": "✓", "duplicate": "✗", "search": "✓", "filter": "✓", "export": "✓", "pagination": "✓", "notes": "Calls are created via telephony, not UI. Uses CommonTable, CommonSearch, SavedFilters, showDeleteConfirm. Has download recording" },
+      "tickets": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✓", "search": "✓", "filter": "✓", "export": "✓", "pagination": "✓", "notes": "Full CRUD with SLA indicators. Uses CommonTable, CommonForm, CommonSearch, SavedFilters, showDeleteConfirm, Can wrapper" },
+      "campaigns": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✓", "filter": "✓", "export": "✗", "pagination": "✓", "notes": "Has member management, start/pause/stop actions, CSV upload for members. Uses showDeleteConfirm, Can wrapper" },
+      "billing_plans": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✗", "filter": "✗", "export": "✗", "pagination": "✗", "notes": "Under billing page tabs. Uses showDeleteConfirm" },
+      "billing_subscriptions": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✗", "duplicate": "✗", "search": "✗", "filter": "✗", "export": "✗", "pagination": "✗", "notes": "Under billing page tabs. No delete (cancel instead)" },
+      "billing_invoices": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✗", "duplicate": "✗", "search": "✗", "filter": "✗", "export": "✗", "pagination": "✗", "notes": "Under billing page tabs" },
+      "notifications": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✗", "filter": "✓", "export": "✗", "pagination": "✓", "notes": "Tabbed: Inbox, Templates, Preferences, Send. Full CRUD on templates and preferences" },
+      "audit": { "list": "✓", "create": "N/A", "read": "✓", "update": "N/A", "delete": "N/A", "duplicate": "N/A", "search": "✓", "filter": "✓", "export": "✗", "pagination": "✓", "notes": "Read-only: audit logs, security logs, fraud alerts, reconciliations. No CRUD expected" },
+      "scheduling_appointments": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✓", "filter": "✓", "export": "✗", "pagination": "✓", "notes": "Under scheduling page tabs. Uses showDeleteConfirm" },
+      "scheduling_availability": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✗", "filter": "✗", "export": "✗", "pagination": "✗", "notes": "Under scheduling page tabs. Uses showDeleteConfirm" },
+      "scheduling_templates": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✗", "filter": "✗", "export": "✗", "pagination": "✗", "notes": "Under scheduling page tabs. Uses showDeleteConfirm" },
+      "surveys": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✓", "filter": "✓", "export": "✗", "pagination": "✓", "notes": "Tabbed: Surveys, Templates, Questions, Answers, Reports. Full CRUD on surveys, templates, questions. Answers read-only" },
+      "knowledge_base": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✓", "filter": "✓", "export": "✗", "pagination": "✓", "notes": "Article browsing with category sidebar. CRUD on articles" },
+      "automation": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✗", "filter": "✓", "export": "✗", "pagination": "✗", "notes": "CRUD for automation rules. Trigger/condition/action config. Activate/deactivate toggle" },
+      "webhooks": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✗", "filter": "✗", "export": "✗", "pagination": "✗", "notes": "CRUD for webhook endpoints. Event subscription, test webhook, secret generation" },
+      "xr_videos": { "list": "✓", "create": "✓", "read": "✓", "update": "✗", "delete": "✓", "duplicate": "✗", "search": "✗", "filter": "✓", "export": "✗", "pagination": "✗", "notes": "Upload, delete, preview, bulk operations. Uses xrVideoApi" },
+      "xr_scenes": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✗", "filter": "✓", "export": "✗", "pagination": "✗", "notes": "CRUD with type/status filters" },
+      "xr_tours": { "list": "✓", "create": "✓", "read": "✓", "update": "✓", "delete": "✓", "duplicate": "✗", "search": "✗", "filter": "✗", "export": "✗", "pagination": "✗", "notes": "CRUD with publish action. Missing search/filter/export. Missing try/catch on form submit (CRIT-003)" },
+      "xr_assets": { "list": "✓", "create": "✓", "read": "N/A", "update": "✗", "delete": "✓", "duplicate": "✗", "search": "✓", "filter": "✓", "export": "✗", "pagination": "✗", "notes": "Upload, delete, bulk delete. No edit (re-upload instead). Grid card view" },
+      "xr_analytics": { "list": "✓", "create": "N/A", "read": "✓", "update": "N/A", "delete": "N/A", "duplicate": "N/A", "search": "✗", "filter": "✓", "export": "✓", "pagination": "N/A", "notes": "Read-only analytics dashboard. Date range filter. CSV/Excel export. Placeholder heatmap" },
+      "xr_collaboration": { "list": "✓", "create": "✓", "read": "✓", "update": "✗", "delete": "✗", "duplicate": "✗", "search": "✗", "filter": "✗", "export": "✗", "pagination": "✗", "notes": "Create room, join room, end room. Missing search/filter/pagination. Hardcoded scene options (CRIT-002)" }
+    }
+  },
+  "componentAnalysis": {
+    "CommonTable": {
+      "file": "frontend/src/components/common/CommonTable.tsx",
+      "quality": "good",
+      "issues": ["createPermission passed to Can without null check — will crash if undefined"]
+    },
+    "CommonForm": {
+      "file": "frontend/src/components/common/CommonForm.tsx",
+      "quality": "good",
+      "issues": ["Duplicate success message (HIGH-001)", "Form fields not disabled during submit"]
+    },
+    "CommonSearch": {
+      "file": "frontend/src/components/common/CommonSearch.tsx",
+      "quality": "good",
+      "issues": ["No Enter key support for search", "No debounce on input"]
+    },
+    "CommonConfirmDelete": {
+      "file": "frontend/src/components/common/CommonConfirmDelete.tsx",
+      "quality": "good",
+      "issues": ["No undo capability (LOW-006)"]
+    },
+    "LoadingSkeleton": {
+      "file": "frontend/src/components/common/LoadingSkeleton.tsx",
+      "quality": "good",
+      "issues": []
+    },
+    "PageHeader": {
+      "file": "frontend/src/components/common/PageHeader.tsx",
+      "quality": "good",
+      "issues": ["createPermission passed to Can without null check"]
+    },
+    "SavedFilters": {
+      "file": "frontend/src/components/common/SavedFilters.tsx",
+      "quality": "fair",
+      "issues": ["Empty catch block on localStorage parse", "No search/filter on some pages that need it"]
+    },
+    "Can": {
+      "file": "frontend/src/components/common/Can.tsx",
+      "quality": "good",
+      "issues": []
+    },
+    "FileUpload": {
+      "file": "frontend/src/components/common/FileUpload.tsx",
+      "quality": "fair",
+      "issues": ["Hardcoded Vietnamese text (HIGH-003)", "Uses raw fetch instead of project's API client"]
+    },
+    "RecordingPlayer": {
+      "file": "frontend/src/components/common/RecordingPlayer.tsx",
+      "quality": "poor",
+      "issues": ["Fake playback simulation (HIGH-004)", "Random waveform", "Hardcoded colors for dark mode", "Vietnamese locale"]
+    },
+    "CallDisposition": {
+      "file": "frontend/src/components/common/CallDisposition.tsx",
+      "quality": "good",
+      "issues": ["No keyboard shortcuts for quick disposition"]
+    },
+    "ScreenPop": {
+      "file": "frontend/src/components/common/ScreenPop.tsx",
+      "quality": "good",
+      "issues": ["Missing aria-labels on buttons"]
+    },
+    "CustomerTimeline": {
+      "file": "frontend/src/components/common/CustomerTimeline.tsx",
+      "quality": "good",
+      "issues": ["Vietnamese locale for dates"]
+    }
+  },
+  "layoutAnalysis": {
+    "AppLayout": { "quality": "good", "issues": [] },
+    "Header": { "quality": "good", "issues": ["No user role display", "No organization name display"] },
+    "Sidebar": { "quality": "good", "issues": ["Menu labels in Vietnamese (HIGH-003)", "selectedKey fallback for root path"] },
+    "menuConfig": { "quality": "fair", "issues": ["All labels hardcoded in Vietnamese", "No i18n keys"] },
+    "NotificationBadge": { "quality": "fair", "issues": ["Silent error swallowing", "No tooltip on bell icon"] }
+  },
+  "themeAnalysis": {
+    "ThemeProvider": { "quality": "good", "issues": ["Color mismatch with CSS variables (HIGH-006)"] },
+    "globals.css": { "quality": "good", "issues": ["Color mismatch with theme provider", "Limited dark mode CSS variable coverage"] }
+  }
+}

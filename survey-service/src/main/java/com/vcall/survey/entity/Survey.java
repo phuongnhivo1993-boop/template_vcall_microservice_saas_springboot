@@ -44,6 +44,10 @@ public class Survey extends BaseEntity {
     @Column(name = "is_active")
     private Boolean isActive = true;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private SurveyStatus status = SurveyStatus.DRAFT;
+
     public enum SurveyType {
         CSAT, NPS, CUSTOM
     }

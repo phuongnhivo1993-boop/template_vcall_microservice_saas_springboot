@@ -19,6 +19,7 @@ import com.vcall.customer.service.CustomerService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -55,6 +56,9 @@ public class CustomerController {
     private final CustomerContactService customerContactService;
     private final CustomerAddressService customerAddressService;
     private final CustomerEventPublisher customerEventPublisher;
+
+    @Value("${app.export.max-size:1000}")
+    private int maxExportSize;
 
     @GetMapping
     public ResponseEntity<ApiResponse<PagedResponse<CustomerResponse>>> getAll(
@@ -200,9 +204,9 @@ public class CustomerController {
                           HttpServletResponse response) throws IOException {
         List<CustomerResponse> customers;
         if (!keyword.isEmpty()) {
-            customers = customerService.search(keyword, PageRequest.of(0, 5000)).getContent();
+            customers = customerService.search(keyword, PageRequest.of(0, Math.min(maxExportSize, 1000))).getContent();
         } else {
-            customers = customerService.findAll(PageRequest.of(0, 5000, Sort.by("createdAt").descending())).getContent();
+            customers = customerService.findAll(PageRequest.of(0, Math.min(maxExportSize, 1000), Sort.by("createdAt").descending())).getContent();
         }
         List<String> headers = Arrays.asList("ID", "Customer Code", "Full Name", "Email", "Phone", "Company", "Gender", "Created At");
         List<List<String>> rows = CsvExportUtil.toRows(customers, Arrays.asList("id", "customerCode", "fullName", "email", "phone", "company", "gender", "createdAt"));
@@ -215,9 +219,9 @@ public class CustomerController {
                             HttpServletResponse response) throws IOException {
         List<CustomerResponse> customers;
         if (!keyword.isEmpty()) {
-            customers = customerService.search(keyword, PageRequest.of(0, 5000)).getContent();
+            customers = customerService.search(keyword, PageRequest.of(0, Math.min(maxExportSize, 1000))).getContent();
         } else {
-            customers = customerService.findAll(PageRequest.of(0, 5000, Sort.by("createdAt").descending())).getContent();
+            customers = customerService.findAll(PageRequest.of(0, Math.min(maxExportSize, 1000), Sort.by("createdAt").descending())).getContent();
         }
         List<String> headers = Arrays.asList("ID", "Customer Code", "Full Name", "Email", "Phone", "Company", "Gender", "Created At");
         ExcelExportUtil.writeExcel(response, "customers.xlsx", headers, customers,

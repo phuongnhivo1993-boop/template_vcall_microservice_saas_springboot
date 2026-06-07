@@ -7,7 +7,9 @@ import {
   SearchOutlined, SendOutlined,
   FacebookOutlined, GlobalOutlined,
 } from '@ant-design/icons';
+import PageHeader from '@/components/common/PageHeader';
 import { chatApi } from '@/lib/api';
+import dayjs from 'dayjs';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -119,6 +121,7 @@ export default function InboxPage() {
 
   return (
     <div style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+      <PageHeader title="Hộp thư đến" subtitle="Quản lý hội thoại đa kênh" />
       <Card size="small" style={{ marginBottom: 8 }}>
         <Row justify="space-between" align="middle">
           <Col>
@@ -179,7 +182,7 @@ export default function InboxPage() {
                           {conv.lastMessage}
                         </Paragraph>
                         <Text type="secondary" style={{ fontSize: 11 }}>
-                          {new Date(conv.lastMessageAt).toLocaleString('vi-VN')}
+                          {dayjs(conv.lastMessageAt).format('DD/MM/YYYY HH:mm')}
                         </Text>
                       </div>
                     }
@@ -224,7 +227,7 @@ export default function InboxPage() {
                     }}>
                       <div>{msg.content}</div>
                       <div style={{ fontSize: 10, marginTop: 4, opacity: 0.7, textAlign: 'right' }}>
-                        {new Date(msg.sentAt).toLocaleTimeString('vi-VN')}
+                        {dayjs(msg.sentAt).format('HH:mm')}
                       </div>
                     </div>
                   </div>

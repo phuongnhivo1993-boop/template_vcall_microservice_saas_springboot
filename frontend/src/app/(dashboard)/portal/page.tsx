@@ -11,6 +11,7 @@ import {
 import CommonTable from '@/components/common/CommonTable';
 import { ticketsApi, knowledgeBaseApi, settingsApi } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import dayjs from 'dayjs';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -149,7 +150,7 @@ export default function PortalPage() {
                   </Typography.Paragraph>
                   <Space>
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}><StarOutlined /> {article.views || 0} lượt xem</Typography.Text>
-                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>Cập nhật: {article.updatedAt ? new Date(article.updatedAt).toLocaleDateString('vi-VN') : '-'}</Typography.Text>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>Cập nhật: {article.updatedAt ? dayjs(article.updatedAt).format('DD/MM/YYYY') : '-'}</Typography.Text>
                   </Space>
                 </Card>
               </Col>

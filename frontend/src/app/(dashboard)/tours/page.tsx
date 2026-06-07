@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import { xrToursApi, type XRTour } from '@/lib/api/xr-api';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -87,13 +88,18 @@ export default function ToursPage() {
   };
 
   const handleFormSubmit = async (values: any) => {
-    if (editingTour?.id) {
-      await xrToursApi.update(editingTour.id, values);
-    } else {
-      await xrToursApi.create(values);
+    try {
+      if (editingTour?.id) {
+        await xrToursApi.update(editingTour.id, values);
+      } else {
+        await xrToursApi.create(values);
+      }
+      message.success(editingTour?.id ? 'Tour updated' : 'Tour created');
+      setModalOpen(false);
+      fetchTours();
+    } catch {
+      message.error(editingTour?.id ? 'Failed to update tour' : 'Failed to create tour');
     }
-    setModalOpen(false);
-    fetchTours();
   };
 
   const columns: ColumnsType<XRTour> = [
@@ -138,7 +144,7 @@ export default function ToursPage() {
       title: 'Created',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-',
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-',
     },
     {
       title: 'Actions',

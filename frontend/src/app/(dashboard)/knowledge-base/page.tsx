@@ -11,6 +11,7 @@ import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { Can } from '@/components/common/Can';
 import { Permissions } from '@/lib/permissions';
 import { knowledgeBaseApi } from '@/lib/api';
+import dayjs from 'dayjs';
 import type { TablePaginationConfig } from 'antd/es/table';
 
 const { Title, Text, Paragraph } = Typography;
@@ -178,7 +179,7 @@ export default function KnowledgeBasePage() {
           <Space style={{ marginBottom: 16 }}>
             <Tag color="blue">{CATEGORIES.find(c => c.key === selectedArticle.category)?.label}</Tag>
             {selectedArticle.tags.map(tag => <Tag key={tag}>{tag}</Tag>)}
-            <Text type="secondary"><ClockCircleOutlined /> Updated: {new Date(selectedArticle.updatedAt).toLocaleDateString('vi-VN')}</Text>
+            <Text type="secondary"><ClockCircleOutlined /> Updated: {dayjs(selectedArticle.updatedAt).format('DD/MM/YYYY')}</Text>
             <Text type="secondary"><EyeOutlined /> {selectedArticle.views} views</Text>
             <Text type="secondary"><LikeOutlined /> {selectedArticle.likes} likes</Text>
           </Space>
@@ -222,7 +223,7 @@ export default function KnowledgeBasePage() {
     { title: 'Category', dataIndex: 'category', key: 'category', render: (c: string) => <Tag>{CATEGORIES.find(cat => cat.key === c)?.label || c}</Tag> },
     { title: 'Views', dataIndex: 'views', key: 'views' },
     { title: 'Likes', dataIndex: 'likes', key: 'likes' },
-    { title: 'Updated', dataIndex: 'updatedAt', key: 'updatedAt', render: (d: string) => new Date(d).toLocaleDateString('vi-VN') },
+    { title: 'Updated', dataIndex: 'updatedAt', key: 'updatedAt', render: (d: string) => dayjs(d).format('DD/MM/YYYY') },
     { title: 'Status', dataIndex: 'status', key: 'status', render: (s: string) => <Tag color={s === 'published' ? 'green' : 'orange'}>{s}</Tag> },
     {
       title: 'Actions', key: 'actions',

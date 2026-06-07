@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Form, Input, Button, Card, Typography, message, Steps, Select, Result } from 'antd';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -69,7 +70,7 @@ export default function SignupPage() {
                   <div style={{ background: '#f6ffed', padding: 12, borderRadius: 6, margin: '12px 0' }}>
                     <p><strong>Tenant ID:</strong> {tenantInfo.tenantId}</p>
                     <p><strong>Plan:</strong> {tenantInfo.plan}</p>
-                    <p><strong>Trial ends:</strong> {new Date(tenantInfo.trialEndDate).toLocaleDateString()}</p>
+                    <p><strong>Trial ends:</strong> {dayjs(tenantInfo.trialEndDate).format('DD/MM/YYYY')}</p>
                     <p><strong>Max Agents:</strong> {tenantInfo.maxAgents}</p>
                     <p><strong>Max Users:</strong> {tenantInfo.maxUsers}</p>
                   </div>

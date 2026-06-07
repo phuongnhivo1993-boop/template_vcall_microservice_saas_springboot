@@ -11,6 +11,7 @@ import {
   DollarOutlined, CalendarOutlined
 } from '@ant-design/icons';
 import { crmApi } from '@/lib/api';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -123,7 +124,7 @@ export default function OpportunityDetailPage() {
           <Card><Statistic title="Probability" value={opportunity.probability ? `${opportunity.probability}%` : '-'} prefix={<CalendarOutlined />} /></Card>
         </Col>
         <Col xs={12} sm={6}>
-          <Card><Statistic title="Expected Close" value={opportunity.expectedCloseDate ? new Date(opportunity.expectedCloseDate).toLocaleDateString() : '-'} prefix={<CalendarOutlined />} /></Card>
+          <Card><Statistic title="Expected Close" value={opportunity.expectedCloseDate ? dayjs(opportunity.expectedCloseDate).format('DD/MM/YYYY') : '-'} prefix={<CalendarOutlined />} /></Card>
         </Col>
         <Col xs={12} sm={6}>
           <Card><Statistic title="Stage" value={opportunity.stage || '-'} valueStyle={{ color: oppStageColors[opportunity.stage] ? undefined : undefined }} /></Card>
@@ -146,7 +147,7 @@ export default function OpportunityDetailPage() {
               <Descriptions.Item label="Value"><DollarOutlined /> ${opportunity.value?.toLocaleString() || '-'}</Descriptions.Item>
               <Descriptions.Item label="Probability">{opportunity.probability ? `${opportunity.probability}%` : '-'}</Descriptions.Item>
               <Descriptions.Item label="Expected Close Date">
-                {opportunity.expectedCloseDate ? new Date(opportunity.expectedCloseDate).toLocaleDateString('vi-VN') : '-'}
+                {opportunity.expectedCloseDate ? dayjs(opportunity.expectedCloseDate).format('DD/MM/YYYY') : '-'}
               </Descriptions.Item>
               <Descriptions.Item label="Contact Person"><UserOutlined /> {opportunity.contactPerson || opportunity.contactName || '-'}</Descriptions.Item>
               <Descriptions.Item label="Assigned To"><UserOutlined /> {opportunity.assignedTo || '-'}</Descriptions.Item>
@@ -189,7 +190,7 @@ export default function OpportunityDetailPage() {
                           {item.title ? `: ${item.title}` : ''}
                         </Text>
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          {item.timestamp ? new Date(item.timestamp).toLocaleDateString('vi-VN') : ''}
+                          {item.timestamp ? dayjs(item.timestamp).format('DD/MM/YYYY') : ''}
                         </Text>
                       </div>
                       {item.description && <div style={{ marginTop: 4, color: '#666' }}>{item.description}</div>}

@@ -19,6 +19,7 @@ import CommonSearch from '@/components/common/CommonSearch';
 import SavedFilters from '@/components/common/SavedFilters';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { crmApi } from '@/lib/api';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -421,7 +422,7 @@ export default function CrmPage() {
       render: (s: string) => <Tag color={leadStatusColors[s] || 'blue'}>{s}</Tag> },
     { title: 'Source', dataIndex: 'source', key: 'source', sorter: true },
     { title: 'Created', dataIndex: 'createdAt', key: 'createdAt', sorter: true,
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-' },
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
         <Space>
@@ -446,9 +447,9 @@ export default function CrmPage() {
     { title: 'Probability', dataIndex: 'probability', key: 'probability',
       render: (p: number) => p ? `${p}%` : '-' },
     { title: 'Expected Close', dataIndex: 'expectedCloseDate', key: 'expectedCloseDate', sorter: true,
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-' },
     { title: 'Created', dataIndex: 'createdAt', key: 'createdAt', sorter: true,
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-' },
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
         <Space>
@@ -467,7 +468,7 @@ export default function CrmPage() {
     { title: 'Description', dataIndex: 'description', key: 'description', ellipsis: true },
     { title: 'Assigned To', dataIndex: 'assignedToName', key: 'assignedToName' },
     { title: 'Date', dataIndex: 'startDate', key: 'startDate', sorter: true,
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-' },
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
         <Space>
@@ -483,7 +484,7 @@ export default function CrmPage() {
     { title: 'Content', dataIndex: 'content', key: 'content', ellipsis: true },
     { title: 'Customer', dataIndex: 'customerId', key: 'customerId' },
     { title: 'Created', dataIndex: 'createdAt', key: 'createdAt', sorter: true,
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-' },
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
         <Space>

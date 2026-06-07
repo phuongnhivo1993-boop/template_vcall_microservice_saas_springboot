@@ -12,6 +12,7 @@ import {
   DownloadOutlined, ReloadOutlined, SearchOutlined,
 } from '@ant-design/icons';
 import { xrAssetsApi, type XRAsset } from '@/lib/api/xr-api';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -67,8 +68,8 @@ export default function AssetsPage() {
       message.success(`${file.name} uploaded successfully`);
       setUploadModalOpen(false);
       fetchAssets();
-    } catch {
-      message.error('Upload failed');
+    } catch (err) {
+      message.error(err?.response?.data?.message || 'Upload failed');
     } finally {
       setUploading(false);
     }
@@ -236,7 +237,7 @@ export default function AssetsPage() {
                       description={
                         <Space direction="vertical" size={0}>
                           <Text type="secondary" style={{ fontSize: 12 }}>{formatFileSize(asset.fileSize)}</Text>
-                          <Text type="secondary" style={{ fontSize: 12 }}>{new Date(asset.createdAt).toLocaleDateString()}</Text>
+                          <Text type="secondary" style={{ fontSize: 12 }}>{dayjs(asset.createdAt).format('DD/MM/YYYY')}</Text>
                         </Space>
                       }
                     />

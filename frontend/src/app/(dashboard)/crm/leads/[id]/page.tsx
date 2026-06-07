@@ -11,6 +11,7 @@ import {
   SwapOutlined, ClockCircleOutlined, UserOutlined, CheckCircleOutlined
 } from '@ant-design/icons';
 import { crmApi } from '@/lib/api';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -162,7 +163,7 @@ export default function LeadDetailPage() {
                           {item.title ? `: ${item.title}` : ''}
                         </Text>
                         <Text type="secondary" style={{ fontSize: 12 }}>
-                          {item.timestamp ? new Date(item.timestamp).toLocaleDateString('vi-VN') : ''}
+                          {item.timestamp ? dayjs(item.timestamp).format('DD/MM/YYYY') : ''}
                         </Text>
                       </div>
                       {item.description && <div style={{ marginTop: 4, color: '#666' }}>{item.description}</div>}

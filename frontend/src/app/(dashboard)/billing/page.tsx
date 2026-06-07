@@ -316,9 +316,9 @@ export default function BillingPage() {
     { title: 'Status', dataIndex: 'status', key: 'status', sorter: true,
       render: (s: string) => <Tag color={subscriptionStatusColors[s]}>{s}</Tag> },
     { title: 'Start', dataIndex: 'startDate', key: 'startDate', sorter: true,
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-' },
     { title: 'End', dataIndex: 'endDate', key: 'endDate',
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-' },
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
         r.status === 'ACTIVE' ? (
@@ -336,9 +336,9 @@ export default function BillingPage() {
     { title: 'Status', dataIndex: 'status', key: 'status', sorter: true,
       render: (s: string) => <Tag color={invoiceStatusColors[s]}>{s}</Tag> },
     { title: 'Issue Date', dataIndex: 'issueDate', key: 'issueDate', sorter: true,
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-' },
     { title: 'Due Date', dataIndex: 'dueDate', key: 'dueDate',
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-' },
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
         r.status === 'PENDING' || r.status === 'OVERDUE' ? (
@@ -355,7 +355,7 @@ export default function BillingPage() {
     { title: 'Cost', dataIndex: 'totalCost', key: 'totalCost', sorter: true,
       render: (c: number) => `$${c?.toFixed(2) || '0.00'}` },
     { title: 'Date', dataIndex: 'recordedAt', key: 'recordedAt', sorter: true,
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-' },
   ];
 
   const totalRevenue = invoices.filter((i: any) => i.status === 'PAID').reduce((sum: number, i: any) => sum + (i.totalAmount || 0), 0);

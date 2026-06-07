@@ -12,6 +12,7 @@ import com.vcall.ticket.entity.Ticket.TicketStatus;
 import com.vcall.ticket.kafka.TicketEventPublisher;
 import com.vcall.ticket.repository.SlaBreachRepository;
 import com.vcall.ticket.repository.SlaRuleRepository;
+import com.vcall.ticket.repository.TicketRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.persistence.criteria.Predicate;
@@ -39,6 +40,7 @@ public class SlaService {
     private final SlaRuleRepository slaRuleRepository;
     private final SlaBreachRepository slaBreachRepository;
     private final TicketEventPublisher eventPublisher;
+    private final TicketRepository ticketRepository;
 
     @Transactional
     public SlaRuleResponse createRule(SlaRuleRequest request) {
@@ -268,7 +270,17 @@ public class SlaService {
     }
 
     private List<Ticket> findTicketsForRule(SlaRule rule) {
-        return List.of();
+        List<TicketStatus> openStatuses = List.of(
+            TicketStatus.OPEN, TicketStatus.IN_PROGRESS, TicketStatus.WAITING, TicketStatus.REOPENED
+        );
+        List<Ticket> candidates = new ArrayList<>();
+        for (TicketStatus status : openStatuses) {
+            candidates.addAll(ticketRepository.findByStatus(status));
+        }
+        return candidates.stream()
+                .filter(t -> t.getPriority() == rule.getPriority())
+                .filter(t -> rule.getCategory() == null || rule.getCategory().equalsIgnoreCase(t.getCategory()))
+                .collect(Collectors.toList());
     }
 
     private SlaRuleResponse toResponse(SlaRule rule) {

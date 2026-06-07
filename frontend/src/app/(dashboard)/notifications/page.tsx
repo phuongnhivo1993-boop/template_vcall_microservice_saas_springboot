@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Tabs, Tag, Typography, Space, Button, message, Row, Col, Statistic, Badge, Form, Select, Modal, Input } from 'antd';
+import { Card, Tabs, Tag, Space, Button, message, Row, Col, Statistic, Badge, Form, Select, Modal, Input } from 'antd';
 import {
   BellOutlined, SendOutlined, SettingOutlined,
   CheckCircleOutlined, MobileOutlined, PlusOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import CommonTable from '@/components/common/CommonTable';
+import PageHeader from '@/components/common/PageHeader';
 import CommonForm from '@/components/common/CommonForm';
 import CommonSearch from '@/components/common/CommonSearch';
 import SavedFilters from '@/components/common/SavedFilters';
@@ -15,7 +16,6 @@ import { notificationsApi } from '@/lib/api';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
 
-const { Title } = Typography;
 const { TextArea } = Input;
 
 const channelColors: Record<string, string> = {
@@ -198,11 +198,20 @@ export default function NotificationsPage() {
   };
 
   const handleDeleteNotification = async (id: string) => {
-    try {
-      await notificationsApi.delete(id);
-      message.success('Deleted');
-      fetchData();
-    } catch { message.error('Delete failed'); }
+    Modal.confirm({
+      title: 'Xóa thông báo',
+      content: 'Bạn có chắc chắn muốn xóa thông báo này?',
+      okText: 'Xóa',
+      okType: 'danger',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          await notificationsApi.delete(id);
+          message.success('Đã xóa');
+          fetchData();
+        } catch { message.error('Xóa thất bại'); }
+      },
+    });
   };
 
   const handleCreateTemplate = () => {
@@ -274,7 +283,7 @@ export default function NotificationsPage() {
     { title: 'Status', dataIndex: 'status', key: 'status', sorter: true,
       render: (s: string) => <Tag color={statusColors[s] || 'default'}>{s}</Tag> },
     { title: 'Sent At', dataIndex: 'sentAt', key: 'sentAt', sorter: true,
-      render: (d: string) => d ? new Date(d).toLocaleString() : '-' },
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY HH:mm') : '-' },
     {
       title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
@@ -444,7 +453,12 @@ export default function NotificationsPage() {
 
   return (
     <div>
-      <Title level={3}>Notifications</Title>
+      <PageHeader
+        title="Thông báo"
+        subtitle="Quản lý thông báo, mẫu và tùy chọn"
+        onExportCsv={handleExportCsv}
+        onExportExcel={handleExportExcel}
+      />
 
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={12} sm={6}><Card><Statistic title="Total" value={notifications.length} prefix={<BellOutlined />} /></Card></Col>

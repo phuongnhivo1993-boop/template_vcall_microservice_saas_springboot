@@ -5,8 +5,10 @@ import com.vcall.call.dto.CallResponse;
 import com.vcall.call.dto.CallStatusRequest;
 import com.vcall.call.entity.Call;
 import com.vcall.call.entity.Call.CallStatus;
+import com.vcall.call.entity.CallStatusHistory;
 import com.vcall.call.kafka.CallEventPublisher;
 import com.vcall.call.repository.CallRepository;
+import com.vcall.call.repository.CallStatusHistoryRepository;
 import com.vcall.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,7 @@ public class CallService {
 
     private final CallRepository callRepository;
     private final CallEventPublisher eventPublisher;
+    private final CallStatusHistoryRepository callStatusHistoryRepository;
 
     @Transactional
     public CallResponse createCall(CallRequest request) {
@@ -51,6 +54,7 @@ public class CallService {
         Call call = callRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Call not found with id: " + id));
 
+        Call.CallStatus oldStatus = call.getStatus();
         Call.CallStatus newStatus = Call.CallStatus.valueOf(request.getStatus().toUpperCase());
         call.setStatus(newStatus);
 
@@ -78,6 +82,9 @@ public class CallService {
         }
 
         call = callRepository.save(call);
+
+        recordStatusHistory(call, oldStatus, newStatus, request.getAgentId(), request.getReason());
+
         return toResponse(call);
     }
 
@@ -259,6 +266,17 @@ public class CallService {
             call.setIsDeleted(true);
         }
         callRepository.saveAll(calls);
+    }
+
+    private void recordStatusHistory(Call call, CallStatus fromStatus, CallStatus toStatus, UUID changedBy, String reason) {
+        CallStatusHistory history = new CallStatusHistory();
+        history.setCall(call);
+        history.setFromStatus(fromStatus);
+        history.setToStatus(toStatus);
+        history.setChangedBy(changedBy);
+        history.setReason(reason);
+        history.setChangedAt(LocalDateTime.now());
+        callStatusHistoryRepository.save(history);
     }
 
     private CallResponse toResponse(Call call) {

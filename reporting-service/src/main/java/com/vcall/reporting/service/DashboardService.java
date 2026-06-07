@@ -27,26 +27,36 @@ public class DashboardService {
     private final ReportingDataService reportingDataService;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Returns dashboard stats aggregated from ReportingDataService.
+     * Data sources:
+     * - Call metrics: from AgentPerformanceCache (Kafka call.ended events)
+     * - Agent metrics: from AgentPerformanceCache (Kafka call.ended events)
+     * - Report execution metrics: from ReportExecution table (reporting-service internal)
+     *
+     * NOTE: Real-time call data and ticket SLA data require direct integration
+     * with call-service and ticket-service respectively.
+     */
     public Map<String, Object> getDashboardStats() {
         Map<String, Object> stats = new HashMap<>();
 
         Map<String, Object> callReport = reportingDataService.generateCallVolumeReport(new HashMap<>());
-        stats.put("totalCallsToday", callReport.get("totalCalls"));
-        stats.put("answered", callReport.get("answered"));
-        stats.put("missed", callReport.get("missed"));
-        stats.put("failed", callReport.get("failed"));
-        stats.put("answerRate", callReport.get("answerRate"));
+        stats.put("totalCallsToday", callReport.getOrDefault("totalCalls", 0L));
+        stats.put("answeredCalls", callReport.getOrDefault("answered", 0L));
+        stats.put("missedCalls", callReport.getOrDefault("missed", 0L));
+        stats.put("answerRate", callReport.getOrDefault("answerRate", 0.0));
 
         Map<String, Object> agentReport = reportingDataService.generateAgentPerformanceReport(new HashMap<>());
-        stats.put("activeAgents", agentReport.get("totalAgents"));
-        stats.put("avgOccupancyRate", agentReport.get("avgOccupancyRate"));
-        stats.put("avgSatisfactionScore", agentReport.get("avgSatisfactionScore"));
+        stats.put("activeAgents", agentReport.getOrDefault("totalAgents", 0));
+        stats.put("avgOccupancyRate", agentReport.getOrDefault("avgOccupancyRate", 0.0));
+        stats.put("avgSatisfactionScore", agentReport.getOrDefault("avgSatisfactionScore", 0.0));
 
         Map<String, Object> slaReport = reportingDataService.generateSlaReport(new HashMap<>());
-        stats.put("openTickets", slaReport.get("totalTickets"));
-        stats.put("slaComplianceRate", slaReport.get("slaComplianceRate"));
+        stats.put("totalReportExecutions", slaReport.getOrDefault("totalExecutions", 0L));
+        stats.put("reportComplianceRate", slaReport.getOrDefault("complianceRate", 0.0));
 
-        stats.put("dataSource", "database");
+        stats.put("dataSource", "agent-performance-cache");
+        stats.put("dataSourceNote", "Call/agent data from Kafka events; report metrics from reporting-service");
         return stats;
     }
 

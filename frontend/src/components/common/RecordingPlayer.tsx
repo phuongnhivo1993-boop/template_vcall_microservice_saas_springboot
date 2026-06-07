@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { Modal, Card, Row, Col, Statistic, Tag, Space, Typography, Button, Slider, message } from 'antd';
-import { PlayCircleOutlined, PauseCircleOutlined, DownloadOutlined, SoundOutlined,
-         PhoneOutlined, ClockCircleOutlined, UserOutlined, FileTextOutlined } from '@ant-design/icons';
+import { useState, useRef, useEffect } from 'react';
+import { Modal, Card, Row, Col, Space, Typography, Button, Slider } from 'antd';
+import {
+  PlayCircleOutlined, PauseCircleOutlined, DownloadOutlined, SoundOutlined,
+  PhoneOutlined, ClockCircleOutlined, UserOutlined, FileTextOutlined,
+} from '@ant-design/icons';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 interface Recording {
   id: string;
@@ -26,19 +28,74 @@ interface Recording {
 interface RecordingPlayerProps {
   visible: boolean;
   recording: Recording | null;
+  recordingUrl?: string;
   onClose: () => void;
 }
 
-export default function RecordingPlayer({ visible, recording, onClose }: RecordingPlayerProps) {
+export default function RecordingPlayer({ visible, recording, recordingUrl, onClose }: RecordingPlayerProps) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [ready, setReady] = useState(false);
 
-  if (!recording) return null;
+  useEffect(() => {
+    if (!visible) {
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setReady(false);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    }
+  }, [visible]);
 
-  const formatDuration = (seconds: number) => {
+  useEffect(() => {
+    if (visible && recordingUrl && audioRef.current) {
+      audioRef.current.src = recordingUrl;
+      audioRef.current.load();
+    }
+  }, [visible, recordingUrl]);
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+      setReady(true);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const togglePlay = () => {
+    if (!audioRef.current || !ready) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleSeek = (value: number) => {
+    if (!audioRef.current || !ready) return;
+    const time = (value / 100) * duration;
+    audioRef.current.currentTime = time;
+    setCurrentTime(time);
+  };
+
+  const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
+    const s = Math.floor(seconds % 60);
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
@@ -48,22 +105,9 @@ export default function RecordingPlayer({ visible, recording, onClose }: Recordi
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const togglePlay = () => {
-    setIsPlaying(!isPlaying);
-    if (!isPlaying) {
-      const interval = setInterval(() => {
-        setProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            setIsPlaying(false);
-            return 100;
-          }
-          setCurrentTime(prev => prev + 1);
-          return prev + 1;
-        });
-      }, recording.duration * 10);
-    }
-  };
+  if (!recording) return null;
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <Modal
@@ -76,6 +120,13 @@ export default function RecordingPlayer({ visible, recording, onClose }: Recordi
         <Button key="download" icon={<DownloadOutlined />}>Download Recording</Button>,
       ]}
     >
+      <audio
+        ref={audioRef}
+        onLoadedMetadata={handleLoadedMetadata}
+        onTimeUpdate={handleTimeUpdate}
+        onEnded={handleEnded}
+      />
+
       <Card size="small" style={{ marginBottom: 16 }}>
         <Row gutter={16}>
           <Col span={12}>
@@ -88,10 +139,9 @@ export default function RecordingPlayer({ visible, recording, onClose }: Recordi
           </Col>
           <Col span={12}>
             <Space direction="vertical" size={2}>
-              <Text type="secondary">Start: {new Date(recording.startTime).toLocaleString('vi-VN')}</Text>
-              <Text><ClockCircleOutlined /> {formatDuration(recording.duration)}</Text>
+              <Text type="secondary">Start: {new Date(recording.startTime).toLocaleString()}</Text>
+              <Text><ClockCircleOutlined /> {formatTime(recording.duration)}</Text>
               <Text><SoundOutlined /> {formatFileSize(recording.fileSize)}</Text>
-              <Tag color={recording.status === 'COMPLETED' ? 'green' : 'orange'}>{recording.status}</Tag>
             </Space>
           </Col>
         </Row>
@@ -105,34 +155,17 @@ export default function RecordingPlayer({ visible, recording, onClose }: Recordi
             <PlayCircleOutlined onClick={togglePlay} style={{ cursor: 'pointer', color: '#52c41a' }} />
           )}
         </div>
-        <Text>{formatDuration(currentTime)} / {formatDuration(recording.duration)}</Text>
+        <Text>{formatTime(currentTime)} / {formatTime(duration)}</Text>
         <Slider
           value={progress}
-          onChange={(val) => {
-            setProgress(val);
-            setCurrentTime(Math.floor(val * recording.duration / 100));
-          }}
-          tooltip={{ formatter: (val) => formatDuration(Math.floor((val || 0) * recording.duration / 100)) }}
+          onChange={handleSeek}
+          tooltip={{ formatter: (val) => formatTime(((val || 0) / 100) * duration) }}
+          style={{ marginTop: 8 }}
         />
       </div>
 
-      <div style={{ height: 80, background: '#f0f0f0', borderRadius: 8, marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', gap: 2, alignItems: 'center', height: '100%', width: '100%', padding: '0 8px' }}>
-          {Array.from({ length: 80 }).map((_, i) => (
-            <div key={i} style={{
-              width: 4,
-              height: `${Math.random() * 60 + 10}%`,
-              background: i / 80 * 100 <= progress ? '#1890ff' : '#d9d9d9',
-              borderRadius: 2,
-              transition: 'height 0.3s',
-              flexShrink: 0,
-            }} />
-          ))}
-        </div>
-      </div>
-
       {recording.transcript && (
-        <Card title={<Space><FileTextOutlined /> Transcript</Space>} size="small">
+        <Card title={<Space><FileTextOutlined /> Transcript</Space>} size="small" style={{ marginTop: 16 }}>
           <Text style={{ whiteSpace: 'pre-wrap' }}>{recording.transcript}</Text>
         </Card>
       )}

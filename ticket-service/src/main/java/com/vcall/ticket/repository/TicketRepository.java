@@ -2,6 +2,7 @@ package com.vcall.ticket.repository;
 
 import com.vcall.common.repository.TenantAwareRepository;
 import com.vcall.ticket.entity.Ticket;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -12,6 +13,7 @@ import java.util.UUID;
 @Repository
 public interface TicketRepository extends TenantAwareRepository<Ticket, UUID> {
 
+    @EntityGraph(attributePaths = {"comments"})
     Optional<Ticket> findByTicketNumber(String ticketNumber);
 
     List<Ticket> findByCustomerId(UUID customerId);

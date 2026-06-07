@@ -20,4 +20,6 @@ public class CallStatusRequest {
     private UUID agentId;
 
     private String hangupCause;
+
+    private String reason;
 }

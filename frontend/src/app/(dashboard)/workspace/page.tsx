@@ -4,8 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { Row, Col, Card, Tabs, Input, Badge, Avatar, Typography, Space, Button, List, Tag, Spin, Alert, Select, Statistic, Empty, Tooltip } from 'antd';
 import { PhoneOutlined, MessageOutlined, CustomerServiceOutlined, SearchOutlined, UserOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, MoreOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
+import PageHeader from '@/components/common/PageHeader';
 import ScreenPop from '@/components/common/ScreenPop';
 import { agentsApi, customersApi, callsApi, chatApi, ticketsApi, notificationsApi } from '@/lib/api';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -62,20 +64,17 @@ export default function WorkspacePage() {
         callerNumber: ringing.callerNumber,
         callerName: ringing.callerName,
         customer: {
-          id: 'demo-customer-1',
+          id: '',
           fullName: ringing.callerName,
           phone: ringing.callerNumber,
-          email: `${ringing.callerName?.toLowerCase().replace(/\s+/g, '.')}@email.com` || 'unknown@email.com',
-          company: 'VCall Customer',
-          totalCalls: 5,
-          totalTickets: 2,
-          satisfactionScore: 88,
-          tags: ['vip', 'support'],
+          email: '',
+          company: '',
+          totalCalls: 0,
+          totalTickets: 0,
+          satisfactionScore: 0,
+          tags: [],
         },
-        recentActivity: [
-          { id: 'a1', type: 'call', title: 'Previous call - Billing inquiry', description: 'Duration: 3m 42s', timestamp: new Date(Date.now() - 86400000).toISOString() },
-          { id: 'a2', type: 'ticket', title: 'Ticket TK-102 opened', description: 'Network issue - In progress', timestamp: new Date(Date.now() - 172800000).toISOString() },
-        ],
+        recentActivity: [],
       });
       setScreenPopVisible(true);
     }
@@ -89,10 +88,7 @@ export default function WorkspacePage() {
       const res = await customersApi.search(value, { page: 0, size: 10 });
       setSearchResults(res.data?.data?.content || []);
     } catch {
-      setSearchResults([
-        { id: '1', fullName: 'Nguyen Van A', phone: '0909123456', email: 'a@test.com' },
-        { id: '2', fullName: 'Tran Thi B', phone: '0909987654', email: 'b@test.com' },
-      ]);
+      setSearchResults([]);
     } finally {
       setCustomerSearching(false);
     }
@@ -128,6 +124,7 @@ export default function WorkspacePage() {
 
   return (
     <div>
+      <PageHeader title="Agent Workspace" subtitle="Điều khiển cuộc gọi, chat và ticket" />
       <Card size="small" style={{ marginBottom: 16 }}>
         <Row justify="space-between" align="middle">
           <Col>
@@ -229,7 +226,7 @@ export default function WorkspacePage() {
                           >
                             <List.Item.Meta
                               title={<Space>{ticket.title} <Tag color={statusColors[ticket.priority]}>{ticket.priority}</Tag></Space>}
-                              description={<Space><Tag>{ticket.status}</Tag><Text type="secondary">Created: {new Date(ticket.createdAt).toLocaleString()}</Text></Space>}
+                              description={<Space><Tag>{ticket.status}</Tag><Text type="secondary">Created: {dayjs(ticket.createdAt).format('DD/MM/YYYY HH:mm')}</Text></Space>}
                             />
                           </List.Item>
                         )}

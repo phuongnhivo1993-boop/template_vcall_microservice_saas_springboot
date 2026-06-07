@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import { xrScenesApi, type XRScene } from '@/lib/api/xr-api';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -195,7 +196,7 @@ export default function ScenesPage() {
       title: 'Created',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-',
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-',
     },
     {
       title: 'Actions',

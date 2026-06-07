@@ -18,6 +18,7 @@ import CommonSearch from '@/components/common/CommonSearch';
 import SavedFilters from '@/components/common/SavedFilters';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { campaignsApi } from '@/lib/api';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -324,13 +325,13 @@ export default function CampaignsPage() {
       title: 'Start',
       dataIndex: 'scheduleStart',
       key: 'scheduleStart',
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-',
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-',
     },
     {
       title: 'End',
       dataIndex: 'scheduleEnd',
       key: 'scheduleEnd',
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-',
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-',
     },
     {
       title: 'Actions',
@@ -494,9 +495,9 @@ export default function CampaignsPage() {
                     <Descriptions.Item label="Type">{selectedCampaign.type}</Descriptions.Item>
                     <Descriptions.Item label="Strategy">{selectedCampaign.strategy}</Descriptions.Item>
                     <Descriptions.Item label="Schedule">
-                      {selectedCampaign.scheduleStart ? new Date(selectedCampaign.scheduleStart).toLocaleDateString() : '-'}
+                      {selectedCampaign.scheduleStart ? dayjs(selectedCampaign.scheduleStart).format('DD/MM/YYYY') : '-'}
                       {' → '}
-                      {selectedCampaign.scheduleEnd ? new Date(selectedCampaign.scheduleEnd).toLocaleDateString() : '-'}
+                      {selectedCampaign.scheduleEnd ? dayjs(selectedCampaign.scheduleEnd).format('DD/MM/YYYY') : '-'}
                     </Descriptions.Item>
                     <Descriptions.Item label="Description">{selectedCampaign.description || '-'}</Descriptions.Item>
                   </Descriptions>

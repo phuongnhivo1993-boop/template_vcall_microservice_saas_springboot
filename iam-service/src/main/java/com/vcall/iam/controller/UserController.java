@@ -11,6 +11,7 @@ import com.vcall.iam.service.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -46,6 +47,9 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+
+    @Value("${app.export.max-size:1000}")
+    private int maxExportSize;
 
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN')")
@@ -149,7 +153,7 @@ public class UserController {
     @GetMapping("/export/csv")
     public void exportUsersCsv(@RequestParam(required = false) String keyword,
                                HttpServletResponse response) throws IOException {
-        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Pageable pageable = PageRequest.of(0, Math.min(maxExportSize, 1000), Sort.by("createdAt").descending());
         Page<UserResponse> users;
         if (keyword != null && !keyword.isEmpty()) {
             Specification<com.vcall.iam.entity.User> spec = (root, query, cb) ->

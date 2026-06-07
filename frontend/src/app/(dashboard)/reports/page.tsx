@@ -26,35 +26,7 @@ const { RangePicker } = DatePicker;
 
 const PIE_COLORS = ['#1677ff', '#52c41a', '#faad14', '#ff4d4f', '#722ed1', '#999'];
 
-const FALLBACK_CALL_VOLUME = [
-  { month: 'Jan', inbound: 1200, outbound: 800 },
-  { month: 'Feb', inbound: 1400, outbound: 900 },
-  { month: 'Mar', inbound: 1100, outbound: 750 },
-  { month: 'Apr', inbound: 1600, outbound: 1100 },
-  { month: 'May', inbound: 1800, outbound: 1200 },
-  { month: 'Jun', inbound: 1500, outbound: 950 },
-];
-
-const FALLBACK_AGENT_PERF = [
-  { name: 'Sarah J.', calls: 145, avgDuration: 4.2, resolution: 95 },
-  { name: 'Mike R.', calls: 128, avgDuration: 5.1, resolution: 88 },
-  { name: 'Emily W.', calls: 112, avgDuration: 3.8, resolution: 92 },
-  { name: 'John D.', calls: 98, avgDuration: 6.2, resolution: 85 },
-  { name: 'Lisa M.', calls: 56, avgDuration: 4.5, resolution: 90 },
-];
-
-const FALLBACK_SLA = [
-  { name: 'Within SLA', value: 92, color: '#52c41a' },
-  { name: 'Breached SLA', value: 8, color: '#ff4d4f' },
-];
-
-const FALLBACK_TOP_CUSTOMERS = [
-  { rank: 1, name: 'MediCorp Health', calls: 456, avgDuration: 5.2 },
-  { rank: 2, name: 'CareFirst Clinic', calls: 389, avgDuration: 4.8 },
-  { rank: 3, name: 'Wellness Plus', calls: 312, avgDuration: 6.1 },
-  { rank: 4, name: 'HealthBridge', calls: 278, avgDuration: 3.9 },
-  { rank: 5, name: 'PrimeCare Group', calls: 245, avgDuration: 5.5 },
-];
+const EMPTY_DATA: never[] = [];
 
 const frequencyOptions = [
   { value: 'DAILY', label: 'Daily' },
@@ -79,10 +51,10 @@ export default function ReportsPage() {
   const [scheduleForm] = Form.useForm();
   const [scheduleSubmitting, setScheduleSubmitting] = useState(false);
   const [selectedFrequency, setSelectedFrequency] = useState('DAILY');
-  const [callVolumeData, setCallVolumeData] = useState(FALLBACK_CALL_VOLUME);
-  const [agentPerfData, setAgentPerfData] = useState(FALLBACK_AGENT_PERF);
-  const [slaData, setSlaData] = useState(FALLBACK_SLA);
-  const [topCustomers, setTopCustomers] = useState(FALLBACK_TOP_CUSTOMERS);
+  const [callVolumeData, setCallVolumeData] = useState<any[]>(EMPTY_DATA);
+  const [agentPerfData, setAgentPerfData] = useState<any[]>(EMPTY_DATA);
+  const [slaData, setSlaData] = useState<any[]>(EMPTY_DATA);
+  const [topCustomers, setTopCustomers] = useState<any[]>(EMPTY_DATA);
 
   const fetchDefinitions = useCallback(async () => {
     setLoading(true);
@@ -122,7 +94,7 @@ export default function ReportsPage() {
         if (data?.agents) setAgentPerfData(data.agents);
       }
     } catch {
-      // Fallback data already set
+      // No data available - empty arrays remain as defaults
     } finally {
       setChartsLoading(false);
     }
@@ -200,7 +172,7 @@ export default function ReportsPage() {
     { title: 'Description', dataIndex: 'description', key: 'description', ellipsis: true },
     { title: 'Schedule', dataIndex: 'schedule', key: 'schedule', render: (s: string) => s || '-' },
     { title: 'Created', dataIndex: 'createdAt', key: 'createdAt',
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-' },
   ];
 
   const tabItems = [
@@ -213,6 +185,11 @@ export default function ReportsPage() {
         <Row gutter={[24, 24]}>
           <Col span={24}>
             <Card title="Call Volume (Inbound vs Outbound)">
+              {callVolumeData.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>
+                  No call volume data available
+                </div>
+              ) : (
               <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={callVolumeData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -224,10 +201,16 @@ export default function ReportsPage() {
                   <Bar dataKey="outbound" fill="#722ed1" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+              )}
             </Card>
           </Col>
           <Col xs={24} lg={12}>
             <Card title="Agent Performance">
+              {agentPerfData.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>
+                  No agent performance data available
+                </div>
+              ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={agentPerfData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -237,10 +220,16 @@ export default function ReportsPage() {
                   <Bar dataKey="calls" fill="#1677ff" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+              )}
             </Card>
           </Col>
           <Col xs={24} lg={12}>
             <Card title="SLA Compliance">
+              {slaData.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>
+                  No SLA data available
+                </div>
+              ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -259,6 +248,7 @@ export default function ReportsPage() {
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
+              )}
             </Card>
           </Col>
         </Row>
@@ -279,6 +269,7 @@ export default function ReportsPage() {
           dataSource={topCustomers}
           rowKey="rank"
           pagination={false}
+          locale={{ emptyText: 'No customer data available' }}
         />
       ),
     },

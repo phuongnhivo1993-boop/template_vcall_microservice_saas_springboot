@@ -24,33 +24,41 @@ public class ReportingDataService {
     private final ReportExecutionRepository reportExecutionRepository;
     private final AgentPerformanceCacheRepository agentPerformanceCacheRepository;
 
+    /**
+     * Generates call volume report.
+     * Data source: AgentPerformanceCache populated from Kafka call.ended events.
+     * This is aggregated data from the call-service, not raw CDR records.
+     */
     public Map<String, Object> generateCallVolumeReport(Map<String, Object> params) {
         Map<String, Object> result = new HashMap<>();
         String period = (String) params.getOrDefault("period", "today");
 
         LocalDate today = LocalDate.now();
-        LocalDateTime startOfDay = today.atStartOfDay();
-        LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
+        List<AgentPerformanceCache> agentCaches = agentPerformanceCacheRepository
+                .findByPeriodAndPeriodStart(AgentPerformanceCache.Period.DAILY, today);
 
-        List<ReportExecution> executions = reportExecutionRepository.findByExecutedAtBetween(startOfDay, endOfDay);
+        if (agentCaches.isEmpty()) {
+            agentCaches = agentPerformanceCacheRepository
+                    .findByPeriodStartBetween(today.minusDays(7), today);
+        }
 
-        long totalCalls = executions.size();
-        long completed = executions.stream().filter(e -> e.getStatus() == ReportExecution.ExecutionStatus.COMPLETED).count();
-        long failed = executions.stream().filter(e -> e.getStatus() == ReportExecution.ExecutionStatus.FAILED).count();
-        long pending = executions.stream().filter(e -> e.getStatus() == ReportExecution.ExecutionStatus.PENDING || e.getStatus() == ReportExecution.ExecutionStatus.RUNNING).count();
+        long totalCalls = agentCaches.stream().mapToLong(AgentPerformanceCache::getTotalCalls).sum();
+        long answeredCalls = agentCaches.stream().mapToLong(AgentPerformanceCache::getAnsweredCalls).sum();
+        long missedCalls = agentCaches.stream().mapToLong(AgentPerformanceCache::getMissedCalls).sum();
+        double avgDuration = agentCaches.stream()
+                .mapToDouble(AgentPerformanceCache::getAvgTalkDuration)
+                .average()
+                .orElse(0.0);
 
         result.put("totalCalls", totalCalls);
-        result.put("answered", completed);
-        result.put("missed", pending);
-        result.put("failed", failed);
-        result.put("avgDuration", executions.stream()
-                .filter(e -> e.getExecutionTime() != null)
-                .mapToLong(ReportExecution::getExecutionTime)
-                .average()
-                .orElse(0.0));
-        result.put("answerRate", totalCalls > 0 ? (double) completed / totalCalls * 100 : 0.0);
+        result.put("answered", answeredCalls);
+        result.put("missed", missedCalls);
+        result.put("failed", 0L);
+        result.put("avgDuration", avgDuration);
+        result.put("answerRate", totalCalls > 0 ? (double) answeredCalls / totalCalls * 100 : 0.0);
         result.put("period", period);
-        result.put("dataSource", "database");
+        result.put("dataSource", "agent-performance-cache");
+        result.put("dataSourceNote", "Aggregated from Kafka call.ended events via agent performance cache");
         return result;
     }
 
@@ -92,10 +100,17 @@ public class ReportingDataService {
         result.put("totalAgents", agentCaches.size());
         result.put("avgOccupancyRate", avgOccupancy);
         result.put("avgSatisfactionScore", avgSatisfaction);
-        result.put("dataSource", "database");
+        result.put("dataSource", "agent-performance-cache");
+        result.put("dataSourceNote", "Aggregated from Kafka call.ended events via agent performance cache");
         return result;
     }
 
+    /**
+     * Generates SLA report.
+     * Data source: ReportExecution records (proxied SLA data).
+     * NOTE: This is an approximation using report execution statuses.
+     * Real SLA data requires integration with ticket-service SLA tracking.
+     */
     public Map<String, Object> generateSlaReport(Map<String, Object> params) {
         Map<String, Object> result = new HashMap<>();
         String period = (String) params.getOrDefault("period", "today");
@@ -111,15 +126,22 @@ public class ReportingDataService {
         long breached = executions.stream()
                 .filter(e -> e.getStatus() == ReportExecution.ExecutionStatus.FAILED).count();
 
-        result.put("totalTickets", total);
-        result.put("breached", breached);
-        result.put("compliant", completed);
-        result.put("slaComplianceRate", total > 0 ? (double) completed / total * 100 : 0.0);
+        result.put("totalExecutions", total);
+        result.put("completedExecutions", completed);
+        result.put("failedExecutions", breached);
+        result.put("complianceRate", total > 0 ? (double) completed / total * 100 : 0.0);
         result.put("period", period);
-        result.put("dataSource", "database");
+        result.put("dataSource", "report-executions");
+        result.put("dataSourceNote", "Approximated from report execution statuses; real SLA data requires ticket-service integration");
         return result;
     }
 
+    /**
+     * Generates cost report.
+     * Data source: ReportExecution records (report processing costs only).
+     * NOTE: This covers report execution metrics only, not actual billing/cost data.
+     * Real cost data requires integration with billing-service.
+     */
     public Map<String, Object> generateCostReport(Map<String, Object> params) {
         Map<String, Object> result = new HashMap<>();
         String period = (String) params.getOrDefault("period", "today");
@@ -143,7 +165,8 @@ public class ReportingDataService {
                 .average()
                 .orElse(0.0));
         result.put("period", period);
-        result.put("dataSource", "database");
+        result.put("dataSource", "report-executions");
+        result.put("dataSourceNote", "Report execution metrics only; actual billing/cost data requires billing-service integration");
         return result;
     }
 }

@@ -15,6 +15,7 @@ import com.vcall.ticket.service.TicketService;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -53,6 +54,9 @@ import java.util.UUID;
 public class TicketController {
 
     private final TicketService ticketService;
+
+    @Value("${app.export.max-size:1000}")
+    private int maxExportSize;
 
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR') or hasRole('AGENT')")
@@ -182,7 +186,7 @@ public class TicketController {
     public void exportCsv(@RequestParam(required = false) String q,
                           @RequestParam(required = false) String status,
                           HttpServletResponse response) throws IOException {
-        Pageable pageable = PageRequest.of(0, 5000, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(0, Math.min(maxExportSize, 1000), Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<TicketResponse> items = ticketService.search(q, status, null, null, null, null, pageable);
         List<String> headers = Arrays.asList("ID", "Ticket Number", "Title", "Customer ID", "Source", "Category", "Priority", "Status", "Assigned To", "Created At");
         List<List<String>> rows = CsvExportUtil.toRows(items.getContent(),
@@ -195,7 +199,7 @@ public class TicketController {
     public void exportExcel(@RequestParam(required = false) String q,
                             @RequestParam(required = false) String status,
                             HttpServletResponse response) throws IOException {
-        Pageable pageable = PageRequest.of(0, 5000, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(0, Math.min(maxExportSize, 1000), Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<TicketResponse> items = ticketService.search(q, status, null, null, null, null, pageable);
         List<String> headers = Arrays.asList("ID", "Ticket Number", "Title", "Customer ID", "Source", "Category", "Priority", "Status", "Assigned To", "Created At");
         ExcelExportUtil.writeExcel(response, "tickets.xlsx", headers, items.getContent(),

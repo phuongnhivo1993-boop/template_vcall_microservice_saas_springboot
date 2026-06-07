@@ -12,6 +12,7 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { xrVideoApi, type XRVideo } from '@/lib/api/xr-api';
+import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
 
@@ -156,7 +157,7 @@ export default function VideoPage() {
       title: 'Created',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (d: string) => d ? new Date(d).toLocaleDateString() : '-',
+      render: (d: string) => d ? dayjs(d).format('DD/MM/YYYY') : '-',
     },
     {
       title: 'Actions',

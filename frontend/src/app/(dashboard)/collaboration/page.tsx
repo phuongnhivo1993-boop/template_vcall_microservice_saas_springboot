@@ -4,8 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Table, Button, Tag, Space, Modal, Form, Input, Select, InputNumber, message, Avatar, Tooltip, Spin, Alert, Empty } from 'antd';
 import { PlusOutlined, VideoCameraOutlined, UserOutlined, StopOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { useRouter } from 'next/navigation';
-import { xrCollaborationApi } from '@/lib/api/xr-api';
+import { xrCollaborationApi, xrScenesApi } from '@/lib/api/xr-api';
 
 interface CollaborationRoom {
   id: string;
@@ -18,6 +17,11 @@ interface CollaborationRoom {
   createdAt: string;
 }
 
+interface SceneOption {
+  id: string;
+  name: string;
+}
+
 const statusColors: Record<string, string> = {
   WAITING: 'default',
   ACTIVE: 'success',
@@ -25,10 +29,10 @@ const statusColors: Record<string, string> = {
 };
 
 export default function CollaborationPage() {
-  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
   const [rooms, setRooms] = useState<CollaborationRoom[]>([]);
+  const [scenes, setScenes] = useState<SceneOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,7 +51,21 @@ export default function CollaborationPage() {
     }
   }, []);
 
-  useEffect(() => { fetchRooms(); }, [fetchRooms]);
+  const fetchScenes = useCallback(async () => {
+    try {
+      const res = await xrScenesApi.list({ page: 0, size: 100 });
+      const data = res.data?.data || res.data;
+      const content = data?.content || (Array.isArray(data) ? data : []);
+      setScenes(content.map((s: any) => ({ id: s.id, name: s.name })));
+    } catch {
+      setScenes([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRooms();
+    fetchScenes();
+  }, [fetchRooms, fetchScenes]);
 
   const handleEndRoom = (record: CollaborationRoom) => {
     Modal.confirm({
@@ -185,10 +203,8 @@ export default function CollaborationPage() {
             <Input placeholder="Enter room name" />
           </Form.Item>
           <Form.Item name="sceneId" label="Scene" rules={[{ required: true }]}>
-            <Select placeholder="Select a VR scene">
-              <Select.Option value="scene1">Office Tour VR</Select.Option>
-              <Select.Option value="scene2">Product Showroom</Select.Option>
-            </Select>
+            <Select placeholder="Select a VR scene" showSearch optionFilterProp="label"
+              options={scenes.map(s => ({ value: s.id, label: s.name }))} />
           </Form.Item>
           <Form.Item name="maxParticipants" label="Max Participants" initialValue={10}>
             <InputNumber min={2} max={50} style={{ width: '100%' }} />

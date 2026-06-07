@@ -17,6 +17,7 @@ import com.vcall.common.util.ExcelExportUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -56,6 +57,9 @@ public class AgentController {
 
     private final AgentService agentService;
     private final AgentStatusService agentStatusService;
+
+    @Value("${app.export.max-size:1000}")
+    private int maxExportSize;
 
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
@@ -209,7 +213,7 @@ public class AgentController {
                                 @RequestParam(required = false) Long groupId,
                                 @RequestParam(required = false) String skill,
                                 HttpServletResponse response) throws IOException {
-        Pageable pageable = PageRequest.of(0, 5000, Sort.by("createdAt").descending());
+        Pageable pageable = PageRequest.of(0, Math.min(maxExportSize, 1000), Sort.by("createdAt").descending());
         Specification<com.vcall.agent.entity.Agent> spec = Specification.where(null);
         if (keyword != null && !keyword.isEmpty()) {
             spec = spec.and((root, query, cb) ->
@@ -250,7 +254,7 @@ public class AgentController {
                                    @RequestParam(required = false) Long groupId,
                                    @RequestParam(required = false) String skill,
                                    HttpServletResponse response) throws IOException {
-        Pageable pageable = PageRequest.of(0, 5000, Sort.by("createdAt").descending());
+        Pageable pageable = PageRequest.of(0, Math.min(maxExportSize, 1000), Sort.by("createdAt").descending());
         Specification<com.vcall.agent.entity.Agent> spec = Specification.where(null);
         if (keyword != null && !keyword.isEmpty()) {
             spec = spec.and((root, query, cb) ->

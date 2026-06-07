@@ -3,6 +3,7 @@ package com.vcall.chat.repository;
 import com.vcall.chat.entity.ChatConversation;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,6 +14,10 @@ import java.util.UUID;
 @Repository
 public interface ChatConversationRepository extends JpaRepository<ChatConversation, UUID> {
 
+    @EntityGraph(attributePaths = {"messages"})
+    Optional<ChatConversation> findById(UUID id);
+
+    @EntityGraph(attributePaths = {"messages"})
     Optional<ChatConversation> findByConversationId(String conversationId);
 
     List<ChatConversation> findByCustomerId(UUID customerId);
