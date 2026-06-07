@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Button, Tag, Space, Form, Input, Select, DatePicker, TimePicker, Switch, message, Typography, Tabs, Modal } from 'antd';
+import { Button, Tag, Space, Form, Input, Select, DatePicker, TimePicker, Switch, message, Typography, Tabs, Modal, Tooltip } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
@@ -345,12 +345,12 @@ export default function SchedulingPage() {
       key: 'actions',
       render: (_: unknown, record: Appointment) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEditAppointment(record)}>
+          <Tooltip title="Edit"><Button type="link" icon={<EditOutlined />} onClick={() => handleEditAppointment(record)}>
             Edit
-          </Button>
-          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDeleteAppointment(record)}>
+          </Button></Tooltip>
+          <Tooltip title="Delete"><Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDeleteAppointment(record)}>
             Delete
-          </Button>
+          </Button></Tooltip>
         </Space>
       ),
     },
@@ -542,12 +542,12 @@ export default function SchedulingPage() {
       key: 'actions',
       render: (_: unknown, record: AvailabilitySlot) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEditAvailability(record)}>
+          <Tooltip title="Edit"><Button type="link" icon={<EditOutlined />} onClick={() => handleEditAvailability(record)}>
             Edit
-          </Button>
-          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDeleteAvailability(record)}>
+          </Button></Tooltip>
+          <Tooltip title="Delete"><Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDeleteAvailability(record)}>
             Delete
-          </Button>
+          </Button></Tooltip>
         </Space>
       ),
     },
@@ -771,12 +771,12 @@ export default function SchedulingPage() {
       key: 'actions',
       render: (_: unknown, record: ScheduleTemplate) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEditTemplate(record)}>
+          <Tooltip title="Edit"><Button type="link" icon={<EditOutlined />} onClick={() => handleEditTemplate(record)}>
             Edit
-          </Button>
-          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDeleteTemplate(record)}>
+          </Button></Tooltip>
+          <Tooltip title="Delete"><Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDeleteTemplate(record)}>
             Delete
-          </Button>
+          </Button></Tooltip>
         </Space>
       ),
     },

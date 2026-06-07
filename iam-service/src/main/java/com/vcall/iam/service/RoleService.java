@@ -44,6 +44,7 @@ public class RoleService {
     @Transactional
     @CacheEvict(value = "roles", allEntries = true)
     public RoleResponse createRole(RoleRequest request) {
+
         RoleName roleName = RoleName.valueOf(request.getName().toUpperCase());
         if (roleRepository.findByName(roleName).isPresent()) {
             throw new DuplicateResourceException("Role already exists: " + request.getName());

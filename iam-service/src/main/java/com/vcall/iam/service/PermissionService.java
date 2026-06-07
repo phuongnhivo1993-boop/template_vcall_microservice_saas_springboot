@@ -22,7 +22,6 @@ public class PermissionService {
     private final PermissionRepository permissionRepository;
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "permissions", key = "'search_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<PermissionResponse> searchPermissions(Specification<com.vcall.iam.entity.Permission> spec, Pageable pageable) {
         return permissionRepository.findAll(spec, pageable).map(this::toResponse);
     }

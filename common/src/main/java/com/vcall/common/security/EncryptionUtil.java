@@ -25,8 +25,16 @@ public class EncryptionUtil {
 
     private static final int AES_KEY_SIZE = 32;
 
-    public EncryptionUtil(@Value("${security.encryption.secret:${ENCRYPTION_SECRET:}}") String secret) {
+    public EncryptionUtil(@Value("${security.encryption.secret:${ENCRYPTION_SECRET:}}") String secret,
+                          @Value("${spring.profiles.active:}") String activeProfile) {
+        boolean isProduction = activeProfile != null &&
+                (activeProfile.contains("prod") || activeProfile.contains("production"));
+
         if (secret == null || secret.isEmpty()) {
+            if (isProduction) {
+                log.error("ENCRYPTION_SECRET is not set. Refusing to start in production with an auto-generated key.");
+                throw new IllegalStateException("ENCRYPTION_SECRET must be set in production environment");
+            }
             byte[] fallback = new byte[AES_KEY_SIZE];
             new SecureRandom().nextBytes(fallback);
             this.key = new SecretKeySpec(fallback, "AES");

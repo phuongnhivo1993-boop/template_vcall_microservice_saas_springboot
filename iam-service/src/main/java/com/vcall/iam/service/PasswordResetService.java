@@ -5,15 +5,14 @@ import com.vcall.iam.entity.User;
 import com.vcall.iam.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
-import java.time.Instant;
+import java.time.Duration;
 import java.util.Base64;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -22,10 +21,10 @@ public class PasswordResetService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    private final Map<String, ResetTokenData> resetTokens = new ConcurrentHashMap<>();
+    private final StringRedisTemplate redisTemplate;
 
     private static final long TOKEN_VALIDITY_MINUTES = 30;
+    private static final String TOKEN_KEY_PREFIX = "password-reset:";
 
     public String generateResetToken(String email) {
         User user = userRepository.findByEmail(email)
@@ -36,32 +35,36 @@ public class PasswordResetService {
         random.nextBytes(bytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
 
-        resetTokens.put(token, new ResetTokenData(user.getId(), Instant.now()));
+        redisTemplate.opsForValue().set(
+                TOKEN_KEY_PREFIX + token,
+                user.getId().toString(),
+                Duration.ofMinutes(TOKEN_VALIDITY_MINUTES)
+        );
         log.info("Password reset token generated for user: {}", user.getUsername());
         return token;
     }
 
     @Transactional
     public void resetPassword(String token, String newPassword) {
-        ResetTokenData data = resetTokens.get(token);
-        if (data == null) {
+        String userIdStr = redisTemplate.opsForValue().get(TOKEN_KEY_PREFIX + token);
+        if (userIdStr == null) {
             throw new IllegalArgumentException("Invalid or expired reset token");
         }
 
-        if (Instant.now().isAfter(data.createdAt().plusSeconds(TOKEN_VALIDITY_MINUTES * 60))) {
-            resetTokens.remove(token);
-            throw new IllegalArgumentException("Reset token has expired");
+        java.util.UUID userId;
+        try {
+            userId = java.util.UUID.fromString(userIdStr);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid or expired reset token");
         }
 
-        User user = userRepository.findById(data.userId())
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
 
-        resetTokens.remove(token);
+        redisTemplate.delete(TOKEN_KEY_PREFIX + token);
         log.info("Password reset successful for user: {}", user.getUsername());
     }
-
-    private record ResetTokenData(java.util.UUID userId, Instant createdAt) {}
 }

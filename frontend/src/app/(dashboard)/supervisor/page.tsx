@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Statistic, Table, Tag, Badge, Typography, Row, Col, Space, Progress, List, Tooltip, Spin, Alert, Button } from 'antd';
+import { Card, Statistic, Table, Tag, Badge, Typography, Row, Col, Space, Progress, List, Tooltip, Alert, Button } from 'antd';
 import {
   PhoneOutlined, TeamOutlined, ClockCircleOutlined, CheckCircleOutlined,
   CloseCircleOutlined, StarOutlined, RiseOutlined, UserSwitchOutlined,
@@ -9,6 +9,7 @@ import {
   DownloadOutlined, ReloadOutlined
 } from '@ant-design/icons';
 import { callsApi, agentsApi, dashboardApi } from '@/lib/api';
+import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -294,8 +295,9 @@ export default function SupervisorPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
-        <Spin size="large" />
+      <div>
+        <Title level={3} style={{ marginBottom: 16 }}>Supervisor Dashboard</Title>
+        <LoadingSkeleton type="stats" rows={5} />
       </div>
     );
   }

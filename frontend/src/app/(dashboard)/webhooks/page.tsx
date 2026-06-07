@@ -246,9 +246,9 @@ export default function WebhooksPage() {
           <Tooltip title="Test webhook">
             <Button size="small" icon={<ReloadOutlined />} onClick={() => testWebhook(record)} />
           </Tooltip>
-          <Button size="small" icon={<EditOutlined />} onClick={() => { setEditingWebhook(record); setFormOpen(true); }} />
-          <Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(record)} />
-          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteWebhook(record.id)} />
+          <Tooltip title="Edit"><Button size="small" icon={<EditOutlined />} onClick={() => { setEditingWebhook(record); setFormOpen(true); }} /></Tooltip>
+          <Tooltip title="Duplicate"><Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(record)} /></Tooltip>
+          <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteWebhook(record.id)} /></Tooltip>
         </Space>
       ),
     },

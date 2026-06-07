@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Row, Col, Card, Statistic, Table, Tag, Typography, Spin, Space, Alert, Button } from 'antd';
+import { Row, Col, Card, Statistic, Table, Tag, Typography, Space, Alert, Button } from 'antd';
 import { PhoneOutlined, CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined, TeamOutlined, RiseOutlined, ReloadOutlined } from '@ant-design/icons';
 import { agentsApi, callsApi, ticketsApi } from '@/lib/api';
+import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 
 const { Title, Text } = Typography;
 
@@ -73,7 +74,7 @@ export default function WallboardPage() {
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: darkTheme.background }}>
-      <Spin size="large" />
+      <LoadingSkeleton type="stats" rows={5} />
     </div>
   );
 

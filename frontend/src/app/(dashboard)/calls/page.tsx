@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUrlState } from '@/lib/hooks/useUrlState';
-import { Card, Tag, Typography, Space, Button, message, Row, Col, Statistic, Form, Input, Select, Modal } from 'antd';
+import { Card, Tag, Typography, Space, Button, message, Row, Col, Statistic, Form, Input, Select, Modal, Tooltip } from 'antd';
 import { SearchOutlined, PhoneOutlined, DownloadOutlined, CopyOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import CommonTable from '@/components/common/CommonTable';
@@ -263,9 +263,9 @@ export default function CallsPage() {
       key: 'actions',
       render: (_: any, record: any) => (
         <Space>
-          <Button size="small" onClick={() => handleEdit(record)}>Edit</Button>
-          <Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(record)}>Nhân bản</Button>
-          <Button size="small" danger onClick={() => handleDelete(record.id)}>Delete</Button>
+          <Tooltip title="Edit"><Button size="small" onClick={() => handleEdit(record)}>Edit</Button></Tooltip>
+          <Tooltip title="Duplicate"><Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(record)}>Nhân bản</Button></Tooltip>
+          <Tooltip title="Delete"><Button size="small" danger onClick={() => handleDelete(record.id)}>Delete</Button></Tooltip>
         </Space>
       ),
     },

@@ -224,9 +224,9 @@ export default function AutomationPage() {
             <Button size="small" icon={record.isActive ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
               onClick={() => toggleActive(record)} />
           </Tooltip>
-          <Button size="small" icon={<EditOutlined />} onClick={() => { setEditingRule(record); setFormOpen(true); }} />
-          <Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(record)} />
-          <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteRule(record.id)} />
+          <Tooltip title="Edit"><Button size="small" icon={<EditOutlined />} onClick={() => { setEditingRule(record); setFormOpen(true); }} /></Tooltip>
+          <Tooltip title="Duplicate"><Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(record)} /></Tooltip>
+          <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteRule(record.id)} /></Tooltip>
         </Space>
       ),
     },

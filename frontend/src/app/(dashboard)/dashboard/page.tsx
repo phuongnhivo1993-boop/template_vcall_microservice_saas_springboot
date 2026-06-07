@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Row, Col, Card, Statistic, Typography, Tag, Spin, Alert, message } from 'antd';
+import { Row, Col, Card, Statistic, Typography, Tag, Alert, message, theme } from 'antd';
 import {
   PhoneOutlined,
   TeamOutlined,
@@ -24,6 +24,7 @@ import {
   Legend,
 } from 'recharts';
 import CommonTable from '@/components/common/CommonTable';
+import LoadingSkeleton from '@/components/common/LoadingSkeleton';
 import { dashboardApi, agentsApi, ticketsApi } from '@/lib/api';
 
 const { Title } = Typography;
@@ -38,6 +39,7 @@ const statusColors: Record<string, string> = {
 const PIE_COLORS = ['#1677ff', '#52c41a', '#faad14', '#ff4d4f', '#722ed1', '#999'];
 
 export default function DashboardPage() {
+  const { token } = theme.useToken();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<any>({});
@@ -146,7 +148,10 @@ export default function DashboardPage() {
     <div>
       <Title level={3} style={{ marginBottom: 24 }}>Dashboard</Title>
 
-      <Spin spinning={loading}>
+      {loading ? (
+        <LoadingSkeleton type="stats" rows={5} />
+      ) : (
+        <>
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} lg={6}>
             <Card className="stat-card" hoverable>
@@ -195,7 +200,7 @@ export default function DashboardPage() {
           <Col xs={24} lg={14}>
             <Card title="Call Volume Today" className="chart-container">
               {callVolumeData.length === 0 ? (
-                <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+                <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: token.colorTextSecondary }}>
                   No call volume data available
                 </div>
               ) : (
@@ -207,9 +212,9 @@ export default function DashboardPage() {
                         <stop offset="95%" stopColor="#1677ff" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="time" stroke="#999" />
-                    <YAxis stroke="#999" />
+                    <CartesianGrid strokeDasharray="3 3" stroke={token.colorBorderSecondary} />
+                    <XAxis dataKey="time" stroke={token.colorTextSecondary} />
+                    <YAxis stroke={token.colorTextSecondary} />
                     <Tooltip />
                     <Area type="monotone" dataKey="calls" stroke="#1677ff" fill="url(#colorCalls)" strokeWidth={2} />
                   </AreaChart>
@@ -220,15 +225,15 @@ export default function DashboardPage() {
           <Col xs={24} lg={10}>
             <Card title="Agent Performance" className="chart-container">
               {agentPerformanceData.length === 0 ? (
-                <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+                <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: token.colorTextSecondary }}>
                   No agent performance data available
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={agentPerformanceData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="name" stroke="#999" />
-                    <YAxis stroke="#999" />
+                    <CartesianGrid strokeDasharray="3 3" stroke={token.colorBorderSecondary} />
+                    <XAxis dataKey="name" stroke={token.colorTextSecondary} />
+                    <YAxis stroke={token.colorTextSecondary} />
                     <Tooltip />
                     <Bar dataKey="calls" fill="#1677ff" radius={[4, 4, 0, 0]} />
                   </BarChart>
@@ -242,7 +247,7 @@ export default function DashboardPage() {
           <Col xs={24} lg={12}>
             <Card title="Agent Status Distribution">
               {agentStatusData.length === 0 ? (
-                <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+                <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: token.colorTextSecondary }}>
                   No agent status data available
                 </div>
               ) : (
@@ -271,7 +276,7 @@ export default function DashboardPage() {
           <Col xs={24} lg={12}>
             <Card title="Ticket Status Breakdown">
               {ticketStatusData.length === 0 ? (
-                <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+                <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: token.colorTextSecondary }}>
                   No ticket status data available
                 </div>
               ) : (
@@ -312,7 +317,8 @@ export default function DashboardPage() {
             onExportExcel={handleExportExcel}
           />
         </div>
-      </Spin>
+        </>
+      )}
     </div>
   );
 }
