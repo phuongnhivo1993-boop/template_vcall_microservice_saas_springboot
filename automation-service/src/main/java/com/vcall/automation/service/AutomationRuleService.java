@@ -15,7 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -99,6 +101,45 @@ public class AutomationRuleService {
         rule.setLastExecutedAt(LocalDateTime.now());
         rule = automationRuleRepository.save(rule);
         return toResponse(rule);
+    }
+
+    @Transactional
+    public void bulkDeleteRules(List<Long> ids) {
+        List<AutomationRule> rules = automationRuleRepository.findAllById(ids);
+        for (AutomationRule rule : rules) {
+            rule.setIsDeleted(true);
+        }
+        automationRuleRepository.saveAll(rules);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AutomationRuleResponse> searchRules(String name, String trigger, String action,
+                                                     Boolean isActive, Pageable pageable) {
+        Specification<AutomationRule> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (name != null && !name.isEmpty()) {
+                predicates.add(cb.like(root.get("name"), "%" + name + "%"));
+            }
+            if (trigger != null && !trigger.isEmpty()) {
+                predicates.add(cb.like(root.get("trigger"), "%" + trigger + "%"));
+            }
+            if (action != null && !action.isEmpty()) {
+                predicates.add(cb.like(root.get("action"), "%" + action + "%"));
+            }
+            if (isActive != null) {
+                predicates.add(cb.equal(root.get("isActive"), isActive));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return automationRuleRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getRuleStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalRules", automationRuleRepository.count());
+        stats.put("activeRules", automationRuleRepository.findByIsActiveTrue().size());
+        return stats;
     }
 
     private AutomationRuleResponse toResponse(AutomationRule rule) {

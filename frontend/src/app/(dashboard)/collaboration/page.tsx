@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Card, Table, Button, Tag, Space, Modal, Form, Input, Select, InputNumber, message, Avatar, Tooltip } from 'antd';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, Table, Button, Tag, Space, Modal, Form, Input, Select, InputNumber, message, Avatar, Tooltip, Spin, Alert, Empty } from 'antd';
 import { PlusOutlined, VideoCameraOutlined, UserOutlined, StopOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useRouter } from 'next/navigation';
+import { xrCollaborationApi } from '@/lib/api/xr-api';
 
 interface CollaborationRoom {
   id: string;
@@ -27,6 +28,64 @@ export default function CollaborationPage() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
+  const [rooms, setRooms] = useState<CollaborationRoom[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchRooms = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await xrCollaborationApi.listRooms({ page: 0, size: 100 });
+      const data = res.data;
+      const content = data?.data?.content || data?.content || (Array.isArray(data) ? data : []);
+      setRooms(content);
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Failed to load rooms');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchRooms(); }, [fetchRooms]);
+
+  const handleEndRoom = (record: CollaborationRoom) => {
+    Modal.confirm({
+      title: 'End Room',
+      content: `End "${record.name}"?`,
+      onOk: async () => {
+        try {
+          await xrCollaborationApi.endRoom(record.id);
+          message.success('Room ended');
+          fetchRooms();
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Failed to end room');
+        }
+      },
+    });
+  };
+
+  const handleJoinRoom = async (record: CollaborationRoom) => {
+    try {
+      await xrCollaborationApi.joinRoom(record.id);
+      message.success('Joining room...');
+      fetchRooms();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Failed to join room');
+    }
+  };
+
+  const handleCreate = async (values: any) => {
+    try {
+      await xrCollaborationApi.createRoom(values);
+      message.success('Collaboration room created');
+      setIsModalOpen(false);
+      form.resetFields();
+      fetchRooms();
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Failed to create room');
+    }
+  };
 
   const columns: ColumnsType<CollaborationRoom> = [
     {
@@ -77,18 +136,12 @@ export default function CollaborationPage() {
         <Space>
           {record.status === 'ACTIVE' && (
             <Tooltip title="Join Room">
-              <Button type="primary" size="small" icon={<VideoCameraOutlined />} onClick={() => message.info('Joining room...')} />
+              <Button type="primary" size="small" icon={<VideoCameraOutlined />} onClick={() => handleJoinRoom(record)} />
             </Tooltip>
           )}
           {record.status !== 'ENDED' && (
             <Tooltip title="End Room">
-              <Button danger size="small" icon={<StopOutlined />} onClick={() => {
-                Modal.confirm({
-                  title: 'End Room',
-                  content: `End "${record.name}"?`,
-                  onOk: () => message.success('Room ended'),
-                });
-              }} />
+              <Button danger size="small" icon={<StopOutlined />} onClick={() => handleEndRoom(record)} />
             </Tooltip>
           )}
         </Space>
@@ -96,34 +149,13 @@ export default function CollaborationPage() {
     },
   ];
 
-  const data: CollaborationRoom[] = [
-    {
-      id: '1',
-      name: 'VR Training Session - Onboarding',
-      sceneName: 'Office Tour VR',
-      hostUser: 'Admin',
-      maxParticipants: 10,
-      currentParticipants: 3,
-      status: 'ACTIVE',
-      createdAt: '2026-06-05 10:00',
-    },
-    {
-      id: '2',
-      name: 'Virtual Showroom Demo',
-      sceneName: 'Product Showroom',
-      hostUser: 'Sales Team',
-      maxParticipants: 5,
-      currentParticipants: 0,
-      status: 'WAITING',
-      createdAt: '2026-06-05 14:30',
-    },
-  ];
+  if (loading) {
+    return <div style={{ textAlign: 'center', padding: 100 }}><Spin size="large" tip="Loading collaboration rooms..." /></div>;
+  }
 
-  const handleCreate = (values: any) => {
-    message.success('Collaboration room created');
-    setIsModalOpen(false);
-    form.resetFields();
-  };
+  if (error) {
+    return <Alert message="Error" description={error} type="error" showIcon action={<Button onClick={fetchRooms}>Retry</Button>} />;
+  }
 
   return (
     <div className="p-6">
@@ -135,7 +167,11 @@ export default function CollaborationPage() {
           </Button>
         }
       >
-        <Table columns={columns} dataSource={data} rowKey="id" />
+        {rooms.length === 0 ? (
+          <Empty description="No collaboration rooms found" />
+        ) : (
+          <Table columns={columns} dataSource={rooms} rowKey="id" />
+        )}
       </Card>
 
       <Modal

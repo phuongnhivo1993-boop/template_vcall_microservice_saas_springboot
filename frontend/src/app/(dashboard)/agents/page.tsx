@@ -189,12 +189,19 @@ export default function AgentsPage() {
   };
 
   const handleFormSubmit = async (values: any) => {
-    if (editingAgent?.id) {
-      await agentsApi.update(editingAgent.id, values);
-    } else {
-      await agentsApi.create(values);
+    try {
+      if (editingAgent?.id) {
+        await agentsApi.update(editingAgent.id, values);
+        message.success('Agent updated successfully');
+      } else {
+        await agentsApi.create(values);
+        message.success('Agent created successfully');
+      }
+      setModalOpen(false);
+      fetchAgents(pagination.current, pagination.pageSize, filters);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to save agent');
     }
-    fetchAgents(pagination.current, pagination.pageSize, filters);
   };
 
   const handleExportCsv = async () => {

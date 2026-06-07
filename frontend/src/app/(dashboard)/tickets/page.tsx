@@ -210,12 +210,19 @@ export default function TicketsPage() {
   };
 
   const handleFormSubmit = async (values: any) => {
-    if (editingTicket?.id) {
-      await ticketsApi.update(editingTicket.id, values);
-    } else {
-      await ticketsApi.create(values);
+    try {
+      if (editingTicket?.id) {
+        await ticketsApi.update(editingTicket.id, values);
+        message.success('Ticket updated successfully');
+      } else {
+        await ticketsApi.create(values);
+        message.success('Ticket created successfully');
+      }
+      setModalOpen(false);
+      fetchTickets(pagination.current, pagination.pageSize, filters);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to save ticket');
     }
-    fetchTickets(pagination.current, pagination.pageSize, filters);
   };
 
   const handleExportCsv = async () => {

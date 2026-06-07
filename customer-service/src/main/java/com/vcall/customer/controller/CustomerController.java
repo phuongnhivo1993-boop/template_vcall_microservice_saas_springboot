@@ -104,6 +104,7 @@ public class CustomerController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR') or hasRole('AGENT')")
     public ResponseEntity<ApiResponse<CustomerResponse>> create(@Valid @RequestBody CustomerRequest request) {
         CustomerResponse response = customerService.create(request);
         customerEventPublisher.publishCustomerCreated(response);
@@ -111,6 +112,7 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR') or hasRole('AGENT')")
     public ResponseEntity<ApiResponse<CustomerResponse>> update(@PathVariable UUID id,
                                                                  @Valid @RequestBody CustomerRequest request) {
         CustomerResponse response = customerService.update(id, request);
@@ -119,6 +121,7 @@ public class CustomerController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         customerService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("Customer deleted", null));
@@ -192,6 +195,7 @@ public class CustomerController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@RequestParam(defaultValue = "") String keyword,
                           HttpServletResponse response) throws IOException {
         List<CustomerResponse> customers;
@@ -206,6 +210,7 @@ public class CustomerController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@RequestParam(defaultValue = "") String keyword,
                             HttpServletResponse response) throws IOException {
         List<CustomerResponse> customers;
@@ -220,6 +225,7 @@ public class CustomerController {
     }
 
     @PostMapping("/bulk-delete")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> bulkDelete(
             @RequestBody List<UUID> ids) {
         BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
@@ -252,6 +258,7 @@ public class CustomerController {
     }
 
     @PostMapping(value = "/import/csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<?>>> importCsv(
             @RequestParam("file") MultipartFile file) throws IOException {
         List<CustomerRequest> items = new ArrayList<>();
@@ -280,6 +287,7 @@ public class CustomerController {
     }
 
     @PostMapping(value = "/import/excel", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<?>>> importExcel(
             @RequestParam("file") MultipartFile file) throws IOException {
         List<CustomerRequest> items = new ArrayList<>();

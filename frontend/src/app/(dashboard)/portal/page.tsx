@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import { ticketsApi, knowledgeBaseApi, settingsApi } from '@/lib/api';
+import { useRouter } from 'next/navigation';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -42,6 +43,7 @@ const priorityColorMap: Record<string, string> = {
 };
 
 export default function PortalPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('tickets');
   const [tickets, setTickets] = useState<PortalTicket[]>([]);
   const [articles, setArticles] = useState<KnowledgeArticle[]>([]);
@@ -112,7 +114,7 @@ export default function PortalPage() {
       children: (
         <CommonTable<PortalTicket>
           columns={[
-            { title: 'Mã', dataIndex: 'id', key: 'id', render: (id: string) => <a>{id}</a> },
+            { title: 'Mã', dataIndex: 'id', key: 'id', render: (id: string) => <a onClick={() => router.push(`/tickets/${id}`)}>{id}</a> },
             { title: 'Tiêu đề', dataIndex: 'subject', key: 'subject' },
             { title: 'Danh mục', dataIndex: 'category', key: 'category', render: (c: string) => <Tag>{c}</Tag> },
             { title: 'Mức độ', dataIndex: 'priority', key: 'priority', render: (p: string) => <Tag color={priorityColorMap[p]}>{p}</Tag> },

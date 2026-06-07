@@ -212,6 +212,55 @@ public class CallService {
         return callRepository.findAll().stream().map(this::toResponse).toList();
     }
 
+    @Transactional
+    public CallResponse updateCall(UUID id, CallRequest request) {
+        Call call = callRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found with id: " + id));
+        call.setCallerNumber(request.getCallerNumber());
+        call.setCalleeNumber(request.getCalleeNumber());
+        call.setCallerName(request.getCallerName());
+        call.setDirection(Call.CallDirection.valueOf(request.getDirection().toUpperCase()));
+        call.setQueueId(request.getQueueId());
+        call.setIvrFlowId(request.getIvrFlowId());
+        call = callRepository.save(call);
+        return toResponse(call);
+    }
+
+    @Transactional
+    public void deleteCall(UUID id) {
+        Call call = callRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found with id: " + id));
+        call.setIsDeleted(true);
+        callRepository.save(call);
+    }
+
+    @Transactional
+    public CallResponse duplicateCall(UUID id) {
+        Call original = callRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found with id: " + id));
+        Call duplicate = new Call();
+        duplicate.setCallId(UUID.randomUUID().toString());
+        duplicate.setCallerNumber(original.getCallerNumber());
+        duplicate.setCalleeNumber(original.getCalleeNumber());
+        duplicate.setCallerName(original.getCallerName());
+        duplicate.setDirection(original.getDirection());
+        duplicate.setStatus(Call.CallStatus.RINGING);
+        duplicate.setStartTime(LocalDateTime.now());
+        duplicate.setQueueId(original.getQueueId());
+        duplicate.setIvrFlowId(original.getIvrFlowId());
+        duplicate = callRepository.save(duplicate);
+        return toResponse(duplicate);
+    }
+
+    @Transactional
+    public void bulkDeleteCalls(List<UUID> ids) {
+        List<Call> calls = callRepository.findAllById(ids);
+        for (Call call : calls) {
+            call.setIsDeleted(true);
+        }
+        callRepository.saveAll(calls);
+    }
+
     private CallResponse toResponse(Call call) {
         return CallResponse.builder()
                 .id(call.getId())

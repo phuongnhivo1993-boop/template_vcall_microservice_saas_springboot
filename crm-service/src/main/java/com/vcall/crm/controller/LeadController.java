@@ -54,6 +54,7 @@ public class LeadController {
     private final LeadService leadService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR') or hasRole('AGENT')")
     public ResponseEntity<ApiResponse<LeadResponse>> createLead(@Valid @RequestBody LeadRequest request) {
         LeadResponse response = leadService.createLead(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Lead created successfully", response));
@@ -95,6 +96,7 @@ public class LeadController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR') or hasRole('AGENT')")
     public ResponseEntity<ApiResponse<LeadResponse>> updateLead(@PathVariable UUID id, @Valid @RequestBody LeadRequest request) {
         LeadResponse response = leadService.updateLead(id, request);
         return ResponseEntity.ok(ApiResponse.success("Lead updated successfully", response));
@@ -113,6 +115,7 @@ public class LeadController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportLeadsCsv(@RequestParam(required = false) String keyword,
                                @RequestParam(required = false) LeadStatus status,
                                HttpServletResponse response) throws IOException {
@@ -138,6 +141,7 @@ public class LeadController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportLeadsExcel(@RequestParam(required = false) String keyword,
                                  @RequestParam(required = false) LeadStatus status,
                                  HttpServletResponse response) throws IOException {
@@ -168,12 +172,14 @@ public class LeadController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteLead(@PathVariable UUID id) {
         leadService.deleteLead(id);
         return ResponseEntity.ok(ApiResponse.success("Lead deleted successfully", null));
     }
 
     @PostMapping("/bulk-delete")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> bulkDelete(
             @RequestBody List<UUID> ids) {
         BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
@@ -204,6 +210,7 @@ public class LeadController {
     }
 
     @PostMapping("/import/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<LeadResponse>>> importLeadsCsv(
             @RequestParam("file") MultipartFile file) throws Exception {
         List<String[]> rows = CsvUtil.parseCsv(file.getInputStream());
@@ -231,6 +238,7 @@ public class LeadController {
     }
 
     @PostMapping("/import/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<LeadResponse>>> importLeadsExcel(
             @RequestParam("file") MultipartFile file) throws Exception {
         List<String[]> rows = ExcelImportUtil.parseXlsx(file.getInputStream());

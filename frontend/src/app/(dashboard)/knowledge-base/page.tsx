@@ -5,10 +5,13 @@ import { Card, Input, List, Typography, Space, Tag, Empty, Spin, Alert, Button, 
 import { SearchOutlined, BookOutlined, FolderOutlined, ClockCircleOutlined, EyeOutlined, LikeOutlined, PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
+import CommonSearch from '@/components/common/CommonSearch';
+import SavedFilters from '@/components/common/SavedFilters';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { Can } from '@/components/common/Can';
 import { Permissions } from '@/lib/permissions';
 import { knowledgeBaseApi } from '@/lib/api';
+import type { TablePaginationConfig } from 'antd/es/table';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -38,21 +41,35 @@ const CATEGORIES = [
 export default function KnowledgeBasePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchText, setSearchText] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [articles, setArticles] = useState<Article[]>([]);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [filters, setFilters] = useState<Record<string, any>>({});
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: 1, pageSize: 10, total: 0,
+  });
 
-  const loadArticles = useCallback(async () => {
+  const loadArticles = useCallback(async (page = 1, size = 10, searchParams?: Record<string, any>) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await knowledgeBaseApi.list({ page: 0, size: 100 });
-      const data = res.data?.data?.content || res.data?.content || [];
-      setArticles(data);
+      const res = await knowledgeBaseApi.list({ page: page - 1, size, ...searchParams });
+      const data = res.data?.data || res.data;
+      if (data.content) {
+        setArticles(data.content);
+        setPagination((prev) => ({
+          ...prev,
+          current: (data.page ?? page - 1) + 1,
+          pageSize: data.size ?? size,
+          total: data.totalElements ?? 0,
+        }));
+      } else if (Array.isArray(data)) {
+        setArticles(data);
+      } else {
+        setArticles(data.content || []);
+      }
     } catch (err: any) {
       setError(err?.message || 'Failed to load articles');
     } finally {
@@ -61,19 +78,31 @@ export default function KnowledgeBasePage() {
   }, []);
 
   useEffect(() => {
-    loadArticles();
+    loadArticles(pagination.current, pagination.pageSize);
   }, [loadArticles]);
 
-  const filteredArticles = articles.filter(article => {
-    if (selectedCategory !== 'all' && article.category !== selectedCategory) return false;
-    if (searchText) {
-      const q = searchText.toLowerCase();
-      return article.title.toLowerCase().includes(q) ||
-             article.content.toLowerCase().includes(q) ||
-             article.tags.some(t => t.toLowerCase().includes(q));
-    }
-    return true;
-  });
+  const filteredArticles = articles;
+
+  const handleSearch = (values: any) => {
+    const cleaned: Record<string, any> = {};
+    Object.entries(values).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') cleaned[key] = val;
+    });
+    setFilters(cleaned);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    loadArticles(1, pagination.pageSize, cleaned);
+  };
+
+  const handleReset = () => {
+    setFilters({});
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    loadArticles(1, pagination.pageSize);
+  };
+
+  const handleTableChange = (pag: TablePaginationConfig) => {
+    setPagination((prev) => ({ ...prev, current: pag.current, pageSize: pag.pageSize }));
+    loadArticles(pag.current, pag.pageSize, filters);
+  };
 
   const handleSaveArticle = async (values: any) => {
     try {
@@ -86,7 +115,7 @@ export default function KnowledgeBasePage() {
       }
       setFormOpen(false);
       setEditingArticle(null);
-      loadArticles();
+      loadArticles(pagination.current, pagination.pageSize, filters);
     } catch (err: any) {
       message.error(err?.message || 'Failed to save article');
     }
@@ -109,7 +138,7 @@ export default function KnowledgeBasePage() {
           await knowledgeBaseApi.bulkDelete(selectedRowKeys);
           message.success(`Đã xóa ${selectedRowKeys.length} bài viết`);
           setSelectedRowKeys([]);
-          loadArticles();
+          loadArticles(pagination.current, pagination.pageSize, filters);
         } catch (err: any) {
           message.error(err?.response?.data?.message || 'Xóa thất bại');
         }
@@ -124,7 +153,7 @@ export default function KnowledgeBasePage() {
       onOk: async () => {
         await knowledgeBaseApi.delete(id);
         message.success('Article deleted');
-        loadArticles();
+        loadArticles(pagination.current, pagination.pageSize, filters);
       },
     });
   };
@@ -134,7 +163,7 @@ export default function KnowledgeBasePage() {
   }
 
   if (error) {
-    return <Alert message="Error" description={error} type="error" showIcon action={<Button onClick={loadArticles}>Retry</Button>} />;
+    return <Alert message="Error" description={error} type="error" showIcon action={<Button onClick={() => loadArticles(pagination.current, pagination.pageSize)}>Retry</Button>} />;
   }
 
   if (selectedArticle) {
@@ -166,6 +195,27 @@ export default function KnowledgeBasePage() {
       </div>
     );
   }
+
+  const searchFields = [
+    { name: 'title', label: 'Title', type: 'input' as const, placeholder: 'Search articles by title' },
+    {
+      name: 'category',
+      label: 'Category',
+      type: 'select' as const,
+      placeholder: 'Filter by category',
+      options: CATEGORIES.filter(c => c.key !== 'all').map(c => ({ value: c.key, label: c.label })),
+    },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      placeholder: 'Filter by status',
+      options: [
+        { value: 'published', label: 'Published' },
+        { value: 'draft', label: 'Draft' },
+      ],
+    },
+  ];
 
   const articlesColumns = [
     { title: 'Title', dataIndex: 'title', key: 'title', render: (t: string) => <a onClick={() => setSelectedArticle(articles.find(a => a.title === t) || null)}>{t}</a> },
@@ -201,8 +251,8 @@ export default function KnowledgeBasePage() {
               dataSource={CATEGORIES}
               renderItem={(cat) => (
                 <List.Item
-                  onClick={() => setSelectedCategory(cat.key)}
-                  style={{ cursor: 'pointer', background: selectedCategory === cat.key ? '#e6f7ff' : 'transparent', padding: '4px 8px', borderRadius: 4 }}
+                  onClick={() => { setFilters((prev) => ({ ...prev, category: cat.key })); loadArticles(1, pagination.pageSize, { ...filters, category: cat.key }); }}
+                  style={{ cursor: 'pointer', background: filters.category === cat.key || (!filters.category && cat.key === 'all') ? '#e6f7ff' : 'transparent', padding: '4px 8px', borderRadius: 4 }}
                 >
                   <Space><FolderOutlined />{cat.label}</Space>
                   <Tag>{cat.key === 'all' ? articles.length : articles.filter(a => a.category === cat.key).length}</Tag>
@@ -215,20 +265,19 @@ export default function KnowledgeBasePage() {
           <Card
             title={<Space><BookOutlined /> Knowledge Base</Space>}
             extra={
-              <Space>
-                <Input.Search
-                  placeholder="Search articles..."
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  style={{ width: 300 }}
-                  allowClear
-                />
-                <Can I={Permissions.KNOWLEDGE_CREATE}>
-                  <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingArticle(null); setFormOpen(true); }}>New Article</Button>
-                </Can>
-              </Space>
+              <Can I={Permissions.KNOWLEDGE_CREATE}>
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingArticle(null); setFormOpen(true); }}>New Article</Button>
+              </Can>
             }
           >
+            <CommonSearch
+              fields={searchFields}
+              onSearch={handleSearch}
+              onReset={handleReset}
+              loading={loading}
+              initialValues={filters}
+            />
+            <SavedFilters currentValues={filters} onApply={(v) => { setFilters(v); loadArticles(1, pagination.pageSize, v); }} storageKey="vcall-saved-filters-kb" />
             {selectedRowKeys.length > 0 && (
               <Button danger onClick={handleBulkDelete} style={{ marginBottom: 16 }}>
                 Xóa đã chọn ({selectedRowKeys.length})
@@ -239,8 +288,10 @@ export default function KnowledgeBasePage() {
               columns={articlesColumns}
               dataSource={filteredArticles}
               rowKey="id"
-              loading={false}
-              pagination={{ pageSize: 10 }}
+              loading={loading}
+              pagination={pagination}
+              onRefresh={() => { setSelectedRowKeys([]); loadArticles(pagination.current, pagination.pageSize, filters); }}
+              onTableChange={handleTableChange}
             />
           </Card>
         </Col>

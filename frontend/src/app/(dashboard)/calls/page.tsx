@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUrlState } from '@/lib/hooks/useUrlState';
 import { Card, Tag, Typography, Space, Button, message, Row, Col, Statistic, Form, Input, Select, Modal } from 'antd';
 import { SearchOutlined, PhoneOutlined, DownloadOutlined, CopyOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -11,6 +12,8 @@ import CommonForm from '@/components/common/CommonForm';
 import SavedFilters from '@/components/common/SavedFilters';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { callsApi } from '@/lib/api';
+import type { TablePaginationConfig } from 'antd/es/table';
+import type { SorterResult } from 'antd/es/table/interface';
 
 const { Title } = Typography;
 
@@ -42,18 +45,40 @@ export default function CallsPage() {
   const [data, setData] = useState<CallRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [urlParams, setUrlParams] = useUrlState({
+    q: '', status: '', direction: '',
+    page: '1', pageSize: '10',
+  });
   const [searchParams, setSearchParams] = useState<Record<string, any>>({});
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: parseInt(urlParams.page),
+    pageSize: parseInt(urlParams.pageSize),
+    total: 0,
+  });
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCall, setEditingCall] = useState<any>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (page = 1, size = 10) => {
     setLoading(true);
     setError(null);
     try {
-      const params = { ...searchParams, page: 0, size: 100 };
+      const params = { ...searchParams, page: page - 1, size };
       const res = await callsApi.getAll(params);
-      setData(res.data?.data?.content || res.data?.content || []);
+      const resData = res.data?.data || res.data;
+      if (resData.content) {
+        setData(resData.content);
+        setPagination((prev) => ({
+          ...prev,
+          current: (resData.page ?? page - 1) + 1,
+          pageSize: resData.size ?? size,
+          total: resData.totalElements ?? 0,
+        }));
+      } else if (Array.isArray(resData)) {
+        setData(resData);
+      } else {
+        setData(resData.content || []);
+      }
     } catch (err: any) {
       setError(err?.message || 'Failed to load calls');
     } finally {
@@ -61,18 +86,35 @@ export default function CallsPage() {
     }
   }, [searchParams]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchData(pagination.current, pagination.pageSize); }, [fetchData]);
 
   const handleSearch = (values: any) => {
     const params: Record<string, any> = {};
     if (values.search) params.q = values.search;
     if (values.status) params.status = values.status;
     if (values.direction) params.direction = values.direction;
+    setUrlParams({
+      q: params.q || '',
+      status: params.status || '',
+      direction: params.direction || '',
+      page: '1',
+    });
     setSearchParams(params);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    fetchData(1, pagination.pageSize);
   };
 
   const handleReset = () => {
+    setUrlParams({ q: '', status: '', direction: '', page: '1' });
     setSearchParams({});
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    fetchData(1, pagination.pageSize);
+  };
+
+  const handleTableChange = (pag: TablePaginationConfig) => {
+    setUrlParams({ page: String(pag.current), pageSize: String(pag.pageSize) });
+    setPagination((prev) => ({ ...prev, current: pag.current, pageSize: pag.pageSize }));
+    fetchData(pag.current, pag.pageSize);
   };
 
   const handleBulkDelete = () => {
@@ -87,7 +129,7 @@ export default function CallsPage() {
           await callsApi.bulkDelete(selectedRowKeys);
           message.success(`Đã xóa ${selectedRowKeys.length} cuộc gọi`);
           setSelectedRowKeys([]);
-          fetchData();
+          fetchData(pagination.current, pagination.pageSize);
         } catch (err: any) {
           message.error(err?.response?.data?.message || 'Xóa thất bại');
         }
@@ -120,19 +162,25 @@ export default function CallsPage() {
       onOk: async () => {
         await callsApi.delete(id);
         message.success('Call deleted');
-        fetchData();
+        fetchData(pagination.current, pagination.pageSize);
       },
     });
   };
 
   const handleSubmit = async (values: any) => {
-    if (editingCall?.id) {
-      await callsApi.update(editingCall.id, values);
-    } else {
-      await callsApi.create(values);
-    }
+    try {
+      if (editingCall?.id) {
+        await callsApi.update(editingCall.id, values);
+        message.success('Call updated successfully');
+      } else {
+        await callsApi.create(values);
+        message.success('Call created successfully');
+      }
     setModalOpen(false);
-    fetchData();
+    fetchData(pagination.current, pagination.pageSize);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to save call');
+    }
   };
 
   const handleExportCsv = async () => {
@@ -174,12 +222,13 @@ export default function CallsPage() {
       key: 'id',
       render: (id: string) => <a style={{ fontWeight: 500 }} onClick={() => router.push(`/calls/${id}`)}>{id}</a>,
     },
-    { title: 'Caller', dataIndex: 'caller', key: 'caller' },
-    { title: 'Callee', dataIndex: 'callee', key: 'callee' },
+    { title: 'Caller', dataIndex: 'caller', key: 'caller', sorter: true },
+    { title: 'Callee', dataIndex: 'callee', key: 'callee', sorter: true },
     {
       title: 'Direction',
       dataIndex: 'direction',
       key: 'direction',
+      sorter: true,
       render: (dir: string) => (
         <Tag icon={<PhoneOutlined />} color={directionColors[dir] || 'default'}>
           {dir?.toUpperCase()}
@@ -190,6 +239,7 @@ export default function CallsPage() {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      sorter: true,
       render: (status: string) => (
         <Tag color={statusColors[status] || 'default'}>{status?.toUpperCase()}</Tag>
       ),
@@ -198,6 +248,7 @@ export default function CallsPage() {
       title: 'Duration',
       dataIndex: 'duration',
       key: 'duration',
+      sorter: true,
       render: (secs: number) => {
         if (!secs) return '-';
         const mins = Math.floor(secs / 60);
@@ -205,8 +256,8 @@ export default function CallsPage() {
         return `${mins}:${s.toString().padStart(2, '0')}`;
       },
     },
-    { title: 'Agent', dataIndex: 'agent', key: 'agent' },
-    { title: 'Time', dataIndex: 'time', key: 'time' },
+    { title: 'Agent', dataIndex: 'agent', key: 'agent', sorter: true },
+    { title: 'Time', dataIndex: 'time', key: 'time', sorter: true },
     {
       title: 'Actions',
       key: 'actions',
@@ -286,10 +337,11 @@ export default function CallsPage() {
           loading={loading}
           error={error}
           rowKey="id"
-          pagination={{ pageSize: 10 }}
-          onRefresh={() => { setSelectedRowKeys([]); fetchData(); }}
+          pagination={pagination}
+          onRefresh={() => { setSelectedRowKeys([]); fetchData(pagination.current, pagination.pageSize); }}
           onExportCsv={handleExportCsv}
           onExportExcel={handleExportExcel}
+          onTableChange={handleTableChange}
           extra={
             <Button type="primary" icon={<PhoneOutlined />} onClick={handleCreate}>
               New Call

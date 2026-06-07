@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import CommonSearch from '@/components/common/CommonSearch';
+import SavedFilters from '@/components/common/SavedFilters';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { Can } from '@/components/common/Can';
 import { Permissions } from '@/lib/permissions';
@@ -138,6 +139,10 @@ export default function SurveysPage() {
   const [editingQuestion, setEditingQuestion] = useState<SurveyQuestion | null>(null);
   const [questionSurveyId, setQuestionSurveyId] = useState<string>('');
 
+  // SavedFilters state
+  const [surveyFilters, setSurveyFilters] = useState<Record<string, any>>({});
+  const [templateFilters, setTemplateFilters] = useState<Record<string, any>>({});
+
   const fetchSurveys = useCallback(async (page = 1, size = 10, params?: Record<string, any>) => {
     setSurveyLoading(true);
     setSurveyError(null);
@@ -234,11 +239,13 @@ export default function SurveysPage() {
         cleaned[key] = val;
       }
     });
+    setSurveyFilters(cleaned);
     setSurveyUrlParams({ title: cleaned.title || '', type: cleaned.type || '', page: '1', pageSize: surveyUrlParams.pageSize });
     fetchSurveys(1, surveyPagination.pageSize, cleaned);
   };
 
   const handleSurveyReset = () => {
+    setSurveyFilters({});
     setSurveyUrlParams({ title: '', type: '', page: '1', pageSize: surveyUrlParams.pageSize });
     fetchSurveys(1, surveyPagination.pageSize);
   };
@@ -255,11 +262,13 @@ export default function SurveysPage() {
         cleaned[key] = val;
       }
     });
+    setTemplateFilters(cleaned);
     setTemplateUrlParams({ name: cleaned.name || '', trigger: cleaned.trigger || '', page: '1', pageSize: templateUrlParams.pageSize });
     fetchTemplates(1, templatePagination.pageSize, cleaned);
   };
 
   const handleTemplateReset = () => {
+    setTemplateFilters({});
     setTemplateUrlParams({ name: '', trigger: '', page: '1', pageSize: templateUrlParams.pageSize });
     fetchTemplates(1, templatePagination.pageSize);
   };
@@ -332,30 +341,51 @@ export default function SurveysPage() {
   };
 
   const handleSurveyFormSubmit = async (values: any) => {
-    if (editingSurvey?.id) {
-      await surveyApi.update(editingSurvey.id, values);
-    } else {
-      await surveyApi.create(values);
+    try {
+      if (editingSurvey?.id) {
+        await surveyApi.update(editingSurvey.id, values);
+        message.success('Survey updated successfully');
+      } else {
+        await surveyApi.create(values);
+        message.success('Survey created successfully');
+      }
+      setSurveyModalOpen(false);
+      fetchSurveys(surveyPagination.current, surveyPagination.pageSize);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to save survey');
     }
-    fetchSurveys(surveyPagination.current, surveyPagination.pageSize);
   };
 
   const handleTemplateFormSubmit = async (values: any) => {
-    if (editingTemplate?.id) {
-      await surveyApi.updateTemplate(editingTemplate.id, values);
-    } else {
-      await surveyApi.createTemplate(values);
+    try {
+      if (editingTemplate?.id) {
+        await surveyApi.updateTemplate(editingTemplate.id, values);
+        message.success('Template updated successfully');
+      } else {
+        await surveyApi.createTemplate(values);
+        message.success('Template created successfully');
+      }
+      setTemplateModalOpen(false);
+      fetchTemplates(templatePagination.current, templatePagination.pageSize);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to save template');
     }
-    fetchTemplates(templatePagination.current, templatePagination.pageSize);
   };
 
   const handleQuestionFormSubmit = async (values: any) => {
-    if (editingQuestion?.id) {
-      await surveyApi.updateQuestion(editingQuestion.id, values);
-    } else {
-      await surveyApi.createQuestion({ ...values, surveyId: questionSurveyId });
+    try {
+      if (editingQuestion?.id) {
+        await surveyApi.updateQuestion(editingQuestion.id, values);
+        message.success('Question updated successfully');
+      } else {
+        await surveyApi.createQuestion({ ...values, surveyId: questionSurveyId });
+        message.success('Question created successfully');
+      }
+      setQuestionModalOpen(false);
+      fetchQuestions(questionSurveyId);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to save question');
     }
-    fetchQuestions(questionSurveyId);
   };
 
   const fetchQuestions = async (surveyId: string) => {
@@ -566,6 +596,11 @@ export default function SurveysPage() {
               loading={surveyLoading}
               initialValues={{ title: surveyUrlParams.title, type: surveyUrlParams.type }}
             />
+            <SavedFilters
+              currentValues={surveyFilters}
+              onApply={(v) => { setSurveyFilters(v); handleSurveySearch(v); }}
+              storageKey="vcall-saved-filters-surveys"
+            />
           </div>
           {selectedSurveyKeys.length > 0 && (
             <Button danger onClick={handleBulkDeleteSurveys} style={{ marginBottom: 16 }}>
@@ -600,6 +635,11 @@ export default function SurveysPage() {
               onReset={handleTemplateReset}
               loading={templateLoading}
               initialValues={{ name: templateUrlParams.name, trigger: templateUrlParams.trigger }}
+            />
+            <SavedFilters
+              currentValues={templateFilters}
+              onApply={(v) => { setTemplateFilters(v); handleTemplateSearch(v); }}
+              storageKey="vcall-saved-filters-surveys-templates"
             />
           </div>
           {selectedTemplateKeys.length > 0 && (

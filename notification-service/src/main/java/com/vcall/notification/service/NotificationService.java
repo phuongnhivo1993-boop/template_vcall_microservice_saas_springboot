@@ -17,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -141,6 +143,46 @@ public class NotificationService {
         Notification notification = notificationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + id));
         return toResponse(notification);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<NotificationResponse> getAllNotifications(Pageable pageable) {
+        return notificationRepository.findAll(pageable).map(this::toResponse);
+    }
+
+    @Transactional
+    public NotificationResponse updateNotification(UUID id, NotificationRequest request) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + id));
+        notification.setRecipientId(request.getRecipientId());
+        notification.setRecipientAddress(request.getRecipientAddress());
+        notification.setChannel(request.getChannel());
+        notification.setType(request.getType());
+        notification.setTitle(request.getTitle());
+        notification.setBody(request.getBody());
+        notification.setMetadata(request.getMetadata());
+        notification = notificationRepository.save(notification);
+        return toResponse(notification);
+    }
+
+    @Transactional
+    public void bulkDeleteNotifications(List<UUID> ids) {
+        List<Notification> notifications = notificationRepository.findAllById(ids);
+        for (Notification notification : notifications) {
+            notification.setIsDeleted(true);
+        }
+        notificationRepository.saveAll(notifications);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getNotificationStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalNotifications", notificationRepository.count());
+        stats.put("pendingNotifications", notificationRepository.findByStatus(NotificationStatus.PENDING).size());
+        stats.put("sentNotifications", notificationRepository.findByStatus(NotificationStatus.SENT).size());
+        stats.put("failedNotifications", notificationRepository.findByStatus(NotificationStatus.FAILED).size());
+        stats.put("readNotifications", notificationRepository.findByStatus(NotificationStatus.READ).size());
+        return stats;
     }
 
     public Notification createAndSave(UUID recipientId, String recipientAddress, NotificationChannel channel,

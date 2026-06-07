@@ -19,6 +19,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -49,6 +50,7 @@ public class CallController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR') or hasRole('AGENT')")
     public ResponseEntity<CallResponse> initiateCall(@Valid @RequestBody CallRequest request) {
         CallResponse response = callService.createCall(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -60,6 +62,7 @@ public class CallController {
     }
 
     @PutMapping("/{id}/status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR') or hasRole('AGENT')")
     public ResponseEntity<CallResponse> updateCallStatus(@PathVariable UUID id,
                                                           @Valid @RequestBody CallStatusRequest request) {
         return ResponseEntity.ok(callService.updateCallStatus(id, request));
@@ -166,5 +169,31 @@ public class CallController {
     public ResponseEntity<ApiResponse<List<CallResponse>>> exportExcel() {
         List<CallResponse> calls = callService.exportAll();
         return ResponseEntity.ok(ApiResponse.success(calls));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<CallResponse>> updateCall(@PathVariable UUID id,
+                                                                 @Valid @RequestBody CallRequest request) {
+        CallResponse response = callService.updateCall(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Call updated successfully", response));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteCall(@PathVariable UUID id) {
+        callService.deleteCall(id);
+        return ResponseEntity.ok(ApiResponse.success("Call deleted successfully", null));
+    }
+
+    @PostMapping("/{id}/duplicate")
+    public ResponseEntity<ApiResponse<CallResponse>> duplicateCall(@PathVariable UUID id) {
+        CallResponse response = callService.duplicateCall(id);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Call duplicated successfully", response));
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<ApiResponse<Void>> bulkDeleteCalls(@RequestBody List<UUID> ids) {
+        callService.bulkDeleteCalls(ids);
+        return ResponseEntity.ok(ApiResponse.success("Calls deleted successfully", null));
     }
 }

@@ -18,7 +18,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/webhooks")
@@ -65,5 +69,27 @@ public class WebhookController {
     public ResponseEntity<ApiResponse<TestResultResponse>> testWebhook(@PathVariable Long id) {
         TestResultResponse result = webhookService.testWebhook(id);
         return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<ApiResponse<Void>> bulkDeleteWebhooks(@RequestBody List<Long> ids) {
+        webhookService.bulkDeleteWebhooks(ids);
+        return ResponseEntity.ok(ApiResponse.success("Webhooks deleted successfully", null));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<WebhookResponse>>> searchWebhooks(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String event,
+            @RequestParam(required = false) Boolean isActive,
+            Pageable pageable) {
+        Page<WebhookResponse> result = webhookService.searchWebhooks(name, event, isActive, pageable);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getWebhookStats() {
+        Map<String, Object> stats = webhookService.getWebhookStats();
+        return ResponseEntity.ok(ApiResponse.success(stats));
     }
 }

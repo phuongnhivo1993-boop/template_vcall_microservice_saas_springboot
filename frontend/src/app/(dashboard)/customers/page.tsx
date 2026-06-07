@@ -182,12 +182,19 @@ export default function CustomersPage() {
   };
 
   const handleFormSubmit = async (values: any) => {
-    if (editingCustomer?.id) {
-      await customersApi.update(editingCustomer.id, values);
-    } else {
-      await customersApi.create(values);
+    try {
+      if (editingCustomer?.id) {
+        await customersApi.update(editingCustomer.id, values);
+        message.success('Customer updated successfully');
+      } else {
+        await customersApi.create(values);
+        message.success('Customer created successfully');
+      }
+      setModalOpen(false);
+      fetchCustomers(pagination.current, pagination.pageSize, filters);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to save customer');
     }
-    fetchCustomers(pagination.current, pagination.pageSize, filters);
   };
 
   const handleExportCsv = async () => {

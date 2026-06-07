@@ -4,13 +4,12 @@ import com.vcall.billing.entity.PricingPlan;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
 import java.util.Optional;
 
-@Repository
-public interface PricingPlanRepository extends JpaRepository<PricingPlan, Long> {
+public interface PricingPlanRepository extends JpaRepository<PricingPlan, Long>, JpaSpecificationExecutor<PricingPlan> {
 
     List<PricingPlan> findByPlanType(PricingPlan.PlanType planType);
     Page<PricingPlan> findByPlanType(PricingPlan.PlanType planType, Pageable pageable);

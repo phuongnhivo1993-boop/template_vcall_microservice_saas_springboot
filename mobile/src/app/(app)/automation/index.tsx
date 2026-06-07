@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
@@ -123,7 +123,7 @@ export default function AutomationScreen() {
             title="Chưa có quy tắc tự động hóa"
             subtitle="Tạo quy tắc để tự động hóa quy trình làm việc"
             actionLabel="Tạo quy tắc"
-            onAction={() => {}}
+            onAction={() => Alert.alert('Thông tin', 'Tính năng này khả dụng trên ứng dụng web')}
           />
         )}
       />

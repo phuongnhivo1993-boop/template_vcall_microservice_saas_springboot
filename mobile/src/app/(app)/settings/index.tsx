@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Switch, StyleSheet, ScrollView } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useSelector, useDispatch } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
 import { Colors } from '../../../constants/colors';
 import { logoutUser } from '../../../store/slices/authSlice';
 import type { RootState, AppDispatch } from '../../../store';
@@ -17,6 +18,13 @@ interface SettingItem {
   info?: string;
 }
 
+const SETTINGS_KEYS = {
+  notifications: 'settings_notifications',
+  soundEnabled: 'settings_sound',
+  vibrationEnabled: 'settings_vibration',
+  autoAnswer: 'settings_auto_answer',
+};
+
 export default function SettingsScreen() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -27,6 +35,44 @@ export default function SettingsScreen() {
   const [vibrationEnabled, setVibrationEnabled] = useState(true);
   const [autoAnswer, setAutoAnswer] = useState(false);
 
+  useEffect(() => {
+    const loadSettings = async () => {
+      const n = await SecureStore.getItemAsync(SETTINGS_KEYS.notifications);
+      const s = await SecureStore.getItemAsync(SETTINGS_KEYS.soundEnabled);
+      const v = await SecureStore.getItemAsync(SETTINGS_KEYS.vibrationEnabled);
+      const a = await SecureStore.getItemAsync(SETTINGS_KEYS.autoAnswer);
+      if (n !== null) setNotifications(n === 'true');
+      if (s !== null) setSoundEnabled(s === 'true');
+      if (v !== null) setVibrationEnabled(v === 'true');
+      if (a !== null) setAutoAnswer(a === 'true');
+    };
+    loadSettings();
+  }, []);
+
+  const persistSetting = async (key: string, value: boolean) => {
+    await SecureStore.setItemAsync(key, String(value));
+  };
+
+  const handleNotifications = (val: boolean) => {
+    setNotifications(val);
+    persistSetting(SETTINGS_KEYS.notifications, val);
+  };
+
+  const handleSoundEnabled = (val: boolean) => {
+    setSoundEnabled(val);
+    persistSetting(SETTINGS_KEYS.soundEnabled, val);
+  };
+
+  const handleVibrationEnabled = (val: boolean) => {
+    setVibrationEnabled(val);
+    persistSetting(SETTINGS_KEYS.vibrationEnabled, val);
+  };
+
+  const handleAutoAnswer = (val: boolean) => {
+    setAutoAnswer(val);
+    persistSetting(SETTINGS_KEYS.autoAnswer, val);
+  };
+
   const handleLogout = async () => {
     await dispatch(logoutUser());
     router.replace('/(auth)/login');
@@ -36,15 +82,15 @@ export default function SettingsScreen() {
     {
       title: 'Thông báo',
       items: [
-        { icon: 'notifications-outline', label: 'Thông báo đẩy', type: 'toggle', value: notifications, onToggle: setNotifications },
-        { icon: 'volume-high-outline', label: 'Âm thanh', type: 'toggle', value: soundEnabled, onToggle: setSoundEnabled },
-        { icon: 'phone-portrait-outline', label: 'Rung', type: 'toggle', value: vibrationEnabled, onToggle: setVibrationEnabled },
+        { icon: 'notifications-outline', label: 'Thông báo đẩy', type: 'toggle', value: notifications, onToggle: handleNotifications },
+        { icon: 'volume-high-outline', label: 'Âm thanh', type: 'toggle', value: soundEnabled, onToggle: handleSoundEnabled },
+        { icon: 'phone-portrait-outline', label: 'Rung', type: 'toggle', value: vibrationEnabled, onToggle: handleVibrationEnabled },
       ],
     },
     {
       title: 'Cuộc gọi',
       items: [
-        { icon: 'call-outline', label: 'Tự động trả lời', type: 'toggle', value: autoAnswer, onToggle: setAutoAnswer },
+        { icon: 'call-outline', label: 'Tự động trả lời', type: 'toggle', value: autoAnswer, onToggle: handleAutoAnswer },
         { icon: 'mic-outline', label: 'Âm lượng mic', type: 'nav', info: '80%' },
         { icon: 'volume-high-outline', label: 'Âm lượng loa', type: 'nav', info: '70%' },
       ],

@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -74,5 +75,28 @@ public class AutomationRuleController {
         boolean isActive = body.getOrDefault("isActive", false);
         AutomationRuleResponse rule = automationRuleService.toggleRule(id, isActive);
         return ResponseEntity.ok(ApiResponse.success("Rule toggled successfully", rule));
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<ApiResponse<Void>> bulkDeleteRules(@RequestBody List<Long> ids) {
+        automationRuleService.bulkDeleteRules(ids);
+        return ResponseEntity.ok(ApiResponse.success("Rules deleted successfully", null));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<Page<AutomationRuleResponse>>> searchRules(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String trigger,
+            @RequestParam(required = false) String action,
+            @RequestParam(required = false) Boolean isActive,
+            Pageable pageable) {
+        Page<AutomationRuleResponse> result = automationRuleService.searchRules(name, trigger, action, isActive, pageable);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getRuleStats() {
+        Map<String, Object> stats = automationRuleService.getRuleStats();
+        return ResponseEntity.ok(ApiResponse.success(stats));
     }
 }

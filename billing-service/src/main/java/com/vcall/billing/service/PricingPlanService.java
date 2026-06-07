@@ -6,11 +6,18 @@ import com.vcall.billing.entity.PricingPlan;
 import com.vcall.billing.repository.PricingPlanRepository;
 import com.vcall.common.exception.DuplicateResourceException;
 import com.vcall.common.exception.ResourceNotFoundException;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -83,6 +90,42 @@ public class PricingPlanService {
                 .orElseThrow(() -> new ResourceNotFoundException("Pricing plan not found with id: " + id));
         plan.setIsDeleted(true);
         pricingPlanRepository.save(plan);
+    }
+
+    @Transactional
+    public void bulkDeletePlans(List<Long> ids) {
+        List<PricingPlan> plans = pricingPlanRepository.findAllById(ids);
+        for (PricingPlan plan : plans) {
+            plan.setIsDeleted(true);
+        }
+        pricingPlanRepository.saveAll(plans);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PricingPlanResponse> searchPlans(String name, PricingPlan.PlanType planType,
+                                                  Boolean isActive, Pageable pageable) {
+        Specification<PricingPlan> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (name != null && !name.isEmpty()) {
+                predicates.add(cb.like(root.get("name"), "%" + name + "%"));
+            }
+            if (planType != null) {
+                predicates.add(cb.equal(root.get("planType"), planType));
+            }
+            if (isActive != null) {
+                predicates.add(cb.equal(root.get("isActive"), isActive));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return pricingPlanRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getPlanStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalPlans", pricingPlanRepository.count());
+        stats.put("activePlans", pricingPlanRepository.findByIsActiveTrue().size());
+        return stats;
     }
 
     private PricingPlanResponse toResponse(PricingPlan plan) {

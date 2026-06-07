@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUrlState } from '@/lib/hooks/useUrlState';
 import {
   Card, Tabs, Select, Tag, Typography, Space, Button, Modal, Form,
   Input, message, Row, Col, Statistic, Tooltip
@@ -10,7 +11,8 @@ import {
   PlusOutlined, TeamOutlined, DollarOutlined, PhoneOutlined,
   EditOutlined, DeleteOutlined, SwapOutlined, CheckCircleOutlined, CopyOutlined, EyeOutlined
 } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
+import type { SorterResult } from 'antd/es/table/interface';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import CommonSearch from '@/components/common/CommonSearch';
@@ -54,52 +56,113 @@ export default function CrmPage() {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [convertModalOpen, setConvertModalOpen] = useState(false);
   const [convertingLead, setConvertingLead] = useState<any>(null);
+  const [urlParams, setUrlParams] = useUrlState({
+    keyword: '', status: '', stage: '', type: '',
+    page: '1', pageSize: '10',
+  });
   const [filters, setFilters] = useState<Record<string, any>>({});
   const [selectedLeadKeys, setSelectedLeadKeys] = useState<string[]>([]);
   const [selectedOppKeys, setSelectedOppKeys] = useState<string[]>([]);
   const [selectedActivityKeys, setSelectedActivityKeys] = useState<number[]>([]);
   const [selectedNoteKeys, setSelectedNoteKeys] = useState<number[]>([]);
+  const [leadsPagination, setLeadsPagination] = useState<TablePaginationConfig>({
+    current: parseInt(urlParams.page), pageSize: parseInt(urlParams.pageSize), total: 0,
+  });
+  const [oppsPagination, setOppsPagination] = useState<TablePaginationConfig>({
+    current: parseInt(urlParams.page), pageSize: parseInt(urlParams.pageSize), total: 0,
+  });
+  const [actsPagination, setActsPagination] = useState<TablePaginationConfig>({
+    current: parseInt(urlParams.page), pageSize: parseInt(urlParams.pageSize), total: 0,
+  });
+  const [notesPagination, setNotesPagination] = useState<TablePaginationConfig>({
+    current: parseInt(urlParams.page), pageSize: parseInt(urlParams.pageSize), total: 0,
+  });
 
   const setTabLoading = (tab: string, val: boolean) =>
     setLoading((prev) => ({ ...prev, [tab]: val }));
 
-  const fetchData = useCallback(async (searchParams?: Record<string, any>) => {
-    const params = { page: 0, size: 100, ...searchParams };
+  const fetchLeads = useCallback(async (page = 1, size = 10, searchParams?: Record<string, any>) => {
+    setTabLoading('leads', true);
     setError(null);
     try {
-      setTabLoading('leads', true);
-      const leadsRes = await crmApi.leads.list(params);
-      setLeads(leadsRes.data?.data?.content || leadsRes.data?.content || []);
+      const res = await crmApi.leads.list({ page: page - 1, size, ...searchParams });
+      const data = res.data?.data || res.data;
+      if (data.content) {
+        setLeads(data.content);
+        setLeadsPagination((prev) => ({ ...prev, current: data.page + 1, pageSize: data.size, total: data.totalElements }));
+      } else if (Array.isArray(data)) {
+        setLeads(data);
+      } else {
+        setLeads(data.content || []);
+      }
     } catch (err: any) {
       message.error(err?.response?.data?.message || err?.message || 'Failed to load leads');
     } finally { setTabLoading('leads', false); }
+  }, []);
 
+  const fetchOpps = useCallback(async (page = 1, size = 10, searchParams?: Record<string, any>) => {
+    setTabLoading('opportunities', true);
+    setError(null);
     try {
-      setTabLoading('opportunities', true);
-      const oppsRes = await crmApi.opportunities.list(params);
-      setOpportunities(oppsRes.data?.data?.content || oppsRes.data?.content || []);
+      const res = await crmApi.opportunities.list({ page: page - 1, size, ...searchParams });
+      const data = res.data?.data || res.data;
+      if (data.content) {
+        setOpportunities(data.content);
+        setOppsPagination((prev) => ({ ...prev, current: data.page + 1, pageSize: data.size, total: data.totalElements }));
+      } else if (Array.isArray(data)) {
+        setOpportunities(data);
+      } else {
+        setOpportunities(data.content || []);
+      }
     } catch (err: any) {
       message.error(err?.response?.data?.message || err?.message || 'Failed to load opportunities');
     } finally { setTabLoading('opportunities', false); }
+  }, []);
 
+  const fetchActivities = useCallback(async (page = 1, size = 10, searchParams?: Record<string, any>) => {
+    setTabLoading('activities', true);
+    setError(null);
     try {
-      setTabLoading('activities', true);
-      const actsRes = await crmApi.activities.list(params);
-      setActivities(actsRes.data?.data?.content || actsRes.data?.content || []);
+      const res = await crmApi.activities.list({ page: page - 1, size, ...searchParams });
+      const data = res.data?.data || res.data;
+      if (data.content) {
+        setActivities(data.content);
+        setActsPagination((prev) => ({ ...prev, current: data.page + 1, pageSize: data.size, total: data.totalElements }));
+      } else if (Array.isArray(data)) {
+        setActivities(data);
+      } else {
+        setActivities(data.content || []);
+      }
     } catch (err: any) {
       message.error(err?.response?.data?.message || err?.message || 'Failed to load activities');
     } finally { setTabLoading('activities', false); }
+  }, []);
 
+  const fetchNotes = useCallback(async (page = 1, size = 10, searchParams?: Record<string, any>) => {
+    setTabLoading('notes', true);
+    setError(null);
     try {
-      setTabLoading('notes', true);
-      const notesRes = await crmApi.notes.list(params);
-      setNotes(notesRes.data?.data?.content || notesRes.data?.content || []);
+      const res = await crmApi.notes.list({ page: page - 1, size, ...searchParams });
+      const data = res.data?.data || res.data;
+      if (data.content) {
+        setNotes(data.content);
+        setNotesPagination((prev) => ({ ...prev, current: data.page + 1, pageSize: data.size, total: data.totalElements }));
+      } else if (Array.isArray(data)) {
+        setNotes(data);
+      } else {
+        setNotes(data.content || []);
+      }
     } catch (err: any) {
       message.error(err?.response?.data?.message || err?.message || 'Failed to load notes');
     } finally { setTabLoading('notes', false); }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchLeads(leadsPagination.current, leadsPagination.pageSize);
+    fetchOpps(oppsPagination.current, oppsPagination.pageSize);
+    fetchActivities(actsPagination.current, actsPagination.pageSize);
+    fetchNotes(notesPagination.current, notesPagination.pageSize);
+  }, []);
 
   const handleCreate = (type: string) => {
     setModalType(type as any);
@@ -131,7 +194,7 @@ export default function CrmPage() {
           await crmApi.leads.bulkDelete(selectedLeadKeys);
           message.success(`Đã xóa ${selectedLeadKeys.length} lead`);
           setSelectedLeadKeys([]);
-          fetchData(filters);
+          fetchLeads(leadsPagination.current, leadsPagination.pageSize, filters);
         } catch (err: any) {
           message.error(err?.response?.data?.message || 'Xóa thất bại');
         }
@@ -151,7 +214,7 @@ export default function CrmPage() {
           await crmApi.opportunities.bulkDelete(selectedOppKeys);
           message.success(`Đã xóa ${selectedOppKeys.length} cơ hội`);
           setSelectedOppKeys([]);
-          fetchData(filters);
+          fetchOpps(oppsPagination.current, oppsPagination.pageSize, filters);
         } catch (err: any) {
           message.error(err?.response?.data?.message || 'Xóa thất bại');
         }
@@ -171,7 +234,7 @@ export default function CrmPage() {
           await crmApi.activities.bulkDelete(selectedActivityKeys);
           message.success(`Đã xóa ${selectedActivityKeys.length} hoạt động`);
           setSelectedActivityKeys([]);
-          fetchData(filters);
+          fetchActivities(actsPagination.current, actsPagination.pageSize, filters);
         } catch (err: any) {
           message.error(err?.response?.data?.message || 'Xóa thất bại');
         }
@@ -191,7 +254,7 @@ export default function CrmPage() {
           await crmApi.notes.bulkDelete(selectedNoteKeys);
           message.success(`Đã xóa ${selectedNoteKeys.length} ghi chú`);
           setSelectedNoteKeys([]);
-          fetchData(filters);
+          fetchNotes(notesPagination.current, notesPagination.pageSize, filters);
         } catch (err: any) {
           message.error(err?.response?.data?.message || 'Xóa thất bại');
         }
@@ -208,34 +271,66 @@ export default function CrmPage() {
         else if (type === 'opportunity') await crmApi.opportunities.delete(id);
         else if (type === 'activity') await crmApi.activities.delete(Number(id));
         else if (type === 'note') await crmApi.notes.delete(Number(id));
-        fetchData();
+        const page = activeTab === 'leads' ? leadsPagination : activeTab === 'opportunities' ? oppsPagination : activeTab === 'activities' ? actsPagination : notesPagination;
+        if (activeTab === 'leads') fetchLeads(page.current, page.pageSize, filters);
+        else if (activeTab === 'opportunities') fetchOpps(page.current, page.pageSize, filters);
+        else if (activeTab === 'activities') fetchActivities(page.current, page.pageSize, filters);
+        else fetchNotes(page.current, page.pageSize, filters);
       },
     });
   };
 
   const handleFormSubmit = async (values: any) => {
-    if (modalType === 'lead') {
-      if (editingItem?.id) await crmApi.leads.update(editingItem.id, values);
-      else await crmApi.leads.create(values);
-    } else if (modalType === 'opportunity') {
-      if (editingItem?.id) await crmApi.opportunities.update(editingItem.id, values);
-      else await crmApi.opportunities.create(values);
-    } else if (modalType === 'activity') {
-      if (editingItem?.id) await crmApi.activities.update(editingItem.id, values);
-      else await crmApi.activities.create(values);
-    } else if (modalType === 'note') {
-      if (editingItem?.id) await crmApi.notes.update(editingItem.id, values);
-      else await crmApi.notes.create(values);
+    try {
+      const label = modalType.charAt(0).toUpperCase() + modalType.slice(1);
+      if (modalType === 'lead') {
+        if (editingItem?.id) {
+          await crmApi.leads.update(editingItem.id, values);
+          message.success(`${label} updated successfully`);
+        } else {
+          await crmApi.leads.create(values);
+          message.success(`${label} created successfully`);
+        }
+        fetchLeads(leadsPagination.current, leadsPagination.pageSize, filters);
+      } else if (modalType === 'opportunity') {
+        if (editingItem?.id) {
+          await crmApi.opportunities.update(editingItem.id, values);
+          message.success(`${label} updated successfully`);
+        } else {
+          await crmApi.opportunities.create(values);
+          message.success(`${label} created successfully`);
+        }
+        fetchOpps(oppsPagination.current, oppsPagination.pageSize, filters);
+      } else if (modalType === 'activity') {
+        if (editingItem?.id) {
+          await crmApi.activities.update(editingItem.id, values);
+          message.success(`${label} updated successfully`);
+        } else {
+          await crmApi.activities.create(values);
+          message.success(`${label} created successfully`);
+        }
+        fetchActivities(actsPagination.current, actsPagination.pageSize, filters);
+      } else if (modalType === 'note') {
+        if (editingItem?.id) {
+          await crmApi.notes.update(editingItem.id, values);
+          message.success(`${label} updated successfully`);
+        } else {
+          await crmApi.notes.create(values);
+          message.success(`${label} created successfully`);
+        }
+        fetchNotes(notesPagination.current, notesPagination.pageSize, filters);
+      }
+      setModalOpen(false);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to save');
     }
-    setModalOpen(false);
-    fetchData();
   };
 
   const handleConvert = async (values: any) => {
     await crmApi.leads.convert(convertingLead.id, values);
     setConvertModalOpen(false);
     message.success('Lead converted to opportunity');
-    fetchData();
+    fetchLeads(leadsPagination.current, leadsPagination.pageSize, filters);
   };
 
   const handleSearch = (values: any) => {
@@ -243,13 +338,45 @@ export default function CrmPage() {
     Object.entries(values).forEach(([key, val]) => {
       if (val !== undefined && val !== null && val !== '') cleaned[key] = val;
     });
+    setUrlParams({
+      keyword: cleaned.keyword || '',
+      status: cleaned.status || '',
+      stage: cleaned.stage || '',
+      type: cleaned.type || '',
+      page: '1',
+      pageSize: leadsPagination.pageSize?.toString() || '10',
+    });
     setFilters(cleaned);
-    fetchData(cleaned);
+    fetchLeads(1, leadsPagination.pageSize, cleaned);
+    fetchOpps(1, oppsPagination.pageSize, cleaned);
+    fetchActivities(1, actsPagination.pageSize, cleaned);
+    fetchNotes(1, notesPagination.pageSize, cleaned);
   };
 
   const handleReset = () => {
+    setUrlParams({ keyword: '', status: '', stage: '', type: '', page: '1', pageSize: leadsPagination.pageSize?.toString() || '10' });
     setFilters({});
-    fetchData();
+    fetchLeads(1, leadsPagination.pageSize);
+    fetchOpps(1, oppsPagination.pageSize);
+    fetchActivities(1, actsPagination.pageSize);
+    fetchNotes(1, notesPagination.pageSize);
+  };
+
+  const handleLeadsTableChange = (pag: TablePaginationConfig) => {
+    setUrlParams({ page: String(pag.current), pageSize: String(pag.pageSize) });
+    fetchLeads(pag.current, pag.pageSize, filters);
+  };
+  const handleOppsTableChange = (pag: TablePaginationConfig) => {
+    setUrlParams({ page: String(pag.current), pageSize: String(pag.pageSize) });
+    fetchOpps(pag.current, pag.pageSize, filters);
+  };
+  const handleActsTableChange = (pag: TablePaginationConfig) => {
+    setUrlParams({ page: String(pag.current), pageSize: String(pag.pageSize) });
+    fetchActivities(pag.current, pag.pageSize, filters);
+  };
+  const handleNotesTableChange = (pag: TablePaginationConfig) => {
+    setUrlParams({ page: String(pag.current), pageSize: String(pag.pageSize) });
+    fetchNotes(pag.current, pag.pageSize, filters);
   };
 
   const handleExportCsv = async () => {
@@ -287,13 +414,13 @@ export default function CrmPage() {
 
   const leadColumns: ColumnsType<any> = [
     { title: 'Name', key: 'name', render: (_: any, r: any) => <span style={{ fontWeight: 500 }}>{r.firstName} {r.lastName}</span> },
-    { title: 'Email', dataIndex: 'email', key: 'email' },
-    { title: 'Company', dataIndex: 'company', key: 'company' },
+    { title: 'Email', dataIndex: 'email', key: 'email', sorter: true },
+    { title: 'Company', dataIndex: 'company', key: 'company', sorter: true },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
-    { title: 'Status', dataIndex: 'status', key: 'status',
+    { title: 'Status', dataIndex: 'status', key: 'status', sorter: true,
       render: (s: string) => <Tag color={leadStatusColors[s] || 'blue'}>{s}</Tag> },
-    { title: 'Source', dataIndex: 'source', key: 'source' },
-    { title: 'Created', dataIndex: 'createdAt', key: 'createdAt',
+    { title: 'Source', dataIndex: 'source', key: 'source', sorter: true },
+    { title: 'Created', dataIndex: 'createdAt', key: 'createdAt', sorter: true,
       render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
@@ -311,16 +438,16 @@ export default function CrmPage() {
   ];
 
   const oppColumns: ColumnsType<any> = [
-    { title: 'Title', dataIndex: 'title', key: 'title' },
-    { title: 'Stage', dataIndex: 'stage', key: 'stage',
+    { title: 'Title', dataIndex: 'title', key: 'title', sorter: true },
+    { title: 'Stage', dataIndex: 'stage', key: 'stage', sorter: true,
       render: (s: string) => <Tag color={oppStageColors[s] || 'blue'}>{s}</Tag> },
-    { title: 'Value', dataIndex: 'value', key: 'value',
+    { title: 'Value', dataIndex: 'value', key: 'value', sorter: true,
       render: (v: number) => v ? `$${v.toLocaleString()}` : '-' },
     { title: 'Probability', dataIndex: 'probability', key: 'probability',
       render: (p: number) => p ? `${p}%` : '-' },
-    { title: 'Expected Close', dataIndex: 'expectedCloseDate', key: 'expectedCloseDate',
+    { title: 'Expected Close', dataIndex: 'expectedCloseDate', key: 'expectedCloseDate', sorter: true,
       render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
-    { title: 'Created', dataIndex: 'createdAt', key: 'createdAt',
+    { title: 'Created', dataIndex: 'createdAt', key: 'createdAt', sorter: true,
       render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
@@ -334,12 +461,12 @@ export default function CrmPage() {
   ];
 
   const activityColumns: ColumnsType<any> = [
-    { title: 'Type', dataIndex: 'type', key: 'type',
+    { title: 'Type', dataIndex: 'type', key: 'type', sorter: true,
       render: (t: string) => <Tag color={activityTypeColors[t] || 'default'}>{t}</Tag> },
-    { title: 'Subject', dataIndex: 'subject', key: 'subject' },
+    { title: 'Subject', dataIndex: 'subject', key: 'subject', sorter: true },
     { title: 'Description', dataIndex: 'description', key: 'description', ellipsis: true },
     { title: 'Assigned To', dataIndex: 'assignedToName', key: 'assignedToName' },
-    { title: 'Date', dataIndex: 'startDate', key: 'startDate',
+    { title: 'Date', dataIndex: 'startDate', key: 'startDate', sorter: true,
       render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
@@ -352,10 +479,10 @@ export default function CrmPage() {
   ];
 
   const noteColumns: ColumnsType<any> = [
-    { title: 'Title', dataIndex: 'title', key: 'title' },
+    { title: 'Title', dataIndex: 'title', key: 'title', sorter: true },
     { title: 'Content', dataIndex: 'content', key: 'content', ellipsis: true },
     { title: 'Customer', dataIndex: 'customerId', key: 'customerId' },
-    { title: 'Created', dataIndex: 'createdAt', key: 'createdAt',
+    { title: 'Created', dataIndex: 'createdAt', key: 'createdAt', sorter: true,
       render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
@@ -477,9 +604,11 @@ export default function CrmPage() {
                 dataSource={leads}
                 loading={loading.leads}
                 rowKey="id"
-                onRefresh={() => { setSelectedLeadKeys([]); fetchData(filters); }}
+                pagination={leadsPagination}
+                onRefresh={() => { setSelectedLeadKeys([]); fetchLeads(leadsPagination.current, leadsPagination.pageSize, filters); }}
                 onExportCsv={handleExportCsv}
                 onExportExcel={handleExportExcel}
+                onTableChange={handleLeadsTableChange}
               />
             </>
           )},
@@ -496,9 +625,11 @@ export default function CrmPage() {
                 dataSource={opportunities}
                 loading={loading.opportunities}
                 rowKey="id"
-                onRefresh={() => { setSelectedOppKeys([]); fetchData(filters); }}
+                pagination={oppsPagination}
+                onRefresh={() => { setSelectedOppKeys([]); fetchOpps(oppsPagination.current, oppsPagination.pageSize, filters); }}
                 onExportCsv={handleExportCsv}
                 onExportExcel={handleExportExcel}
+                onTableChange={handleOppsTableChange}
               />
             </>
           )},
@@ -515,9 +646,11 @@ export default function CrmPage() {
                 dataSource={activities}
                 loading={loading.activities}
                 rowKey="id"
-                onRefresh={() => { setSelectedActivityKeys([]); fetchData(filters); }}
+                pagination={actsPagination}
+                onRefresh={() => { setSelectedActivityKeys([]); fetchActivities(actsPagination.current, actsPagination.pageSize, filters); }}
                 onExportCsv={handleExportCsv}
                 onExportExcel={handleExportExcel}
+                onTableChange={handleActsTableChange}
               />
             </>
           )},
@@ -534,9 +667,11 @@ export default function CrmPage() {
                 dataSource={notes}
                 loading={loading.notes}
                 rowKey="id"
-                onRefresh={() => { setSelectedNoteKeys([]); fetchData(filters); }}
+                pagination={notesPagination}
+                onRefresh={() => { setSelectedNoteKeys([]); fetchNotes(notesPagination.current, notesPagination.pageSize, filters); }}
                 onExportCsv={handleExportCsv}
                 onExportExcel={handleExportExcel}
+                onTableChange={handleNotesTableChange}
               />
             </>
           )},

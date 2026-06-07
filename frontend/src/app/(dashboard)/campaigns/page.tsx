@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useUrlState } from '@/lib/hooks/useUrlState';
 import {
   Card, Tabs, Tag, Typography, Space, Button, Modal, Form,
   Input, Select, message, Row, Col, Statistic, Tooltip, Upload, Descriptions
@@ -9,7 +10,8 @@ import {
   PlusOutlined, PlayCircleOutlined, PauseCircleOutlined, StopOutlined,
   UploadOutlined, TeamOutlined, BarChartOutlined, EditOutlined, DeleteOutlined, CopyOutlined
 } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
+import type { SorterResult } from 'antd/es/table/interface';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import CommonSearch from '@/components/common/CommonSearch';
@@ -44,18 +46,39 @@ export default function CampaignsPage() {
   const [campaignModalOpen, setCampaignModalOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<any>(null);
   const [memberModalOpen, setMemberModalOpen] = useState(false);
+  const [urlParams, setUrlParams] = useUrlState({
+    name: '', status: '', type: '',
+    page: '1', pageSize: '10',
+  });
   const [filters, setFilters] = useState<Record<string, any>>({});
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: parseInt(urlParams.page),
+    pageSize: parseInt(urlParams.pageSize),
+    total: 0,
+  });
   const [selectedCampaignRowKeys, setSelectedCampaignRowKeys] = useState<string[]>([]);
   const [selectedMemberRowKeys, setSelectedMemberRowKeys] = useState<number[]>([]);
   const [selectedResultRowKeys, setSelectedResultRowKeys] = useState<string[]>([]);
 
-  const fetchCampaigns = useCallback(async (params?: Record<string, any>) => {
+  const fetchCampaigns = useCallback(async (page = 1, size = 10, params?: Record<string, any>) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await campaignsApi.list({ page: 0, size: 100, ...params });
-      const data = res.data?.data?.content || res.data?.content || [];
-      setCampaigns(data);
+      const res = await campaignsApi.list({ page: page - 1, size, ...params });
+      const data = res.data?.data || res.data;
+      if (data.content) {
+        setCampaigns(data.content);
+        setPagination((prev) => ({
+          ...prev,
+          current: (data.page ?? page - 1) + 1,
+          pageSize: data.size ?? size,
+          total: data.totalElements ?? 0,
+        }));
+      } else if (Array.isArray(data)) {
+        setCampaigns(data);
+      } else {
+        setCampaigns(data.content || []);
+      }
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || 'Failed to load campaigns');
     } finally {
@@ -63,7 +86,7 @@ export default function CampaignsPage() {
     }
   }, []);
 
-  useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
+  useEffect(() => { fetchCampaigns(pagination.current, pagination.pageSize); }, [fetchCampaigns]);
 
   const fetchCampaignDetail = async (campaign: any) => {
     setSelectedCampaign(campaign);
@@ -109,7 +132,7 @@ export default function CampaignsPage() {
           await campaignsApi.bulkDelete(selectedCampaignRowKeys);
           message.success(`Đã xóa ${selectedCampaignRowKeys.length} chiến dịch`);
           setSelectedCampaignRowKeys([]);
-          fetchCampaigns(filters);
+          fetchCampaigns(pagination.current, pagination.pageSize, filters);
         } catch (err: any) {
           message.error(err?.response?.data?.message || 'Xóa thất bại');
         }
@@ -166,19 +189,25 @@ export default function CampaignsPage() {
       content: `Are you sure you want to delete ${campaign.name}? This action cannot be undone.`,
       onOk: async () => {
         await campaignsApi.delete(campaign.id);
-        fetchCampaigns(filters);
+        fetchCampaigns(pagination.current, pagination.pageSize, filters);
       },
     });
   };
 
   const handleFormSubmit = async (values: any) => {
-    if (editingCampaign?.id) {
-      await campaignsApi.update(editingCampaign.id, values);
-    } else {
-      await campaignsApi.create(values);
-    }
+    try {
+      if (editingCampaign?.id) {
+        await campaignsApi.update(editingCampaign.id, values);
+        message.success('Campaign updated successfully');
+      } else {
+        await campaignsApi.create(values);
+        message.success('Campaign created successfully');
+      }
     setCampaignModalOpen(false);
-    fetchCampaigns(filters);
+    fetchCampaigns(pagination.current, pagination.pageSize, filters);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to save campaign');
+    }
   };
 
   const handleStatusAction = async (id: string, action: 'start' | 'pause' | 'stop') => {
@@ -187,7 +216,7 @@ export default function CampaignsPage() {
       else if (action === 'pause') await campaignsApi.pause(id);
       else await campaignsApi.stop(id);
       message.success(`Campaign ${action}ed`);
-      fetchCampaigns(filters);
+      fetchCampaigns(pagination.current, pagination.pageSize, filters);
     } catch {
       message.error(`Failed to ${action} campaign`);
     }
@@ -219,13 +248,28 @@ export default function CampaignsPage() {
     Object.entries(values).forEach(([key, val]) => {
       if (val !== undefined && val !== null && val !== '') cleaned[key] = val;
     });
+    setUrlParams({
+      name: cleaned.name || '',
+      status: cleaned.status || '',
+      type: cleaned.type || '',
+      page: '1',
+    });
     setFilters(cleaned);
-    fetchCampaigns(cleaned);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    fetchCampaigns(1, pagination.pageSize, cleaned);
   };
 
   const handleReset = () => {
+    setUrlParams({ name: '', status: '', type: '', page: '1' });
     setFilters({});
-    fetchCampaigns();
+    setPagination((prev) => ({ ...prev, current: 1 }));
+    fetchCampaigns(1, pagination.pageSize);
+  };
+
+  const handleTableChange = (pag: TablePaginationConfig) => {
+    setUrlParams({ page: String(pag.current), pageSize: String(pag.pageSize) });
+    setPagination((prev) => ({ ...prev, current: pag.current, pageSize: pag.pageSize }));
+    fetchCampaigns(pag.current, pag.pageSize, filters);
   };
 
   const handleExportCsv = async () => {
@@ -426,9 +470,11 @@ export default function CampaignsPage() {
                     loading={loading}
                     error={error}
                     rowKey="id"
-                    onRefresh={() => { setSelectedCampaignRowKeys([]); fetchCampaigns(filters); }}
+                    pagination={pagination}
+                    onRefresh={() => { setSelectedCampaignRowKeys([]); fetchCampaigns(pagination.current, pagination.pageSize, filters); }}
                     onExportCsv={handleExportCsv}
                     onExportExcel={handleExportExcel}
+                    onTableChange={handleTableChange}
                   />
                 </>
               ),

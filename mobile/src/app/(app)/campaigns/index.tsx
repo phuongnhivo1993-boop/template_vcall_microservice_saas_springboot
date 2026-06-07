@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
@@ -140,7 +140,7 @@ export default function CampaignsScreen() {
           search ? (
             <EmptyState icon="search-outline" title="Không tìm thấy chiến dịch" subtitle="Thử tìm kiếm với từ khóa khác" />
           ) : (
-            <EmptyState icon="megaphone-outline" title="Chưa có chiến dịch" subtitle="Tạo chiến dịch mới để bắt đầu" actionLabel="Tạo chiến dịch" onAction={() => {}} />
+            <EmptyState icon="megaphone-outline" title="Chưa có chiến dịch" subtitle="Tạo chiến dịch mới để bắt đầu" actionLabel="Tạo chiến dịch" onAction={() => Alert.alert('Thông tin', 'Tính năng này khả dụng trên ứng dụng web')} />
           )
         )}
       />

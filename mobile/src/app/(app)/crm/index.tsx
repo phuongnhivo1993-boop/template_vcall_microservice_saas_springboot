@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
@@ -132,7 +132,7 @@ export default function CRMScreen() {
               title="Chưa có khách hàng"
               subtitle="Thêm khách hàng mới để bắt đầu"
               actionLabel="Thêm khách hàng"
-              onAction={() => {}}
+              onAction={() => Alert.alert('Thông tin', 'Tính năng này khả dụng trên ứng dụng web')}
             />
           )
         )}

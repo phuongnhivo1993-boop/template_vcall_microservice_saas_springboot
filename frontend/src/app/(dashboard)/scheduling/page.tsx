@@ -6,6 +6,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import CommonSearch from '@/components/common/CommonSearch';
+import SavedFilters from '@/components/common/SavedFilters';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { schedulingApi } from '@/lib/api';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
@@ -149,6 +150,11 @@ export default function SchedulingPage() {
   const [editingTemplate, setEditingTemplate] = useState<ScheduleTemplate | null>(null);
   const [selectedTemplateKeys, setSelectedTemplateKeys] = useState<string[]>([]);
 
+  // SavedFilters state
+  const [appointmentFilters, setAppointmentFilters] = useState<Record<string, any>>({});
+  const [availabilityFilters, setAvailabilityFilters] = useState<Record<string, any>>({});
+  const [templateFilters, setTemplateFilters] = useState<Record<string, any>>({});
+
   // ---- Appointments ----
   const fetchAppointments = useCallback(async (page = 1, size = 10, params?: Record<string, any>) => {
     setAppointmentsLoading(true);
@@ -195,11 +201,13 @@ export default function SchedulingPage() {
     Object.entries(values).forEach(([key, val]) => {
       if (val !== undefined && val !== null && val !== '') cleaned[key] = val;
     });
+    setAppointmentFilters(cleaned);
     setAppointmentPagination((prev) => ({ ...prev, current: 1 }));
     fetchAppointments(1, appointmentPagination.pageSize, cleaned);
   };
 
   const handleAppointmentReset = () => {
+    setAppointmentFilters({});
     setAppointmentPagination((prev) => ({ ...prev, current: 1 }));
     fetchAppointments(1, appointmentPagination.pageSize);
   };
@@ -226,17 +234,24 @@ export default function SchedulingPage() {
   };
 
   const handleAppointmentFormSubmit = async (values: any) => {
-    const payload = {
-      ...values,
-      startTime: values.startTime?.toISOString?.() || values.startTime,
-      endTime: values.endTime?.toISOString?.() || values.endTime,
-    };
-    if (editingAppointment?.id) {
-      await schedulingApi.updateAppointment(editingAppointment.id, payload);
-    } else {
-      await schedulingApi.createAppointment(payload);
+    try {
+      const payload = {
+        ...values,
+        startTime: values.startTime?.toISOString?.() || values.startTime,
+        endTime: values.endTime?.toISOString?.() || values.endTime,
+      };
+      if (editingAppointment?.id) {
+        await schedulingApi.updateAppointment(editingAppointment.id, payload);
+        message.success('Appointment updated successfully');
+      } else {
+        await schedulingApi.createAppointment(payload);
+        message.success('Appointment created successfully');
+      }
+      setAppointmentModalOpen(false);
+      fetchAppointments(appointmentPagination.current, appointmentPagination.pageSize);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to save appointment');
     }
-    fetchAppointments(appointmentPagination.current, appointmentPagination.pageSize);
   };
 
   const handleBulkDeleteAppointments = () => {
@@ -405,11 +420,13 @@ export default function SchedulingPage() {
     Object.entries(values).forEach(([key, val]) => {
       if (val !== undefined && val !== null && val !== '') cleaned[key] = val;
     });
+    setAvailabilityFilters(cleaned);
     setAvailabilityPagination((prev) => ({ ...prev, current: 1 }));
     fetchAvailability(1, availabilityPagination.pageSize, cleaned);
   };
 
   const handleAvailabilityReset = () => {
+    setAvailabilityFilters({});
     setAvailabilityPagination((prev) => ({ ...prev, current: 1 }));
     fetchAvailability(1, availabilityPagination.pageSize);
   };
@@ -436,19 +453,26 @@ export default function SchedulingPage() {
   };
 
   const handleAvailabilityFormSubmit = async (values: any) => {
-    const payload = {
-      ...values,
-      date: values.date?.format?.('YYYY-MM-DD') || values.date,
-      startTime: values.startTime?.format?.('HH:mm:ss') || values.startTime,
-      endTime: values.endTime?.format?.('HH:mm:ss') || values.endTime,
-    };
-    if (editingAvailability?.id) {
-      await schedulingApi.deleteAvailability(editingAvailability.id);
-      await schedulingApi.createAvailability(payload);
-    } else {
-      await schedulingApi.createAvailability(payload);
+    try {
+      const payload = {
+        ...values,
+        date: values.date?.format?.('YYYY-MM-DD') || values.date,
+        startTime: values.startTime?.format?.('HH:mm:ss') || values.startTime,
+        endTime: values.endTime?.format?.('HH:mm:ss') || values.endTime,
+      };
+      if (editingAvailability?.id) {
+        await schedulingApi.deleteAvailability(editingAvailability.id);
+        await schedulingApi.createAvailability(payload);
+        message.success('Availability updated successfully');
+      } else {
+        await schedulingApi.createAvailability(payload);
+        message.success('Availability created successfully');
+      }
+      setAvailabilityModalOpen(false);
+      fetchAvailability(availabilityPagination.current, availabilityPagination.pageSize);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to save availability');
     }
-    fetchAvailability(availabilityPagination.current, availabilityPagination.pageSize);
   };
 
   const handleExportAvailabilityCsv = async () => {
@@ -587,11 +611,13 @@ export default function SchedulingPage() {
     Object.entries(values).forEach(([key, val]) => {
       if (val !== undefined && val !== null && val !== '') cleaned[key] = val;
     });
+    setTemplateFilters(cleaned);
     setTemplatePagination((prev) => ({ ...prev, current: 1 }));
     fetchTemplates(1, templatePagination.pageSize, cleaned);
   };
 
   const handleTemplateReset = () => {
+    setTemplateFilters({});
     setTemplatePagination((prev) => ({ ...prev, current: 1 }));
     fetchTemplates(1, templatePagination.pageSize);
   };
@@ -618,19 +644,26 @@ export default function SchedulingPage() {
   };
 
   const handleTemplateFormSubmit = async (values: any) => {
-    const payload = {
-      ...values,
-      startTime: values.startTime?.format?.('HH:mm:ss') || values.startTime,
-      endTime: values.endTime?.format?.('HH:mm:ss') || values.endTime,
-      effectiveFrom: values.effectiveFrom?.format?.('YYYY-MM-DD') || values.effectiveFrom || null,
-      effectiveTo: values.effectiveTo?.format?.('YYYY-MM-DD') || values.effectiveTo || null,
-    };
-    if (editingTemplate?.id) {
-      await schedulingApi.updateTemplate(editingTemplate.id, payload);
-    } else {
-      await schedulingApi.createTemplate(payload);
+    try {
+      const payload = {
+        ...values,
+        startTime: values.startTime?.format?.('HH:mm:ss') || values.startTime,
+        endTime: values.endTime?.format?.('HH:mm:ss') || values.endTime,
+        effectiveFrom: values.effectiveFrom?.format?.('YYYY-MM-DD') || values.effectiveFrom || null,
+        effectiveTo: values.effectiveTo?.format?.('YYYY-MM-DD') || values.effectiveTo || null,
+      };
+      if (editingTemplate?.id) {
+        await schedulingApi.updateTemplate(editingTemplate.id, payload);
+        message.success('Template updated successfully');
+      } else {
+        await schedulingApi.createTemplate(payload);
+        message.success('Template created successfully');
+      }
+      setTemplateModalOpen(false);
+      fetchTemplates(templatePagination.current, templatePagination.pageSize);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || err?.message || 'Failed to save template');
     }
-    fetchTemplates(templatePagination.current, templatePagination.pageSize);
   };
 
   const handleBulkDeleteTemplates = () => {
@@ -782,6 +815,11 @@ export default function SchedulingPage() {
               onReset={handleAppointmentReset}
               loading={appointmentsLoading}
             />
+            <SavedFilters
+              currentValues={appointmentFilters}
+              onApply={(v) => { setAppointmentFilters(v); handleAppointmentSearch(v); }}
+              storageKey="vcall-saved-filters-scheduling-appointments"
+            />
           </div>
           {selectedAppointmentKeys.length > 0 && (
             <Button danger onClick={handleBulkDeleteAppointments} style={{ marginBottom: 16 }}>
@@ -862,6 +900,11 @@ export default function SchedulingPage() {
               onReset={handleAvailabilityReset}
               loading={availabilityLoading}
             />
+            <SavedFilters
+              currentValues={availabilityFilters}
+              onApply={(v) => { setAvailabilityFilters(v); handleAvailabilitySearch(v); }}
+              storageKey="vcall-saved-filters-scheduling-availability"
+            />
           </div>
           <CommonTable<AvailabilitySlot>
             columns={availabilityColumns}
@@ -919,6 +962,11 @@ export default function SchedulingPage() {
               onSearch={handleTemplateSearch}
               onReset={handleTemplateReset}
               loading={templatesLoading}
+            />
+            <SavedFilters
+              currentValues={templateFilters}
+              onApply={(v) => { setTemplateFilters(v); handleTemplateSearch(v); }}
+              storageKey="vcall-saved-filters-scheduling-templates"
             />
           </div>
           {selectedTemplateKeys.length > 0 && (

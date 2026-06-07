@@ -4,7 +4,9 @@ import com.vcall.common.dto.ApiResponse;
 import com.vcall.notification.dto.BatchNotificationRequest;
 import com.vcall.notification.dto.NotificationRequest;
 import com.vcall.notification.dto.NotificationResponse;
+import com.vcall.notification.dto.NotificationTemplateResponse;
 import com.vcall.notification.service.NotificationService;
+import com.vcall.notification.service.NotificationTemplateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -16,12 +18,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -30,6 +34,7 @@ import java.util.UUID;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final NotificationTemplateService templateService;
 
     @PostMapping("/send")
     public ResponseEntity<ApiResponse<NotificationResponse>> send(@Valid @RequestBody NotificationRequest request) {
@@ -76,8 +81,45 @@ public class NotificationController {
 
     @GetMapping("/unread/{recipientId}")
     public ResponseEntity<ApiResponse<Page<NotificationResponse>>> getUnread(@PathVariable UUID recipientId,
-                                                                              Pageable pageable) {
+                                                                               Pageable pageable) {
         Page<NotificationResponse> notifications = notificationService.getUnreadByRecipient(recipientId, pageable);
         return ResponseEntity.ok(ApiResponse.success(notifications));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<NotificationResponse>>> getAllNotifications(
+            @RequestParam(required = false) UUID recipientId, Pageable pageable) {
+        Page<NotificationResponse> notifications;
+        if (recipientId != null) {
+            notifications = notificationService.getByRecipient(recipientId, pageable);
+        } else {
+            notifications = notificationService.getAllNotifications(pageable);
+        }
+        return ResponseEntity.ok(ApiResponse.success(notifications));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<NotificationResponse>> updateNotification(
+            @PathVariable UUID id, @Valid @RequestBody NotificationRequest request) {
+        NotificationResponse response = notificationService.updateNotification(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Notification updated successfully", response));
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<ApiResponse<Void>> bulkDeleteNotifications(@RequestBody List<UUID> ids) {
+        notificationService.bulkDeleteNotifications(ids);
+        return ResponseEntity.ok(ApiResponse.success("Notifications deleted successfully", null));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getNotificationStats() {
+        Map<String, Object> stats = notificationService.getNotificationStats();
+        return ResponseEntity.ok(ApiResponse.success(stats));
+    }
+
+    @GetMapping("/templates")
+    public ResponseEntity<ApiResponse<Page<NotificationTemplateResponse>>> getTemplates(Pageable pageable) {
+        Page<NotificationTemplateResponse> templates = templateService.getAll(pageable);
+        return ResponseEntity.ok(ApiResponse.success(templates));
     }
 }

@@ -55,6 +55,7 @@ public class TicketController {
     private final TicketService ticketService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR') or hasRole('AGENT')")
     public ResponseEntity<ApiResponse<TicketResponse>> createTicket(@Valid @RequestBody TicketRequest request) {
         TicketResponse response = ticketService.createTicket(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -88,6 +89,7 @@ public class TicketController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR') or hasRole('AGENT')")
     public ResponseEntity<ApiResponse<TicketResponse>> updateTicket(@PathVariable UUID id,
                                                                      @Valid @RequestBody TicketRequest request) {
         TicketResponse response = ticketService.updateTicket(id, request);
@@ -95,6 +97,7 @@ public class TicketController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteTicket(@PathVariable UUID id) {
         ticketService.deleteTicket(id);
         return ResponseEntity.ok(ApiResponse.success("Ticket deleted successfully", null));
@@ -124,6 +127,7 @@ public class TicketController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR') or hasRole('AGENT')")
     public ResponseEntity<ApiResponse<TicketResponse>> updateStatus(@PathVariable UUID id,
                                                                      @Valid @RequestBody TicketStatusRequest request) {
         TicketResponse response = ticketService.updateStatus(id, request);
@@ -174,6 +178,7 @@ public class TicketController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@RequestParam(required = false) String q,
                           @RequestParam(required = false) String status,
                           HttpServletResponse response) throws IOException {
@@ -186,6 +191,7 @@ public class TicketController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@RequestParam(required = false) String q,
                             @RequestParam(required = false) String status,
                             HttpServletResponse response) throws IOException {
@@ -197,6 +203,7 @@ public class TicketController {
     }
 
     @PostMapping("/bulk-delete")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> bulkDelete(
             @RequestBody List<UUID> ids) {
         BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
@@ -228,6 +235,7 @@ public class TicketController {
     }
 
     @PostMapping(value = "/import/csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<?>>> importCsv(
             @RequestParam("file") MultipartFile file) throws IOException {
         List<TicketRequest> items = new ArrayList<>();

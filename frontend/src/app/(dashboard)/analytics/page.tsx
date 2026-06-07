@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Card, Row, Col, Statistic, Typography, Space, Button, Select,
-  DatePicker, Spin, Tag, Table, Empty,
+  DatePicker, Spin, Tag, Table, Empty, message,
 } from 'antd';
 import {
   EyeOutlined, TeamOutlined, ClockCircleOutlined, BarChartOutlined,
@@ -39,32 +39,13 @@ export default function AnalyticsPage() {
       ]);
 
       setAnalytics({
-        totalViews: overview.data?.totalViews || 12450,
-        totalSessions: overview.data?.totalSessions || 3280,
-        avgSessionDuration: overview.data?.avgSessionDuration || 245,
-        deviceDistribution: devices.data || [
-          { device: 'Desktop', count: 1850, percentage: 56.4 },
-          { device: 'Mobile', count: 980, percentage: 29.9 },
-          { device: 'VR Headset', count: 340, percentage: 10.4 },
-          { device: 'Tablet', count: 110, percentage: 3.3 },
-        ],
+        totalViews: overview.data?.totalViews || 0,
+        totalSessions: overview.data?.totalSessions || 0,
+        avgSessionDuration: overview.data?.avgSessionDuration || 0,
+        deviceDistribution: devices.data || [],
         heatmapData: [],
-        viewsOverTime: views.data || [
-          { date: 'Jun 1', views: 1420, sessions: 380 },
-          { date: 'Jun 2', views: 1680, sessions: 420 },
-          { date: 'Jun 3', views: 1950, sessions: 510 },
-          { date: 'Jun 4', views: 2100, sessions: 560 },
-          { date: 'Jun 5', views: 1870, sessions: 490 },
-          { date: 'Jun 6', views: 2300, sessions: 620 },
-          { date: 'Jun 7', views: 2540, sessions: 680 },
-        ],
-        topScenes: topScenes.data || [
-          { sceneId: 's1', name: 'Ocean Adventure', views: 3420, avgDuration: 320 },
-          { sceneId: 's2', name: 'Mountain Peak', views: 2810, avgDuration: 280 },
-          { sceneId: 's3', name: 'City Tour', views: 2150, avgDuration: 195 },
-          { sceneId: 's4', name: 'Space Station', views: 1890, avgDuration: 410 },
-          { sceneId: 's5', name: 'Historical Ruins', views: 1560, avgDuration: 250 },
-        ],
+        viewsOverTime: views.data || [],
+        topScenes: topScenes.data || [],
       });
     } catch {
       // use fallback data
@@ -74,6 +55,38 @@ export default function AnalyticsPage() {
   }, [dateRange]);
 
   useEffect(() => { fetchAnalytics(); }, [fetchAnalytics]);
+
+  const handleExportCsv = async () => {
+    try {
+      const res = await xrAnalyticsApi.exportCsv({ period: dateRange });
+      const blob = new Blob([res.data], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analytics_${dateRange}_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Analytics exported as CSV');
+    } catch {
+      message.error('Export failed');
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const res = await xrAnalyticsApi.exportExcel({ period: dateRange });
+      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analytics_${dateRange}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('Analytics exported as Excel');
+    } catch {
+      message.error('Export failed');
+    }
+  };
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -136,8 +149,8 @@ export default function AnalyticsPage() {
             ]}
           />
           <Button icon={<ReloadOutlined />} onClick={fetchAnalytics}>Refresh</Button>
-          <Button icon={<DownloadOutlined />}>Export CSV</Button>
-          <Button icon={<FileExcelOutlined />}>Export Excel</Button>
+          <Button icon={<DownloadOutlined />} onClick={handleExportCsv}>Export CSV</Button>
+          <Button icon={<FileExcelOutlined />} onClick={handleExportExcel}>Export Excel</Button>
         </Space>
       </div>
 

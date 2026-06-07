@@ -8,10 +8,12 @@ import com.vcall.webhooks.entity.Webhook;
 import com.vcall.webhooks.entity.WebhookLog;
 import com.vcall.webhooks.repository.WebhookLogRepository;
 import com.vcall.webhooks.repository.WebhookRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -23,7 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -132,6 +137,42 @@ public class WebhookService {
                 sendWebhook(webhook, event, payload);
             }
         }
+    }
+
+    @Transactional
+    public void bulkDeleteWebhooks(List<Long> ids) {
+        List<Webhook> webhooks = webhookRepository.findAllById(ids);
+        for (Webhook webhook : webhooks) {
+            webhook.setIsDeleted(true);
+        }
+        webhookRepository.saveAll(webhooks);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<WebhookResponse> searchWebhooks(String name, String event, Boolean isActive, Pageable pageable) {
+        Specification<Webhook> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (name != null && !name.isEmpty()) {
+                predicates.add(cb.like(root.get("name"), "%" + name + "%"));
+            }
+            if (event != null && !event.isEmpty()) {
+                predicates.add(cb.like(root.get("events"), "%" + event + "%"));
+            }
+            if (isActive != null) {
+                predicates.add(cb.equal(root.get("isActive"), isActive));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return webhookRepository.findAll(spec, pageable).map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getWebhookStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalWebhooks", webhookRepository.count());
+        stats.put("activeWebhooks", webhookRepository.findByIsActiveTrue().size());
+        stats.put("totalLogs", webhookLogRepository.count());
+        return stats;
     }
 
     private void sendWebhook(Webhook webhook, String event, String payload) {
