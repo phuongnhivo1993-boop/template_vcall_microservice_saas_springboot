@@ -18,6 +18,8 @@ import com.vcall.xr.tenant.repository.FeatureFlagRepository;
 import com.vcall.xr.tenant.repository.SubscriptionRepository;
 import com.vcall.xr.tenant.repository.TenantRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -39,6 +41,7 @@ public class TenantService {
     private final FeatureFlagMapper featureFlagMapper;
 
     @Transactional
+    @CacheEvict(value = "tenants", allEntries = true)
     public TenantResponse createTenant(TenantRequest request) {
         if (tenantRepository.existsBySlug(request.getSlug())) {
             throw new DuplicateResourceException("Tenant slug already exists: " + request.getSlug());
@@ -81,6 +84,7 @@ public class TenantService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "tenants", key = "#id")
     public TenantResponse getTenantById(UUID id) {
         Tenant tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found with id: " + id));
@@ -88,6 +92,7 @@ public class TenantService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "tenants", key = "'slug_' + #slug")
     public TenantResponse getTenantBySlug(String slug) {
         Tenant tenant = tenantRepository.findBySlug(slug)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found with slug: " + slug));
@@ -100,6 +105,7 @@ public class TenantService {
     }
 
     @Transactional
+    @CacheEvict(value = "tenants", allEntries = true)
     public TenantResponse updateTenant(UUID id, TenantRequest request) {
         Tenant tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found with id: " + id));
@@ -115,6 +121,7 @@ public class TenantService {
     }
 
     @Transactional
+    @CacheEvict(value = "tenants", allEntries = true)
     public void deleteTenant(UUID id) {
         Tenant tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found with id: " + id));
@@ -171,6 +178,7 @@ public class TenantService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "tenants", key = "'features_' + #tenantId")
     public List<FeatureFlagResponse> getFeatureFlags(UUID tenantId) {
         return featureFlagRepository.findByTenantId(tenantId).stream()
                 .map(featureFlagMapper::toResponse)
@@ -178,6 +186,7 @@ public class TenantService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "tenants", key = "'feature_' + #tenantId + '_' + #featureKey")
     public FeatureFlagResponse getFeatureFlag(UUID tenantId, String featureKey) {
         FeatureFlag flag = featureFlagRepository.findByTenantIdAndFeatureKey(tenantId, featureKey)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -186,6 +195,7 @@ public class TenantService {
     }
 
     @Transactional
+    @CacheEvict(value = "tenants", allEntries = true)
     public FeatureFlagResponse createFeatureFlag(UUID tenantId, FeatureFlagRequest request) {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found with id: " + tenantId));
@@ -202,6 +212,7 @@ public class TenantService {
     }
 
     @Transactional
+    @CacheEvict(value = "tenants", allEntries = true)
     public FeatureFlagResponse updateFeatureFlag(UUID tenantId, UUID flagId, FeatureFlagRequest request) {
         FeatureFlag flag = featureFlagRepository.findById(flagId)
                 .orElseThrow(() -> new ResourceNotFoundException("Feature flag not found with id: " + flagId));
@@ -212,6 +223,7 @@ public class TenantService {
     }
 
     @Transactional
+    @CacheEvict(value = "tenants", allEntries = true)
     public void deleteFeatureFlag(UUID tenantId, UUID flagId) {
         FeatureFlag flag = featureFlagRepository.findById(flagId)
                 .orElseThrow(() -> new ResourceNotFoundException("Feature flag not found with id: " + flagId));

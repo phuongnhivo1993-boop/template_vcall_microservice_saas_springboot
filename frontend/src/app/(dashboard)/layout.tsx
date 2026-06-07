@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 
 export default function DashboardLayout({
@@ -5,5 +6,5 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AppLayout>{children}</AppLayout>;
+  return <AppLayout><Suspense>{children}</Suspense></AppLayout>;
 }

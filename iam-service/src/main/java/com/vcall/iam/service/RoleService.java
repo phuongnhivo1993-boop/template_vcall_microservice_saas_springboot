@@ -16,6 +16,8 @@ import com.vcall.iam.repository.RoleRepository;
 import com.vcall.iam.repository.UserRepository;
 import com.vcall.iam.repository.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -40,6 +42,7 @@ public class RoleService {
     private final RolePermissionRepository rolePermissionRepository;
 
     @Transactional
+    @CacheEvict(value = "roles", allEntries = true)
     public RoleResponse createRole(RoleRequest request) {
         RoleName roleName = RoleName.valueOf(request.getName().toUpperCase());
         if (roleRepository.findByName(roleName).isPresent()) {
@@ -71,6 +74,7 @@ public class RoleService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "roles", key = "#id")
     public RoleResponse getRoleById(Long id) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found with id: " + id));
@@ -78,6 +82,7 @@ public class RoleService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "roles", key = "'all_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<RoleResponse> getAllRoles(Pageable pageable) {
         return roleRepository.findAll(pageable)
                 .map(this::toRoleResponse);
@@ -97,6 +102,7 @@ public class RoleService {
     }
 
     @Transactional
+    @CacheEvict(value = "roles", allEntries = true)
     public RoleResponse updateRole(Long id, RoleRequest request) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found with id: " + id));
@@ -123,6 +129,7 @@ public class RoleService {
     }
 
     @Transactional
+    @CacheEvict(value = "roles", allEntries = true)
     public void deleteRole(Long id) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found with id: " + id));
@@ -131,6 +138,7 @@ public class RoleService {
     }
 
     @Transactional
+    @CacheEvict(value = "roles", allEntries = true)
     public void assignRoleToUser(Long roleId, UUID userId) {
         Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found with id: " + roleId));
@@ -149,6 +157,7 @@ public class RoleService {
     }
 
     @Transactional
+    @CacheEvict(value = "roles", allEntries = true)
     public void removeRoleFromUser(Long roleId, UUID userId) {
         UserRole userRole = userRoleRepository.findByUserIdAndRoleId(userId, roleId)
                 .orElseThrow(() -> new ResourceNotFoundException("User role association not found"));

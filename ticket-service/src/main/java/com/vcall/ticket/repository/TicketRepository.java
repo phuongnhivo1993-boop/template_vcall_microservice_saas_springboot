@@ -1,8 +1,7 @@
 package com.vcall.ticket.repository;
 
+import com.vcall.common.repository.TenantAwareRepository;
 import com.vcall.ticket.entity.Ticket;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -11,7 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface TicketRepository extends JpaRepository<Ticket, UUID>, JpaSpecificationExecutor<Ticket> {
+public interface TicketRepository extends TenantAwareRepository<Ticket, UUID> {
 
     Optional<Ticket> findByTicketNumber(String ticketNumber);
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Tabs, Tag, Typography, Space, Button, message, Row, Col, Statistic, Badge, Input, Form, Select, Modal } from 'antd';
+import { Card, Tabs, Tag, Typography, Space, Button, message, Row, Col, Statistic, Badge, Form, Select, Modal, Input } from 'antd';
 import {
   BellOutlined, SendOutlined, SettingOutlined,
   CheckCircleOutlined, MobileOutlined, PlusOutlined,
@@ -9,7 +9,11 @@ import {
 import dayjs from 'dayjs';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
+import CommonSearch from '@/components/common/CommonSearch';
+import SavedFilters from '@/components/common/SavedFilters';
 import { notificationsApi } from '@/lib/api';
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
+import type { SorterResult } from 'antd/es/table/interface';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -42,6 +46,9 @@ export default function NotificationsPage() {
   const [selectedNotifKeys, setSelectedNotifKeys] = useState<string[]>([]);
   const [selectedTemplateKeys, setSelectedTemplateKeys] = useState<number[]>([]);
   const [selectedPrefKeys, setSelectedPrefKeys] = useState<string[]>([]);
+  const [searchFilters, setSearchFilters] = useState<Record<string, any>>({});
+  const [sortField, setSortField] = useState<string>('type');
+  const [sortOrder, setSortOrder] = useState<'ascend' | 'descend'>('ascend');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -63,6 +70,54 @@ export default function NotificationsPage() {
   }, [recipientId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleSearch = (values: any) => {
+    const cleaned: Record<string, any> = {};
+    Object.entries(values).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') {
+        cleaned[key] = val;
+      }
+    });
+    setSearchFilters(cleaned);
+  };
+
+  const handleReset = () => {
+    setSearchFilters({});
+  };
+
+  const handleTableChange = (
+    pag: TablePaginationConfig,
+    _filters: any,
+    sorter: SorterResult<any> | SorterResult<any>[],
+  ) => {
+    if (!Array.isArray(sorter) && sorter.field) {
+      setSortField(sorter.field as string);
+      setSortOrder(sorter.order || 'ascend');
+    }
+  };
+
+  const getFilteredData = (data: any[]) => {
+    let filtered = [...data];
+    Object.entries(searchFilters).forEach(([key, value]) => {
+      if (value) {
+        filtered = filtered.filter((item) =>
+          String(item[key]).toLowerCase().includes(String(value).toLowerCase())
+        );
+      }
+    });
+    if (sortField && sortOrder) {
+      filtered.sort((a, b) => {
+        const aVal = a[sortField];
+        const bVal = b[sortField];
+        if (aVal === bVal) return 0;
+        if (aVal === null || aVal === undefined) return 1;
+        if (bVal === null || bVal === undefined) return -1;
+        const comparison = String(aVal).localeCompare(String(bVal));
+        return sortOrder === 'ascend' ? comparison : -comparison;
+      });
+    }
+    return filtered;
+  };
 
   const handleBulkDeleteNotifications = () => {
     Modal.confirm({
@@ -201,9 +256,9 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter((n: any) => n.status === 'PENDING' || n.status === 'SENT').length;
 
   const notifColumns = [
-    { title: 'Type', dataIndex: 'type', key: 'type',
+    { title: 'Type', dataIndex: 'type', key: 'type', sorter: true,
       render: (t: string) => <Tag color={typeColors[t] || 'default'}>{t}</Tag> },
-    { title: 'Channel', dataIndex: 'channel', key: 'channel',
+    { title: 'Channel', dataIndex: 'channel', key: 'channel', sorter: true,
       render: (c: string) => <Tag color={channelColors[c] || 'default'}>{c}</Tag> },
     {
       title: 'Title', dataIndex: 'title', key: 'title',
@@ -216,9 +271,9 @@ export default function NotificationsPage() {
     },
     { title: 'Body', dataIndex: 'body', key: 'body', ellipsis: true },
     { title: 'Recipient', dataIndex: 'recipientId', key: 'recipientId' },
-    { title: 'Status', dataIndex: 'status', key: 'status',
+    { title: 'Status', dataIndex: 'status', key: 'status', sorter: true,
       render: (s: string) => <Tag color={statusColors[s] || 'default'}>{s}</Tag> },
-    { title: 'Sent At', dataIndex: 'sentAt', key: 'sentAt',
+    { title: 'Sent At', dataIndex: 'sentAt', key: 'sentAt', sorter: true,
       render: (d: string) => d ? new Date(d).toLocaleString() : '-' },
     {
       title: 'Actions', key: 'actions',
@@ -261,6 +316,50 @@ export default function NotificationsPage() {
       render: (e: boolean) => e ? <Tag color="green">Yes</Tag> : <Tag color="red">No</Tag> },
   ];
 
+  const searchFields = [
+    { name: 'title', label: 'Title', type: 'input' as const, placeholder: 'Search by title' },
+    {
+      name: 'type',
+      label: 'Type',
+      type: 'select' as const,
+      placeholder: 'Filter by type',
+      options: [
+        { value: 'ALERT', label: 'Alert' },
+        { value: 'REMINDER', label: 'Reminder' },
+        { value: 'UPDATE', label: 'Update' },
+        { value: 'PROMOTION', label: 'Promotion' },
+        { value: 'SLA_BREACH', label: 'SLA Breach' },
+        { value: 'TICKET_ASSIGNED', label: 'Ticket Assigned' },
+        { value: 'CALL_MISSED', label: 'Call Missed' },
+      ],
+    },
+    {
+      name: 'channel',
+      label: 'Channel',
+      type: 'select' as const,
+      placeholder: 'Filter by channel',
+      options: [
+        { value: 'SMS', label: 'SMS' },
+        { value: 'EMAIL', label: 'Email' },
+        { value: 'PUSH', label: 'Push' },
+        { value: 'IN_APP', label: 'In-App' },
+      ],
+    },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      placeholder: 'Filter by status',
+      options: [
+        { value: 'PENDING', label: 'Pending' },
+        { value: 'SENT', label: 'Sent' },
+        { value: 'DELIVERED', label: 'Delivered' },
+        { value: 'FAILED', label: 'Failed' },
+        { value: 'READ', label: 'Read' },
+      ],
+    },
+  ];
+
   const tabContent = (key: string) => {
     switch (key) {
       case 'inbox':
@@ -274,7 +373,7 @@ export default function NotificationsPage() {
             <CommonTable
               rowSelection={{ selectedRowKeys: selectedNotifKeys, onChange: (keys: React.Key[]) => setSelectedNotifKeys(keys as string[]) }}
               columns={notifColumns}
-              dataSource={notifications}
+              dataSource={getFilteredData(notifications)}
               loading={loading}
               error={error}
               rowKey="id"
@@ -282,6 +381,7 @@ export default function NotificationsPage() {
               onRefresh={() => { setSelectedNotifKeys([]); fetchData(); }}
               onExportCsv={handleExportCsv}
               onExportExcel={handleExportExcel}
+              onTableChange={handleTableChange}
               extra={
                 <Button type="primary" icon={<SendOutlined />} onClick={() => { form.resetFields(); setSendModalOpen(true); }}>
                   Send Notification
@@ -301,12 +401,13 @@ export default function NotificationsPage() {
             <CommonTable
               rowSelection={{ selectedRowKeys: selectedTemplateKeys, onChange: (keys: React.Key[]) => setSelectedTemplateKeys(keys as number[]) }}
               columns={templateColumns}
-              dataSource={templates}
+              dataSource={getFilteredData(templates)}
               loading={loading}
               error={error}
               rowKey="id"
               pagination={{ pageSize: 10 }}
               onRefresh={() => { setSelectedTemplateKeys([]); fetchData(); }}
+              onTableChange={handleTableChange}
               extra={
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateTemplate}>
                   Add Template
@@ -326,12 +427,13 @@ export default function NotificationsPage() {
             <CommonTable
               rowSelection={{ selectedRowKeys: selectedPrefKeys, onChange: (keys: React.Key[]) => setSelectedPrefKeys(keys as string[]) }}
               columns={preferenceColumns}
-              dataSource={preferences}
+              dataSource={getFilteredData(preferences)}
               loading={loading}
               error={error}
               rowKey="id"
               pagination={{ pageSize: 10 }}
               onRefresh={() => { setSelectedPrefKeys([]); fetchData(); }}
+              onTableChange={handleTableChange}
             />
           </>
         );
@@ -351,13 +453,22 @@ export default function NotificationsPage() {
         <Col xs={12} sm={6}><Card><Statistic title="Preferences" value={preferences.length} prefix={<MobileOutlined />} /></Card></Col>
       </Row>
 
-      <Input.Search
-        placeholder="Recipient ID"
-        value={recipientId}
-        onChange={(e) => setRecipientId(e.target.value)}
-        onSearch={fetchData}
-        style={{ width: 300, marginBottom: 16 }}
-      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <CommonSearch
+          fields={searchFields}
+          onSearch={handleSearch}
+          onReset={handleReset}
+          loading={loading}
+          initialValues={searchFilters}
+        />
+        <SavedFilters
+          currentValues={searchFilters}
+          onApply={(values) => {
+            setSearchFilters(values);
+          }}
+          storageKey="vcall-saved-filters-notifications"
+        />
+      </div>
 
       <Card>
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={[

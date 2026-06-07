@@ -107,6 +107,22 @@ public class TicketController {
         return ResponseEntity.ok(ApiResponse.success("Ticket restored successfully", response));
     }
 
+    @PostMapping("/restore-bulk")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> restoreBulk(
+            @RequestBody List<UUID> ids) {
+        BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
+        for (UUID id : ids) {
+            try {
+                ticketService.restoreTicket(id);
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk restore completed", result));
+    }
+
     @PatchMapping("/{id}/status")
     public ResponseEntity<ApiResponse<TicketResponse>> updateStatus(@PathVariable UUID id,
                                                                      @Valid @RequestBody TicketStatusRequest request) {

@@ -109,6 +109,22 @@ public class AgentController {
         return ResponseEntity.ok(ApiResponse.success("Agent restored successfully", response));
     }
 
+    @PostMapping("/restore-bulk")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> restoreBulk(
+            @RequestBody List<UUID> ids) {
+        BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
+        for (UUID id : ids) {
+            try {
+                agentService.restoreAgent(id);
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk restore completed", result));
+    }
+
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AgentResponse>> updateStatus(@PathVariable UUID id,

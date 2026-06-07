@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Card, Tabs, Tag, Typography, Space, Button, message, Row, Col, Statistic, Input, Form, Select, Tooltip, Modal } from 'antd';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Card, Tabs, Tag, Typography, Space, Button, message, Row, Col, Statistic, Form, Select, Tooltip, Modal, Input } from 'antd';
 import {
   PlusOutlined, DollarOutlined, CreditCardOutlined,
   FileTextOutlined, BarChartOutlined,
@@ -9,8 +9,12 @@ import {
 import dayjs from 'dayjs';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
+import CommonSearch from '@/components/common/CommonSearch';
+import SavedFilters from '@/components/common/SavedFilters';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { billingApi } from '@/lib/api';
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
+import type { SorterResult } from 'antd/es/table/interface';
 
 const { Title } = Typography;
 
@@ -43,6 +47,9 @@ export default function BillingPage() {
   const [selectedSubKeys, setSelectedSubKeys] = useState<string[]>([]);
   const [selectedInvoiceKeys, setSelectedInvoiceKeys] = useState<string[]>([]);
   const [selectedUsageKeys, setSelectedUsageKeys] = useState<string[]>([]);
+  const [searchFilters, setSearchFilters] = useState<Record<string, any>>({});
+  const [sortField, setSortField] = useState<string>('name');
+  const [sortOrder, setSortOrder] = useState<'ascend' | 'descend'>('ascend');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -66,6 +73,54 @@ export default function BillingPage() {
   }, [selectedSubscriber]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const handleSearch = (values: any) => {
+    const cleaned: Record<string, any> = {};
+    Object.entries(values).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') {
+        cleaned[key] = val;
+      }
+    });
+    setSearchFilters(cleaned);
+  };
+
+  const handleReset = () => {
+    setSearchFilters({});
+  };
+
+  const handleTableChange = (
+    pag: TablePaginationConfig,
+    _filters: any,
+    sorter: SorterResult<any> | SorterResult<any>[],
+  ) => {
+    if (!Array.isArray(sorter) && sorter.field) {
+      setSortField(sorter.field as string);
+      setSortOrder(sorter.order || 'ascend');
+    }
+  };
+
+  const getFilteredData = (data: any[]) => {
+    let filtered = [...data];
+    Object.entries(searchFilters).forEach(([key, value]) => {
+      if (value) {
+        filtered = filtered.filter((item) =>
+          String(item[key]).toLowerCase().includes(String(value).toLowerCase())
+        );
+      }
+    });
+    if (sortField && sortOrder) {
+      filtered.sort((a, b) => {
+        const aVal = a[sortField];
+        const bVal = b[sortField];
+        if (aVal === bVal) return 0;
+        if (aVal === null || aVal === undefined) return 1;
+        if (bVal === null || bVal === undefined) return -1;
+        const comparison = String(aVal).localeCompare(String(bVal));
+        return sortOrder === 'ascend' ? comparison : -comparison;
+      });
+    }
+    return filtered;
+  };
 
   const handleCreate = (type: 'plan' | 'subscription') => {
     setFormType(type);
@@ -236,14 +291,14 @@ export default function BillingPage() {
   };
 
   const planColumns = [
-    { title: 'Name', dataIndex: 'name', key: 'name' },
-    { title: 'Type', dataIndex: 'planType', key: 'planType',
+    { title: 'Name', dataIndex: 'name', key: 'name', sorter: true },
+    { title: 'Type', dataIndex: 'planType', key: 'planType', sorter: true,
       render: (t: string) => <Tag color={planTypeColors[t] || 'default'}>{t}</Tag> },
-    { title: 'Price', dataIndex: 'price', key: 'price',
+    { title: 'Price', dataIndex: 'price', key: 'price', sorter: true,
       render: (p: number) => `$${p?.toFixed(2) || '0.00'}` },
     { title: 'Currency', dataIndex: 'currency', key: 'currency' },
-    { title: 'Billing Cycle', dataIndex: 'billingCycle', key: 'billingCycle' },
-    { title: 'Active', dataIndex: 'isActive', key: 'isActive',
+    { title: 'Billing Cycle', dataIndex: 'billingCycle', key: 'billingCycle', sorter: true },
+    { title: 'Active', dataIndex: 'isActive', key: 'isActive', sorter: true,
       render: (a: boolean) => a ? <Tag color="green">Active</Tag> : <Tag>Inactive</Tag> },
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
@@ -257,10 +312,10 @@ export default function BillingPage() {
 
   const subColumns = [
     { title: 'ID', dataIndex: 'id', key: 'id' },
-    { title: 'Plan', dataIndex: 'planId', key: 'planId' },
-    { title: 'Status', dataIndex: 'status', key: 'status',
+    { title: 'Plan', dataIndex: 'planId', key: 'planId', sorter: true },
+    { title: 'Status', dataIndex: 'status', key: 'status', sorter: true,
       render: (s: string) => <Tag color={subscriptionStatusColors[s]}>{s}</Tag> },
-    { title: 'Start', dataIndex: 'startDate', key: 'startDate',
+    { title: 'Start', dataIndex: 'startDate', key: 'startDate', sorter: true,
       render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
     { title: 'End', dataIndex: 'endDate', key: 'endDate',
       render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
@@ -275,12 +330,12 @@ export default function BillingPage() {
 
   const invoiceColumns = [
     { title: 'ID', dataIndex: 'id', key: 'id' },
-    { title: 'Invoice #', dataIndex: 'invoiceNumber', key: 'invoiceNumber' },
-    { title: 'Amount', dataIndex: 'totalAmount', key: 'totalAmount',
+    { title: 'Invoice #', dataIndex: 'invoiceNumber', key: 'invoiceNumber', sorter: true },
+    { title: 'Amount', dataIndex: 'totalAmount', key: 'totalAmount', sorter: true,
       render: (a: number) => `$${a?.toFixed(2) || '0.00'}` },
-    { title: 'Status', dataIndex: 'status', key: 'status',
+    { title: 'Status', dataIndex: 'status', key: 'status', sorter: true,
       render: (s: string) => <Tag color={invoiceStatusColors[s]}>{s}</Tag> },
-    { title: 'Issue Date', dataIndex: 'issueDate', key: 'issueDate',
+    { title: 'Issue Date', dataIndex: 'issueDate', key: 'issueDate', sorter: true,
       render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
     { title: 'Due Date', dataIndex: 'dueDate', key: 'dueDate',
       render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
@@ -294,17 +349,45 @@ export default function BillingPage() {
   ];
 
   const usageColumns = [
-    { title: 'Type', dataIndex: 'usageType', key: 'usageType' },
-    { title: 'Quantity', dataIndex: 'quantity', key: 'quantity' },
+    { title: 'Type', dataIndex: 'usageType', key: 'usageType', sorter: true },
+    { title: 'Quantity', dataIndex: 'quantity', key: 'quantity', sorter: true },
     { title: 'Unit', dataIndex: 'unit', key: 'unit' },
-    { title: 'Cost', dataIndex: 'totalCost', key: 'totalCost',
+    { title: 'Cost', dataIndex: 'totalCost', key: 'totalCost', sorter: true,
       render: (c: number) => `$${c?.toFixed(2) || '0.00'}` },
-    { title: 'Date', dataIndex: 'recordedAt', key: 'recordedAt',
+    { title: 'Date', dataIndex: 'recordedAt', key: 'recordedAt', sorter: true,
       render: (d: string) => d ? new Date(d).toLocaleDateString() : '-' },
   ];
 
   const totalRevenue = invoices.filter((i: any) => i.status === 'PAID').reduce((sum: number, i: any) => sum + (i.totalAmount || 0), 0);
   const activeSubscriptions = subscriptions.filter((s: any) => s.status === 'ACTIVE').length;
+
+  const searchFields = [
+    { name: 'subscriberId', label: 'Subscriber ID', type: 'input' as const, placeholder: 'Search by subscriber ID' },
+    {
+      name: 'planType',
+      label: 'Plan Type',
+      type: 'select' as const,
+      placeholder: 'Filter by plan type',
+      options: [
+        { value: 'BASIC', label: 'Basic' },
+        { value: 'PROFESSIONAL', label: 'Professional' },
+        { value: 'ENTERPRISE', label: 'Enterprise' },
+        { value: 'CUSTOM', label: 'Custom' },
+      ],
+    },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select' as const,
+      placeholder: 'Filter by status',
+      options: [
+        { value: 'ACTIVE', label: 'Active' },
+        { value: 'PENDING', label: 'Pending' },
+        { value: 'EXPIRED', label: 'Expired' },
+        { value: 'CANCELLED', label: 'Cancelled' },
+      ],
+    },
+  ];
 
   const tabContent = (key: string) => {
     switch (key) {
@@ -319,7 +402,7 @@ export default function BillingPage() {
             <CommonTable
               rowSelection={{ selectedRowKeys: selectedPlanKeys, onChange: (keys: React.Key[]) => setSelectedPlanKeys(keys as number[]) }}
               columns={planColumns}
-              dataSource={plans}
+              dataSource={getFilteredData(plans)}
               loading={loading}
               error={error}
               rowKey="id"
@@ -327,6 +410,7 @@ export default function BillingPage() {
               onRefresh={() => { setSelectedPlanKeys([]); fetchData(); }}
               onExportCsv={handleExportCsv}
               onExportExcel={handleExportExcel}
+              onTableChange={handleTableChange}
               extra={
                 <Button type="primary" icon={<PlusOutlined />} onClick={() => handleCreate('plan')}>
                   Add Plan
@@ -346,7 +430,7 @@ export default function BillingPage() {
             <CommonTable
               rowSelection={{ selectedRowKeys: selectedSubKeys, onChange: (keys: React.Key[]) => setSelectedSubKeys(keys as string[]) }}
               columns={subColumns}
-              dataSource={subscriptions}
+              dataSource={getFilteredData(subscriptions)}
               loading={loading}
               error={error}
               rowKey="id"
@@ -354,6 +438,7 @@ export default function BillingPage() {
               onRefresh={() => { setSelectedSubKeys([]); fetchData(); }}
               onExportCsv={handleExportCsv}
               onExportExcel={handleExportExcel}
+              onTableChange={handleTableChange}
               extra={
                 <Button type="primary" icon={<PlusOutlined />} onClick={() => handleCreate('subscription')}>
                   New Subscription
@@ -373,7 +458,7 @@ export default function BillingPage() {
             <CommonTable
               rowSelection={{ selectedRowKeys: selectedInvoiceKeys, onChange: (keys: React.Key[]) => setSelectedInvoiceKeys(keys as string[]) }}
               columns={invoiceColumns}
-              dataSource={invoices}
+              dataSource={getFilteredData(invoices)}
               loading={loading}
               error={error}
               rowKey="id"
@@ -381,6 +466,7 @@ export default function BillingPage() {
               onRefresh={() => { setSelectedInvoiceKeys([]); fetchData(); }}
               onExportCsv={handleExportCsv}
               onExportExcel={handleExportExcel}
+              onTableChange={handleTableChange}
             />
           </>
         );
@@ -395,7 +481,7 @@ export default function BillingPage() {
             <CommonTable
               rowSelection={{ selectedRowKeys: selectedUsageKeys, onChange: (keys: React.Key[]) => setSelectedUsageKeys(keys as string[]) }}
               columns={usageColumns}
-              dataSource={usage}
+              dataSource={getFilteredData(usage)}
               loading={loading}
               error={error}
               rowKey="id"
@@ -403,6 +489,7 @@ export default function BillingPage() {
               onRefresh={() => { setSelectedUsageKeys([]); fetchData(); }}
               onExportCsv={handleExportCsv}
               onExportExcel={handleExportExcel}
+              onTableChange={handleTableChange}
             />
           </>
         );
@@ -422,13 +509,22 @@ export default function BillingPage() {
         <Col xs={12} sm={6}><Card><Statistic title="Revenue" value={totalRevenue} prefix={<BarChartOutlined />} precision={2} valueStyle={{ color: '#52c41a' }} /></Card></Col>
       </Row>
 
-      <Input.Search
-        placeholder="Subscriber ID"
-        value={selectedSubscriber}
-        onChange={(e) => setSelectedSubscriber(e.target.value)}
-        onSearch={fetchData}
-        style={{ width: 300, marginBottom: 16 }}
-      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <CommonSearch
+          fields={searchFields}
+          onSearch={handleSearch}
+          onReset={handleReset}
+          loading={loading}
+          initialValues={searchFilters}
+        />
+        <SavedFilters
+          currentValues={searchFilters}
+          onApply={(values) => {
+            setSearchFilters(values);
+          }}
+          storageKey="vcall-saved-filters-billing"
+        />
+      </div>
 
       <Card>
         <Tabs activeKey={activeTab} onChange={setActiveTab} items={[

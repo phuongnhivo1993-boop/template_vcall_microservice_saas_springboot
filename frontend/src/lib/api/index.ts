@@ -448,6 +448,62 @@ export const webhooksApi = {
   getStats: () => apiClient.get('/webhooks/stats'),
 };
 
+export const schedulingApi = {
+  getAppointments: (params?: Record<string, unknown>) => apiClient.get('/appointments', { params }),
+  getAppointment: (id: string) => apiClient.get(`/appointments/${id}`),
+  createAppointment: (data: Record<string, unknown>) => apiClient.post('/appointments', data),
+  updateAppointment: (id: string, data: Record<string, unknown>) => apiClient.put(`/appointments/${id}`, data),
+  deleteAppointment: (id: string) => apiClient.delete(`/appointments/${id}`),
+  updateAppointmentStatus: (id: string, status: string) =>
+    apiClient.patch(`/appointments/${id}/status`, null, { params: { status } }),
+  searchAppointments: (params?: Record<string, unknown>) => apiClient.get('/appointments/search', { params }),
+  bulkDeleteAppointments: (ids: string[]) => apiClient.post('/appointments/bulk-delete', ids),
+  bulkStatusAppointments: (ids: string[], status: string) =>
+    apiClient.post('/appointments/bulk-status', { ids, status }),
+  getAppointmentsByCustomer: (customerId: string) => apiClient.get(`/appointments/customer/${customerId}`),
+  getAppointmentsByAgent: (agentId: string) => apiClient.get(`/appointments/agent/${agentId}`),
+  getAppointmentStats: () => apiClient.get('/appointments/stats'),
+  exportAppointmentsCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/appointments/export/csv', { params, responseType: 'blob' }),
+  exportAppointmentsExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/appointments/export/excel', { params, responseType: 'blob' }),
+
+  getAvailability: (params?: Record<string, unknown>) => apiClient.get('/availability', { params }),
+  getAvailabilityById: (id: string) => apiClient.get(`/availability/${id}`),
+  createAvailability: (data: Record<string, unknown>) => apiClient.post('/availability', data),
+  deleteAvailability: (id: string) => apiClient.delete(`/availability/${id}`),
+  updateAvailabilityStatus: (id: string, status: string) =>
+    apiClient.patch(`/availability/${id}/status`, null, { params: { status } }),
+  toggleBooked: (id: string) => apiClient.patch(`/availability/${id}/toggle-booked`),
+  checkAvailability: (data: Record<string, unknown>) => apiClient.post('/availability/check', data),
+  getAvailabilityByAgent: (agentId: string) => apiClient.get(`/availability/agent/${agentId}`),
+  getAvailabilityByAgentAndDate: (agentId: string, date: string) =>
+    apiClient.get(`/availability/agent/${agentId}/date/${date}`),
+  getAvailabilityByAgentAndRange: (agentId: string, startDate: string, endDate: string) =>
+    apiClient.get(`/availability/agent/${agentId}/range`, { params: { startDate, endDate } }),
+  searchAvailability: (params?: Record<string, unknown>) => apiClient.get('/availability/search', { params }),
+  exportAvailabilityCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/availability/export/csv', { params, responseType: 'blob' }),
+  exportAvailabilityExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/availability/export/excel', { params, responseType: 'blob' }),
+
+  getTemplates: (params?: Record<string, unknown>) => apiClient.get('/schedule-templates', { params }),
+  getTemplate: (id: string) => apiClient.get(`/schedule-templates/${id}`),
+  createTemplate: (data: Record<string, unknown>) => apiClient.post('/schedule-templates', data),
+  updateTemplate: (id: string, data: Record<string, unknown>) => apiClient.put(`/schedule-templates/${id}`, data),
+  deleteTemplate: (id: string) => apiClient.delete(`/schedule-templates/${id}`),
+  searchTemplates: (params?: Record<string, unknown>) => apiClient.get('/schedule-templates/search', { params }),
+  getTemplatesByAgent: (agentId: string) => apiClient.get(`/schedule-templates/agent/${agentId}`),
+  getTemplatesByAgentAndDay: (agentId: string, dayOfWeek: string) =>
+    apiClient.get(`/schedule-templates/agent/${agentId}/day/${dayOfWeek}`),
+  getActiveTemplatesByAgent: (agentId: string) => apiClient.get(`/schedule-templates/agent/${agentId}/active`),
+  bulkDeleteTemplates: (ids: string[]) => apiClient.post('/schedule-templates/bulk-delete', ids),
+  exportTemplatesCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/schedule-templates/export/csv', { params, responseType: 'blob' }),
+  exportTemplatesExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/schedule-templates/export/excel', { params, responseType: 'blob' }),
+};
+
 export const chatApi = {
   getConversations: (params?: Record<string, unknown>) =>
     apiClient.get('/chat/conversations', { params }),
@@ -468,4 +524,41 @@ export const chatApi = {
     apiClient.get('/chat/conversations/export/csv', { params, responseType: 'blob' }),
   exportExcel: (params?: Record<string, unknown>) =>
     apiClient.get('/chat/conversations/export/excel', { params, responseType: 'blob' }),
+};
+
+export const surveyApi = {
+  list: (params?: Record<string, unknown>) => apiClient.get('/surveys', { params }),
+  getById: (id: string) => apiClient.get(`/surveys/${id}`),
+  create: (data: Record<string, unknown>) => apiClient.post('/surveys', data),
+  update: (id: string, data: Record<string, unknown>) => apiClient.put(`/surveys/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/surveys/${id}`),
+  bulkDelete: (ids: string[]) => apiClient.post('/surveys/bulk-delete', ids),
+  search: (params?: Record<string, unknown>) => apiClient.get('/surveys/search', { params }),
+  getStats: (id: string) => apiClient.get(`/surveys/${id}/stats`),
+  exportCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/surveys/export/csv', { params, responseType: 'blob' }),
+  exportExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/surveys/export/excel', { params, responseType: 'blob' }),
+
+  getTemplates: (params?: Record<string, unknown>) => apiClient.get('/survey-templates', { params }),
+  getTemplateById: (id: string) => apiClient.get(`/survey-templates/${id}`),
+  createTemplate: (data: Record<string, unknown>) => apiClient.post('/survey-templates', data),
+  updateTemplate: (id: string, data: Record<string, unknown>) => apiClient.put(`/survey-templates/${id}`, data),
+  deleteTemplate: (id: string) => apiClient.delete(`/survey-templates/${id}`),
+  bulkDeleteTemplates: (ids: string[]) => apiClient.post('/survey-templates/bulk-delete', ids),
+  searchTemplates: (params?: Record<string, unknown>) => apiClient.get('/survey-templates/search', { params }),
+
+  getQuestions: (surveyId: string) => apiClient.get(`/survey-questions/by-survey/${surveyId}`),
+  getQuestionById: (id: string) => apiClient.get(`/survey-questions/${id}`),
+  createQuestion: (data: Record<string, unknown>) => apiClient.post('/survey-questions', data),
+  updateQuestion: (id: string, data: Record<string, unknown>) => apiClient.put(`/survey-questions/${id}`, data),
+  deleteQuestion: (id: string) => apiClient.delete(`/survey-questions/${id}`),
+
+  getResponses: (params?: Record<string, unknown>) => apiClient.get('/survey-responses', { params }),
+  getResponseById: (id: string) => apiClient.get(`/survey-responses/${id}`),
+  searchResponses: (params?: Record<string, unknown>) => apiClient.get('/survey-responses/search', { params }),
+  exportResponsesCsv: (params?: Record<string, unknown>) =>
+    apiClient.get('/survey-responses/export/csv', { params, responseType: 'blob' }),
+  exportResponsesExcel: (params?: Record<string, unknown>) =>
+    apiClient.get('/survey-responses/export/excel', { params, responseType: 'blob' }),
 };

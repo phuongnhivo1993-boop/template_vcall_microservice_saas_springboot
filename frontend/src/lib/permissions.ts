@@ -59,6 +59,11 @@ export const Permissions = {
   WEBHOOK_CREATE: 'webhook:create',
   WEBHOOK_EDIT: 'webhook:edit',
   WEBHOOK_DELETE: 'webhook:delete',
+
+  SURVEY_VIEW: 'survey:view',
+  SURVEY_CREATE: 'survey:create',
+  SURVEY_EDIT: 'survey:edit',
+  SURVEY_DELETE: 'survey:delete',
 } as const;
 
 export type Permission = typeof Permissions[keyof typeof Permissions];
@@ -79,6 +84,7 @@ export const RolePermissions: Record<string, Permission[]> = {
     Permissions.KNOWLEDGE_VIEW, Permissions.KNOWLEDGE_CREATE, Permissions.KNOWLEDGE_EDIT,
     Permissions.INBOX_VIEW,
     Permissions.WEBHOOK_VIEW, Permissions.WEBHOOK_CREATE, Permissions.WEBHOOK_EDIT, Permissions.WEBHOOK_DELETE,
+    Permissions.SURVEY_VIEW, Permissions.SURVEY_CREATE, Permissions.SURVEY_EDIT,
   ],
   AGENT: [
     Permissions.CUSTOMER_VIEW, Permissions.CUSTOMER_CREATE,
@@ -88,6 +94,7 @@ export const RolePermissions: Record<string, Permission[]> = {
     Permissions.NOTIFICATION_VIEW,
     Permissions.KNOWLEDGE_VIEW,
     Permissions.INBOX_VIEW,
+    Permissions.SURVEY_VIEW,
   ],
   QA: [
     Permissions.CALL_VIEW,

@@ -1,5 +1,7 @@
 package com.vcall.notification.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vcall.notification.entity.Notification;
 import com.vcall.notification.entity.NotificationTemplate;
 import com.vcall.notification.repository.NotificationTemplateRepository;
@@ -11,6 +13,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -22,6 +26,7 @@ public class EmailNotificationService {
 
     private final JavaMailSender mailSender;
     private final NotificationTemplateRepository templateRepository;
+    private final ObjectMapper objectMapper;
 
     public void sendEmail(Notification notification) {
         String subject = notification.getTitle();
@@ -60,6 +65,17 @@ public class EmailNotificationService {
     }
 
     private Map<String, String> parseVariables(String metadata) {
-        return Map.of();
+        if (metadata == null || metadata.isBlank()) {
+            return Collections.emptyMap();
+        }
+        try {
+            Map<String, Object> raw = objectMapper.readValue(metadata, new TypeReference<>() {});
+            Map<String, String> variables = new HashMap<>();
+            raw.forEach((key, value) -> variables.put(key, String.valueOf(value)));
+            return variables;
+        } catch (Exception e) {
+            log.warn("Failed to parse notification metadata as JSON: {}", e.getMessage());
+            return Collections.emptyMap();
+        }
     }
 }

@@ -88,6 +88,7 @@ public class AgentService {
         Agent agent = agentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Agent not found with id: " + id));
         agent.setIsDeleted(true);
+        agent.setDeletedAt(java.time.LocalDateTime.now());
         agentRepository.save(agent);
     }
 
@@ -96,6 +97,7 @@ public class AgentService {
         Agent agent = agentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Agent not found with id: " + id));
         agent.setIsDeleted(false);
+        agent.setDeletedAt(null);
         agent = agentRepository.save(agent);
         return toResponse(agent);
     }

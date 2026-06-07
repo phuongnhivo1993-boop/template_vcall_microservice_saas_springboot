@@ -5,7 +5,7 @@ import {
   SafetyOutlined, SettingOutlined, CustomerServiceOutlined,
   MessageOutlined, BookOutlined, ThunderboltOutlined,
   VideoCameraOutlined, ExperimentOutlined, BuildOutlined,
-  AppstoreOutlined, LineChartOutlined,
+  AppstoreOutlined, LineChartOutlined, FormOutlined, CalendarOutlined,
 } from '@ant-design/icons';
 import { Permissions } from '@/lib/permissions';
 
@@ -26,7 +26,9 @@ export const menuItems: MenuItem[] = [
   { key: 'crm', label: 'CRM', icon: <ContactsOutlined />, path: '/crm', permission: Permissions.CRM_VIEW },
   { key: 'calls', label: 'Cuộc gọi', icon: <PhoneOutlined />, path: '/calls', permission: Permissions.CALL_VIEW },
   { key: 'tickets', label: 'Yêu cầu', icon: <FileTextOutlined />, path: '/tickets', permission: Permissions.TICKET_VIEW },
+  { key: 'surveys', label: 'Khảo sát', icon: <FormOutlined />, path: '/surveys', permission: Permissions.SURVEY_VIEW },
   { key: 'campaigns', label: 'Chiến dịch', icon: <ApiOutlined />, path: '/campaigns', permission: Permissions.CAMPAIGN_VIEW },
+  { key: 'scheduling', label: 'Lịch hẹn', icon: <CalendarOutlined />, path: '/scheduling', permission: Permissions.AGENT_VIEW },
   { key: 'billing', label: 'Hóa đơn', icon: <DollarOutlined />, path: '/billing', permission: Permissions.BILLING_VIEW },
   { key: 'reports', label: 'Báo cáo', icon: <BarChartOutlined />, path: '/reports', permission: Permissions.REPORTS_VIEW },
   { key: 'notifications', label: 'Thông báo', icon: <BellOutlined />, path: '/notifications', permission: Permissions.NOTIFICATION_VIEW },

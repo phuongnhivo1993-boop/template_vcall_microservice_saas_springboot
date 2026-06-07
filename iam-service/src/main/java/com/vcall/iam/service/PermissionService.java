@@ -7,6 +7,8 @@ import com.vcall.iam.dto.PermissionResponse;
 import com.vcall.iam.entity.Permission;
 import com.vcall.iam.repository.PermissionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -20,6 +22,7 @@ public class PermissionService {
     private final PermissionRepository permissionRepository;
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "permissions", key = "'search_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<PermissionResponse> searchPermissions(Specification<com.vcall.iam.entity.Permission> spec, Pageable pageable) {
         return permissionRepository.findAll(spec, pageable).map(this::toResponse);
     }
@@ -31,6 +34,7 @@ public class PermissionService {
     }
 
     @Transactional
+    @CacheEvict(value = "permissions", allEntries = true)
     public PermissionResponse createPermission(PermissionRequest request) {
         if (permissionRepository.findByName(request.getName()).isPresent()) {
             throw new DuplicateResourceException("Permission already exists: " + request.getName());
@@ -46,6 +50,7 @@ public class PermissionService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "permissions", key = "#id")
     public PermissionResponse getPermission(Long id) {
         Permission permission = permissionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Permission not found with id: " + id));
@@ -53,11 +58,13 @@ public class PermissionService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "permissions", key = "'all_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<PermissionResponse> getAllPermissions(Pageable pageable) {
         return permissionRepository.findAll(pageable).map(this::toResponse);
     }
 
     @Transactional
+    @CacheEvict(value = "permissions", allEntries = true)
     public PermissionResponse updatePermission(Long id, PermissionRequest request) {
         Permission permission = permissionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Permission not found with id: " + id));
@@ -70,6 +77,7 @@ public class PermissionService {
     }
 
     @Transactional
+    @CacheEvict(value = "permissions", allEntries = true)
     public void deletePermission(Long id) {
         Permission permission = permissionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Permission not found with id: " + id));

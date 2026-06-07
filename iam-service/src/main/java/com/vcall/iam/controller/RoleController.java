@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -40,6 +41,7 @@ public class RoleController {
     private final RoleService roleService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<RoleResponse>> createRole(@Valid @RequestBody RoleRequest request) {
         RoleResponse response = roleService.createRole(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -47,18 +49,21 @@ public class RoleController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<RoleResponse>> getRoleById(@PathVariable Long id) {
         RoleResponse response = roleService.getRoleById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<Page<RoleResponse>>> getAllRoles(Pageable pageable) {
         Page<RoleResponse> response = roleService.getAllRoles(pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<RoleResponse>> updateRole(@PathVariable Long id,
                                                                 @Valid @RequestBody RoleRequest request) {
         RoleResponse response = roleService.updateRole(id, request);
@@ -66,12 +71,14 @@ public class RoleController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteRole(@PathVariable Long id) {
         roleService.deleteRole(id);
         return ResponseEntity.ok(ApiResponse.success("Role deleted successfully", null));
     }
 
     @PostMapping("/{roleId}/users/{userId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> assignRoleToUser(@PathVariable Long roleId,
                                                               @PathVariable UUID userId) {
         roleService.assignRoleToUser(roleId, userId);
@@ -79,6 +86,7 @@ public class RoleController {
     }
 
     @DeleteMapping("/{roleId}/users/{userId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> removeRoleFromUser(@PathVariable Long roleId,
                                                                  @PathVariable UUID userId) {
         roleService.removeRoleFromUser(roleId, userId);
@@ -86,6 +94,7 @@ public class RoleController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<Page<RoleResponse>>> searchRoles(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
@@ -103,6 +112,7 @@ public class RoleController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public void exportRolesCsv(@RequestParam(required = false) String keyword,
                                HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -124,6 +134,7 @@ public class RoleController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public void exportRolesExcel(@RequestParam(required = false) String keyword,
                                  HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -144,6 +155,7 @@ public class RoleController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
         Map<String, Object> stats = roleService.getRoleStats();
         return ResponseEntity.ok(ApiResponse.success(stats));

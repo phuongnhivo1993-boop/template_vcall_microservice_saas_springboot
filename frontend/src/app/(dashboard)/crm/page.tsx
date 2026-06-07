@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Card, Tabs, Select, Tag, Typography, Space, Button, Modal, Form,
   Input, message, Row, Col, Statistic, Tooltip
 } from 'antd';
 import {
   PlusOutlined, TeamOutlined, DollarOutlined, PhoneOutlined,
-  EditOutlined, DeleteOutlined, SwapOutlined, CheckCircleOutlined, CopyOutlined
+  EditOutlined, DeleteOutlined, SwapOutlined, CheckCircleOutlined, CopyOutlined, EyeOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import CommonTable from '@/components/common/CommonTable';
@@ -40,6 +41,7 @@ const oppStageOptions = ['PROSPECTING', 'QUALIFICATION', 'NEEDS_ANALYSIS', 'PROP
 const activityTypeOptions = ['CALL', 'EMAIL', 'MEETING', 'TASK', 'NOTE'].map(s => ({ value: s, label: s }));
 
 export default function CrmPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('leads');
   const [leads, setLeads] = useState<any[]>([]);
   const [opportunities, setOpportunities] = useState<any[]>([]);
@@ -296,6 +298,7 @@ export default function CrmPage() {
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
         <Space>
+          <Tooltip title="View"><Button size="small" icon={<EyeOutlined />} onClick={() => router.push(`/crm/leads/${r.id}`)} /></Tooltip>
           <Tooltip title="Convert to Opportunity">
             <Button size="small" icon={<SwapOutlined />} onClick={() => { setConvertingLead(r); setConvertModalOpen(true); }} />
           </Tooltip>
@@ -322,6 +325,7 @@ export default function CrmPage() {
     { title: 'Actions', key: 'actions',
       render: (_: any, r: any) => (
         <Space>
+          <Tooltip title="View"><Button size="small" icon={<EyeOutlined />} onClick={() => router.push(`/crm/opportunities/${r.id}`)} /></Tooltip>
           <Tooltip title="Edit"><Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(r, 'opportunity')} /></Tooltip>
           <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteConfirm(r.id, 'opportunity', 'opportunity')} /></Tooltip>
         </Space>

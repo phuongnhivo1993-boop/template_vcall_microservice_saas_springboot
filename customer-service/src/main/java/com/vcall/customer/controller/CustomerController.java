@@ -124,6 +124,29 @@ public class CustomerController {
         return ResponseEntity.ok(ApiResponse.success("Customer deleted", null));
     }
 
+    @PostMapping("/{id}/restore")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<CustomerResponse>> restore(@PathVariable UUID id) {
+        CustomerResponse response = customerService.restore(id);
+        return ResponseEntity.ok(ApiResponse.success("Customer restored successfully", response));
+    }
+
+    @PostMapping("/restore-bulk")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> restoreBulk(
+            @RequestBody List<UUID> ids) {
+        BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
+        for (UUID id : ids) {
+            try {
+                customerService.restore(id);
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk restore completed", result));
+    }
+
     @PostMapping("/{id}/contacts")
     public ResponseEntity<ApiResponse<CustomerContact>> addContact(@PathVariable UUID id,
                                                                     @Valid @RequestBody CustomerContactRequest request) {

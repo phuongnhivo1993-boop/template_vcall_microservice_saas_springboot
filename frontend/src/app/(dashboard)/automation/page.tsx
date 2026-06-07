@@ -1,12 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Tag, Button, Space, Typography, Input, message, Alert, Tooltip, Divider, Form, Select, Modal } from 'antd';
+import { Card, Tag, Button, Space, Typography, message, Alert, Tooltip, Form, Select, Modal, Input } from 'antd';
 import { PlusOutlined, ThunderboltOutlined, EditOutlined, DeleteOutlined, PauseCircleOutlined, PlayCircleOutlined, CopyOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
+import CommonSearch from '@/components/common/CommonSearch';
+import SavedFilters from '@/components/common/SavedFilters';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { automationApi } from '@/lib/api';
+import type { TablePaginationConfig } from 'antd/es/table';
+import type { SorterResult } from 'antd/es/table/interface';
 
 const { Title, Text } = Typography;
 
@@ -55,6 +59,14 @@ export default function AutomationPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<AutomationRule | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const [searchFilters, setSearchFilters] = useState<Record<string, any>>({});
+  const [sortField, setSortField] = useState<string>('name');
+  const [sortOrder, setSortOrder] = useState<'ascend' | 'descend'>('ascend');
+  const [pagination, setPagination] = useState<TablePaginationConfig>({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
   const fetchRules = useCallback(async () => {
     setLoading(true);
@@ -72,6 +84,61 @@ export default function AutomationPage() {
   useEffect(() => {
     fetchRules();
   }, [fetchRules]);
+
+  const handleSearch = (values: any) => {
+    const cleaned: Record<string, any> = {};
+    Object.entries(values).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') {
+        cleaned[key] = val;
+      }
+    });
+    setSearchFilters(cleaned);
+  };
+
+  const handleReset = () => {
+    setSearchFilters({});
+  };
+
+  const handleTableChange = (
+    pag: TablePaginationConfig,
+    _filters: any,
+    sorter: SorterResult<any> | SorterResult<any>[],
+  ) => {
+    setPagination((prev) => ({ ...prev, current: pag.current, pageSize: pag.pageSize }));
+    if (!Array.isArray(sorter) && sorter.field) {
+      setSortField(sorter.field as string);
+      setSortOrder(sorter.order || 'ascend');
+    }
+  };
+
+  const getFilteredData = (data: AutomationRule[]) => {
+    let filtered = [...data];
+    Object.entries(searchFilters).forEach(([key, value]) => {
+      if (value) {
+        filtered = filtered.filter((item) => {
+          if (key === 'name') {
+            return item.name.toLowerCase().includes(String(value).toLowerCase());
+          }
+          if (key === 'isActive') {
+            return item.isActive === (value === 'true');
+          }
+          return true;
+        });
+      }
+    });
+    if (sortField && sortOrder) {
+      filtered.sort((a, b) => {
+        const aVal = a[sortField as keyof AutomationRule];
+        const bVal = b[sortField as keyof AutomationRule];
+        if (aVal === bVal) return 0;
+        if (aVal === null || aVal === undefined) return 1;
+        if (bVal === null || bVal === undefined) return -1;
+        const comparison = String(aVal).localeCompare(String(bVal));
+        return sortOrder === 'ascend' ? comparison : -comparison;
+      });
+    }
+    return filtered;
+  };
 
   const handleSave = async (values: any) => {
     try {
@@ -138,17 +205,17 @@ export default function AutomationPage() {
   };
 
   const columns = [
-    { title: 'Name', dataIndex: 'name', key: 'name', render: (n: string, r: AutomationRule) => (
+    { title: 'Name', dataIndex: 'name', key: 'name', sorter: true, render: (n: string, r: AutomationRule) => (
       <Space><ThunderboltOutlined style={{ color: r.isActive ? '#faad14' : '#d9d9d9' }} /><Text strong>{n}</Text></Space>
     )},
-    { title: 'Trigger', dataIndex: 'triggerLabel', key: 'trigger', render: (t: string) => <Tag color="blue">{t}</Tag> },
+    { title: 'Trigger', dataIndex: 'triggerLabel', key: 'trigger', sorter: true, render: (t: string) => <Tag color="blue">{t}</Tag> },
     { title: 'Conditions', key: 'conditions', render: (_: any, r: AutomationRule) => (
       <Space size={4}>{r.conditions.length > 0 ? r.conditions.map((c, i) => <Tag key={i}>{c.field} {c.operator} {c.value}</Tag>) : <Text type="secondary">No conditions</Text>}</Space>
     )},
     { title: 'Actions', key: 'actions', render: (_: any, r: AutomationRule) => (
       <Space>{r.actions.map((a, i) => <Tag key={i} color="green">{a.type.replace(/_/g, ' ')}</Tag>)}</Space>
     )},
-    { title: 'Status', dataIndex: 'isActive', key: 'isActive', render: (a: boolean) => <Tag color={a ? 'green' : 'red'}>{a ? 'Active' : 'Paused'}</Tag> },
+    { title: 'Status', dataIndex: 'isActive', key: 'isActive', sorter: true, render: (a: boolean) => <Tag color={a ? 'green' : 'red'}>{a ? 'Active' : 'Paused'}</Tag> },
     {
       title: 'Actions', key: 'actions',
       render: (_: any, record: AutomationRule) => (
@@ -162,6 +229,27 @@ export default function AutomationPage() {
           <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteRule(record.id)} />
         </Space>
       ),
+    },
+  ];
+
+  const searchFields = [
+    { name: 'name', label: 'Name', type: 'input' as const, placeholder: 'Search by name' },
+    {
+      name: 'isActive',
+      label: 'Status',
+      type: 'select' as const,
+      placeholder: 'Filter by status',
+      options: [
+        { value: 'true', label: 'Active' },
+        { value: 'false', label: 'Paused' },
+      ],
+    },
+    {
+      name: 'trigger',
+      label: 'Trigger Type',
+      type: 'select' as const,
+      placeholder: 'Filter by trigger',
+      options: TRIGGER_OPTIONS.map(opt => ({ value: opt.value, label: opt.label })),
     },
   ];
 
@@ -181,6 +269,22 @@ export default function AutomationPage() {
           showIcon
           style={{ marginBottom: 16 }}
         />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <CommonSearch
+            fields={searchFields}
+            onSearch={handleSearch}
+            onReset={handleReset}
+            loading={loading}
+            initialValues={searchFilters}
+          />
+          <SavedFilters
+            currentValues={searchFilters}
+            onApply={(values) => {
+              setSearchFilters(values);
+            }}
+            storageKey="vcall-saved-filters-automation"
+          />
+        </div>
         {selectedRowKeys.length > 0 && (
           <Button danger onClick={handleBulkDelete} style={{ marginBottom: 16 }}>
             Xóa đã chọn ({selectedRowKeys.length})
@@ -189,12 +293,13 @@ export default function AutomationPage() {
         <CommonTable
           rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]) }}
           columns={columns}
-          dataSource={rules}
+          dataSource={getFilteredData(rules)}
           rowKey="id"
           loading={loading}
           error={error}
           onRefresh={() => { setSelectedRowKeys([]); fetchRules(); }}
-          pagination={false}
+          pagination={{ ...pagination, total: getFilteredData(rules).length }}
+          onTableChange={handleTableChange}
         />
       </Card>
 

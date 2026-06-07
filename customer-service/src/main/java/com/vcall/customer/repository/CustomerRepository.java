@@ -1,15 +1,14 @@
 package com.vcall.customer.repository;
 
+import com.vcall.common.repository.TenantAwareRepository;
 import com.vcall.customer.entity.Customer;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface CustomerRepository extends JpaRepository<Customer, UUID>, JpaSpecificationExecutor<Customer> {
+public interface CustomerRepository extends TenantAwareRepository<Customer, UUID> {
 
     Optional<Customer> findByCustomerCode(String customerCode);
 

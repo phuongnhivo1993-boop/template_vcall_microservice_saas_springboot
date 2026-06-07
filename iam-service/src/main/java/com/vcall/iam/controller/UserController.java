@@ -97,6 +97,7 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserStatus(@PathVariable UUID id,
                                                                        @RequestParam String status) {
         UserResponse response = userService.updateUserStatus(id, status);
@@ -168,6 +169,7 @@ public class UserController {
     }
 
     @PostMapping("/bulk-delete")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> bulkDelete(
             @RequestBody List<UUID> ids) {
         BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
@@ -183,6 +185,7 @@ public class UserController {
     }
 
     @PostMapping("/bulk-status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> bulkStatus(
             @RequestBody BulkStatusRequest request) {
         BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
@@ -198,6 +201,7 @@ public class UserController {
     }
 
     @PostMapping(value = "/import/csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<?>>> importCsv(
             @RequestParam("file") MultipartFile file) throws IOException {
         List<UserRequest> items = new ArrayList<>();

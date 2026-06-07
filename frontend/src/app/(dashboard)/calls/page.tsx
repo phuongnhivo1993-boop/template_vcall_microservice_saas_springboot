@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, Tag, Typography, Space, Button, message, Row, Col, Statistic, Form, Input, Select, Modal } from 'antd';
 import { SearchOutlined, PhoneOutlined, DownloadOutlined, CopyOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -37,6 +38,7 @@ interface CallRecord {
 }
 
 export default function CallsPage() {
+  const router = useRouter();
   const [data, setData] = useState<CallRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -170,7 +172,7 @@ export default function CallsPage() {
       title: 'Call ID',
       dataIndex: 'id',
       key: 'id',
-      render: (id: string) => <a style={{ fontWeight: 500 }}>{id}</a>,
+      render: (id: string) => <a style={{ fontWeight: 500 }} onClick={() => router.push(`/calls/${id}`)}>{id}</a>,
     },
     { title: 'Caller', dataIndex: 'caller', key: 'caller' },
     { title: 'Callee', dataIndex: 'callee', key: 'callee' },

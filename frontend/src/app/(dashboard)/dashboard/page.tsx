@@ -1,18 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Row, Col, Card, Statistic, Typography, Tag, Spin, Alert, Tabs, message } from 'antd';
+import { Row, Col, Card, Statistic, Typography, Tag, Spin, Alert, message } from 'antd';
 import {
   PhoneOutlined,
   TeamOutlined,
   FileTextOutlined,
   DollarOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
 } from '@ant-design/icons';
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   XAxis,
@@ -28,7 +24,7 @@ import {
   Legend,
 } from 'recharts';
 import CommonTable from '@/components/common/CommonTable';
-import { dashboardApi, callsApi, agentsApi, ticketsApi } from '@/lib/api';
+import { dashboardApi, agentsApi, ticketsApi } from '@/lib/api';
 
 const { Title } = Typography;
 
@@ -37,23 +33,6 @@ const statusColors: Record<string, string> = {
   ongoing: '#1677ff',
   missed: '#ff4d4f',
   failed: '#faad14',
-};
-
-const agentStatusColors: Record<string, string> = {
-  AVAILABLE: '#52c41a',
-  BUSY: '#1677ff',
-  AWAY: '#faad14',
-  OFFLINE: '#999',
-  ON_CALL: '#722ed1',
-  BREAK: '#faad14',
-};
-
-const ticketStatusColors: Record<string, string> = {
-  OPEN: '#1677ff',
-  IN_PROGRESS: '#faad14',
-  RESOLVED: '#52c41a',
-  CLOSED: '#999',
-  ESCALATED: '#ff4d4f',
 };
 
 const PIE_COLORS = ['#1677ff', '#52c41a', '#faad14', '#ff4d4f', '#722ed1', '#999'];
@@ -89,26 +68,8 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const callVolumeData = stats.callVolume || [
-    { time: '00:00', calls: 12 },
-    { time: '04:00', calls: 8 },
-    { time: '08:00', calls: 45 },
-    { time: '10:00', calls: 78 },
-    { time: '12:00', calls: 65 },
-    { time: '14:00', calls: 88 },
-    { time: '16:00', calls: 92 },
-    { time: '18:00', calls: 74 },
-    { time: '20:00', calls: 42 },
-    { time: '22:00', calls: 20 },
-  ];
-
-  const agentPerformanceData = stats.agentPerformance || [
-    { name: 'Sarah J.', calls: 48, avgDuration: 4.2, satisfaction: 95 },
-    { name: 'Mike R.', calls: 42, avgDuration: 5.1, satisfaction: 88 },
-    { name: 'Emily W.', calls: 38, avgDuration: 3.8, satisfaction: 92 },
-    { name: 'John D.', calls: 35, avgDuration: 6.2, satisfaction: 85 },
-    { name: 'Lisa M.', calls: 32, avgDuration: 4.5, satisfaction: 90 },
-  ];
+  const callVolumeData = stats.callVolume || [];
+  const agentPerformanceData = stats.agentPerformance || [];
 
   const handleExportCsv = async () => {
     try {
@@ -161,10 +122,10 @@ export default function DashboardPage() {
     { title: 'Time', dataIndex: 'time', key: 'time', render: (t: string) => t || '-' },
   ];
 
-  const totalCalls = stats.totalCallsToday ?? 486;
-  const activeAgents = stats.activeAgents ?? 24;
-  const openTickets = stats.openTickets ?? 38;
-  const todayRevenue = stats.todayRevenue ?? 12580;
+  const totalCalls = stats.totalCallsToday ?? 0;
+  const activeAgents = stats.activeAgents ?? 0;
+  const openTickets = stats.openTickets ?? 0;
+  const todayRevenue = stats.todayRevenue ?? 0;
 
   if (error) {
     return (
@@ -193,7 +154,6 @@ export default function DashboardPage() {
                 title="Total Calls Today"
                 value={totalCalls}
                 prefix={<PhoneOutlined />}
-                suffix={<small style={{ color: '#52c41a', fontSize: 14 }}><ArrowUpOutlined /> 12%</small>}
                 valueStyle={{ color: '#1677ff' }}
               />
             </Card>
@@ -204,7 +164,6 @@ export default function DashboardPage() {
                 title="Active Agents"
                 value={activeAgents}
                 prefix={<TeamOutlined />}
-                suffix={<small style={{ color: '#52c41a', fontSize: 14 }}><ArrowUpOutlined /> 3</small>}
                 valueStyle={{ color: '#722ed1' }}
               />
             </Card>
@@ -215,7 +174,6 @@ export default function DashboardPage() {
                 title="Open Tickets"
                 value={openTickets}
                 prefix={<FileTextOutlined />}
-                suffix={<small style={{ color: '#ff4d4f', fontSize: 14 }}><ArrowDownOutlined /> 5</small>}
                 valueStyle={{ color: '#faad14' }}
               />
             </Card>
@@ -236,34 +194,46 @@ export default function DashboardPage() {
         <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
           <Col xs={24} lg={14}>
             <Card title="Call Volume Today" className="chart-container">
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={callVolumeData}>
-                  <defs>
-                    <linearGradient id="colorCalls" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#1677ff" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#1677ff" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="time" stroke="#999" />
-                  <YAxis stroke="#999" />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="calls" stroke="#1677ff" fill="url(#colorCalls)" strokeWidth={2} />
-                </AreaChart>
-              </ResponsiveContainer>
+              {callVolumeData.length === 0 ? (
+                <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+                  No call volume data available
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={callVolumeData}>
+                    <defs>
+                      <linearGradient id="colorCalls" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#1677ff" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#1677ff" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="time" stroke="#999" />
+                    <YAxis stroke="#999" />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="calls" stroke="#1677ff" fill="url(#colorCalls)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
             </Card>
           </Col>
           <Col xs={24} lg={10}>
             <Card title="Agent Performance" className="chart-container">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={agentPerformanceData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" stroke="#999" />
-                  <YAxis stroke="#999" />
-                  <Tooltip />
-                  <Bar dataKey="calls" fill="#1677ff" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {agentPerformanceData.length === 0 ? (
+                <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+                  No agent performance data available
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={agentPerformanceData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="name" stroke="#999" />
+                    <YAxis stroke="#999" />
+                    <Tooltip />
+                    <Bar dataKey="calls" fill="#1677ff" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </Card>
           </Col>
         </Row>
@@ -271,48 +241,60 @@ export default function DashboardPage() {
         <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
           <Col xs={24} lg={12}>
             <Card title="Agent Status Distribution">
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={agentStatusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {agentStatusData.map((_: any, index: number) => (
-                      <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              {agentStatusData.length === 0 ? (
+                <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+                  No agent status data available
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={agentStatusData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {agentStatusData.map((_: any, index: number) => (
+                        <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </Card>
           </Col>
           <Col xs={24} lg={12}>
             <Card title="Ticket Status Breakdown">
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={ticketStatusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {ticketStatusData.map((_: any, index: number) => (
-                      <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              {ticketStatusData.length === 0 ? (
+                <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+                  No ticket status data available
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={ticketStatusData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {ticketStatusData.map((_: any, index: number) => (
+                        <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </Card>
           </Col>
         </Row>

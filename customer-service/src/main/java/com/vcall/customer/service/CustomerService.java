@@ -149,7 +149,18 @@ public class CustomerService {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
         customer.setIsDeleted(true);
+        customer.setDeletedAt(java.time.LocalDateTime.now());
         customerRepository.save(customer);
+    }
+
+    @Transactional
+    public CustomerResponse restore(UUID id) {
+        Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+        customer.setIsDeleted(false);
+        customer.setDeletedAt(null);
+        customer = customerRepository.save(customer);
+        return toResponse(customer);
     }
 
     @Transactional(readOnly = true)

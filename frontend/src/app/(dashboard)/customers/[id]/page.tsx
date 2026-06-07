@@ -188,7 +188,7 @@ export default function CustomerDetailPage() {
       children: (
         <CommonTable
           columns={[
-            { title: 'Mã', dataIndex: 'id', key: 'id', render: (id: string) => <a>{id}</a> },
+            { title: 'Mã', dataIndex: 'id', key: 'id', render: (id: string) => <a onClick={() => router.push(`/tickets/${id}`)} style={{ cursor: 'pointer' }}>{id}</a> },
             { title: 'Tiêu đề', dataIndex: 'title', key: 'title' },
             { title: 'Mức độ', dataIndex: 'priority', key: 'priority', render: (p: string) => <Tag color={p === 'HIGH' ? 'red' : p === 'MEDIUM' ? 'orange' : 'green'}>{p}</Tag> },
             { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (s: string) => <Tag color={s === 'OPEN' ? 'blue' : s === 'RESOLVED' ? 'green' : 'orange'}>{s}</Tag> },

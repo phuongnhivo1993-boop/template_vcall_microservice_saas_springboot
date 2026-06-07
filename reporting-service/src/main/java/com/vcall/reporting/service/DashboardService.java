@@ -10,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,10 +29,24 @@ public class DashboardService {
 
     public Map<String, Object> getDashboardStats() {
         Map<String, Object> stats = new HashMap<>();
-        stats.put("totalCalls", reportingDataService.generateCallVolumeReport(new HashMap<>()).get("totalCalls"));
-        stats.put("activeAgents", 0);
-        stats.put("openTickets", 0);
-        stats.put("pendingTasks", 0);
+
+        Map<String, Object> callReport = reportingDataService.generateCallVolumeReport(new HashMap<>());
+        stats.put("totalCallsToday", callReport.get("totalCalls"));
+        stats.put("answered", callReport.get("answered"));
+        stats.put("missed", callReport.get("missed"));
+        stats.put("failed", callReport.get("failed"));
+        stats.put("answerRate", callReport.get("answerRate"));
+
+        Map<String, Object> agentReport = reportingDataService.generateAgentPerformanceReport(new HashMap<>());
+        stats.put("activeAgents", agentReport.get("totalAgents"));
+        stats.put("avgOccupancyRate", agentReport.get("avgOccupancyRate"));
+        stats.put("avgSatisfactionScore", agentReport.get("avgSatisfactionScore"));
+
+        Map<String, Object> slaReport = reportingDataService.generateSlaReport(new HashMap<>());
+        stats.put("openTickets", slaReport.get("totalTickets"));
+        stats.put("slaComplianceRate", slaReport.get("slaComplianceRate"));
+
+        stats.put("dataSource", "database");
         return stats;
     }
 

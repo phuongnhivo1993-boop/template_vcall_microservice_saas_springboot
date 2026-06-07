@@ -5,8 +5,12 @@ import { Card, Tag, Button, Space, Typography, Switch, Form, Input, Checkbox, me
 import { PlusOutlined, EditOutlined, DeleteOutlined, ApiOutlined, ReloadOutlined, CopyOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
+import CommonSearch from '@/components/common/CommonSearch';
+import SavedFilters from '@/components/common/SavedFilters';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { webhooksApi } from '@/lib/api';
+import type { TablePaginationConfig } from 'antd/es/table';
+import type { SorterResult } from 'antd/es/table/interface';
 
 const { Text } = Typography;
 
@@ -48,6 +52,9 @@ export default function WebhooksPage() {
   const testTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  const [searchFilters, setSearchFilters] = useState<Record<string, any>>({});
+  const [sortField, setSortField] = useState<string>('name');
+  const [sortOrder, setSortOrder] = useState<'ascend' | 'descend'>('ascend');
 
   const fetchWebhooks = useCallback(async (page = 1, size = 10) => {
     setLoading(true);
@@ -79,6 +86,63 @@ export default function WebhooksPage() {
 
   const handleTableChange = (pag: any) => {
     fetchWebhooks(pag.current, pag.pageSize);
+  };
+
+  const handleSearch = (values: any) => {
+    const cleaned: Record<string, any> = {};
+    Object.entries(values).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') {
+        cleaned[key] = val;
+      }
+    });
+    setSearchFilters(cleaned);
+  };
+
+  const handleReset = () => {
+    setSearchFilters({});
+  };
+
+  const handleSortChange = (
+    pag: TablePaginationConfig,
+    _filters: any,
+    sorter: SorterResult<any> | SorterResult<any>[],
+  ) => {
+    if (!Array.isArray(sorter) && sorter.field) {
+      setSortField(sorter.field as string);
+      setSortOrder(sorter.order || 'ascend');
+    }
+  };
+
+  const getFilteredData = (data: Webhook[]) => {
+    let filtered = [...data];
+    Object.entries(searchFilters).forEach(([key, value]) => {
+      if (value) {
+        filtered = filtered.filter((item) => {
+          if (key === 'name') {
+            return item.name.toLowerCase().includes(String(value).toLowerCase());
+          }
+          if (key === 'isActive') {
+            return item.isActive === (value === 'true');
+          }
+          if (key === 'events') {
+            return item.events.some((e) => e.includes(String(value)));
+          }
+          return true;
+        });
+      }
+    });
+    if (sortField && sortOrder) {
+      filtered.sort((a, b) => {
+        const aVal = a[sortField as keyof Webhook];
+        const bVal = b[sortField as keyof Webhook];
+        if (aVal === bVal) return 0;
+        if (aVal === null || aVal === undefined) return 1;
+        if (bVal === null || bVal === undefined) return -1;
+        const comparison = String(aVal).localeCompare(String(bVal));
+        return sortOrder === 'ascend' ? comparison : -comparison;
+      });
+    }
+    return filtered;
   };
 
   const toggleWebhook = async (webhook: Webhook) => {
@@ -159,20 +223,20 @@ export default function WebhooksPage() {
   };
 
   const columns = [
-    { title: 'Name', dataIndex: 'name', key: 'name', render: (n: string, r: Webhook) => (
+    { title: 'Name', dataIndex: 'name', key: 'name', sorter: true, render: (n: string, r: Webhook) => (
       <Space><ApiOutlined style={{ color: r.isActive ? '#1890ff' : '#d9d9d9' }} /><Text strong>{n}</Text></Space>
     )},
     { title: 'URL', dataIndex: 'url', key: 'url', render: (u: string) => <Text copyable style={{ maxWidth: 250, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u}</Text> },
     { title: 'Events', dataIndex: 'events', key: 'events', render: (e: string[]) => (
       <Space size={4} wrap>{e.map(ev => <Tag key={ev} style={{ fontSize: 10 }}>{ev}</Tag>)}</Space>
     )},
-    { title: 'Status', dataIndex: 'isActive', key: 'isActive', render: (a: boolean, r: Webhook) => (
+    { title: 'Status', dataIndex: 'isActive', key: 'isActive', sorter: true, render: (a: boolean, r: Webhook) => (
       <Switch checked={a} onChange={() => toggleWebhook(r)} size="small" />
     )},
     { title: 'Last Response', key: 'lastResponse', render: (_: any, r: Webhook) => (
       r.lastResponseCode ? <Tag color={r.lastResponseCode < 300 ? 'green' : 'red'}>{r.lastResponseCode}</Tag> : '-'
     )},
-    { title: 'Failures', dataIndex: 'failureCount', key: 'failureCount', render: (c: number) => (
+    { title: 'Failures', dataIndex: 'failureCount', key: 'failureCount', sorter: true, render: (c: number) => (
       <Badge count={c} style={{ backgroundColor: c > 0 ? '#ff4d4f' : '#52c41a' }} />
     )},
     {
@@ -190,6 +254,27 @@ export default function WebhooksPage() {
     },
   ];
 
+  const searchFields = [
+    { name: 'name', label: 'Name', type: 'input' as const, placeholder: 'Search by name' },
+    {
+      name: 'isActive',
+      label: 'Status',
+      type: 'select' as const,
+      placeholder: 'Filter by status',
+      options: [
+        { value: 'true', label: 'Active' },
+        { value: 'false', label: 'Inactive' },
+      ],
+    },
+    {
+      name: 'events',
+      label: 'Event Type',
+      type: 'select' as const,
+      placeholder: 'Filter by event',
+      options: EVENT_OPTIONS,
+    },
+  ];
+
   return (
     <div>
       <Card
@@ -204,12 +289,28 @@ export default function WebhooksPage() {
           <Alert message={testResult} type={testResult.includes('✅') ? 'success' : 'error'} closable
             onClose={() => setTestResult(null)} style={{ marginBottom: 16 }} />
         )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <CommonSearch
+            fields={searchFields}
+            onSearch={handleSearch}
+            onReset={handleReset}
+            loading={loading}
+            initialValues={searchFilters}
+          />
+          <SavedFilters
+            currentValues={searchFilters}
+            onApply={(values) => {
+              setSearchFilters(values);
+            }}
+            storageKey="vcall-saved-filters-webhooks"
+          />
+        </div>
         {selectedRowKeys.length > 0 && (
           <Button danger onClick={handleBulkDelete} style={{ marginBottom: 16 }}>
             Xóa đã chọn ({selectedRowKeys.length})
           </Button>
         )}
-        <CommonTable rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]) }} columns={columns} dataSource={webhooks} rowKey="id" loading={loading} error={error} pagination={pagination} onTableChange={handleTableChange} onRefresh={() => { setSelectedRowKeys([]); fetchWebhooks(pagination.current, pagination.pageSize); }} />
+        <CommonTable rowSelection={{ selectedRowKeys, onChange: (keys: React.Key[]) => setSelectedRowKeys(keys as string[]) }} columns={columns} dataSource={getFilteredData(webhooks)} rowKey="id" loading={loading} error={error} pagination={pagination} onTableChange={handleTableChange} onRefresh={() => { setSelectedRowKeys([]); fetchWebhooks(pagination.current, pagination.pageSize); }} />
       </Card>
 
       <CommonForm

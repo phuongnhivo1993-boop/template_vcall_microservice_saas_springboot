@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
@@ -39,6 +40,7 @@ public class PermissionController {
     private final PermissionService permissionService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<PermissionResponse>> createPermission(@Valid @RequestBody PermissionRequest request) {
         PermissionResponse response = permissionService.createPermission(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -46,18 +48,21 @@ public class PermissionController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<Page<PermissionResponse>>> getAllPermissions(Pageable pageable) {
         Page<PermissionResponse> response = permissionService.getAllPermissions(pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<PermissionResponse>> getPermission(@PathVariable Long id) {
         PermissionResponse response = permissionService.getPermission(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<PermissionResponse>> updatePermission(@PathVariable Long id,
                                                                              @Valid @RequestBody PermissionRequest request) {
         PermissionResponse response = permissionService.updatePermission(id, request);
@@ -65,12 +70,14 @@ public class PermissionController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deletePermission(@PathVariable Long id) {
         permissionService.deletePermission(id);
         return ResponseEntity.ok(ApiResponse.success("Permission deleted successfully", null));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<Page<PermissionResponse>>> searchPermissions(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
@@ -90,6 +97,7 @@ public class PermissionController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public void exportPermissionsCsv(@RequestParam(required = false) String keyword,
                                      HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -113,6 +121,7 @@ public class PermissionController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public void exportPermissionsExcel(@RequestParam(required = false) String keyword,
                                        HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -135,6 +144,7 @@ public class PermissionController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
         Map<String, Object> stats = permissionService.getPermissionStats();
         return ResponseEntity.ok(ApiResponse.success(stats));

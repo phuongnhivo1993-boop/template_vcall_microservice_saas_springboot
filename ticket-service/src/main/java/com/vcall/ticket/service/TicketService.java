@@ -118,6 +118,7 @@ public class TicketService {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
         ticket.setIsDeleted(true);
+        ticket.setDeletedAt(LocalDateTime.now());
         ticketRepository.save(ticket);
     }
 
@@ -126,6 +127,7 @@ public class TicketService {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
         ticket.setIsDeleted(false);
+        ticket.setDeletedAt(null);
         ticket = ticketRepository.save(ticket);
         return toResponse(ticket);
     }
