@@ -7,6 +7,7 @@ import dayjs from 'dayjs';
 import CommonTable from '@/components/common/CommonTable';
 import CommonSearch from '@/components/common/CommonSearch';
 import CommonForm from '@/components/common/CommonForm';
+import SavedFilters from '@/components/common/SavedFilters';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { callsApi } from '@/lib/api';
 
@@ -264,6 +265,7 @@ export default function CallsPage() {
           onReset={handleReset}
           loading={loading}
         />
+        <SavedFilters currentValues={searchParams} onApply={(v) => { setSearchParams(v); handleSearch(v); }} storageKey="vcall-saved-filters-calls" />
       </Card>
 
       <div style={{ marginTop: 16 }}>

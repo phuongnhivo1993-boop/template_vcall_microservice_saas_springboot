@@ -102,14 +102,23 @@ public class AgentController {
         return ResponseEntity.ok(ApiResponse.success("Agent deleted successfully", null));
     }
 
+    @PostMapping("/{id}/restore")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<AgentResponse>> restoreAgent(@PathVariable UUID id) {
+        AgentResponse response = agentService.restoreAgent(id);
+        return ResponseEntity.ok(ApiResponse.success("Agent restored successfully", response));
+    }
+
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AgentResponse>> updateStatus(@PathVariable UUID id,
-                                                                    @Valid @RequestBody AgentStatusRequest request) {
+                                                                     @Valid @RequestBody AgentStatusRequest request) {
         AgentResponse response = agentService.updateStatus(id, request);
         return ResponseEntity.ok(ApiResponse.success("Status updated successfully", response));
     }
 
     @GetMapping("/status/{status}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<AgentResponse>>> getAgentsByStatus(@PathVariable String status) {
         AgentStatusEnum statusEnum = AgentStatusEnum.valueOf(status.toUpperCase());
         List<AgentResponse> agents = agentService.getByStatus(statusEnum);
@@ -117,12 +126,14 @@ public class AgentController {
     }
 
     @GetMapping("/{id}/status-history")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<AgentStatusResponse>>> getStatusHistory(@PathVariable UUID id) {
         List<AgentStatusResponse> history = agentStatusService.getStatusHistory(id, null, null);
         return ResponseEntity.ok(ApiResponse.success(history));
     }
 
     @GetMapping("/profile")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<AgentResponse>> getProfile(@RequestParam UUID userId) {
         AgentResponse response = agentService.getAgentByUserId(userId);
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -176,12 +187,13 @@ public class AgentController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportAgentsCsv(@RequestParam(required = false) String keyword,
                                 @RequestParam(required = false) String status,
                                 @RequestParam(required = false) Long groupId,
                                 @RequestParam(required = false) String skill,
                                 HttpServletResponse response) throws IOException {
-        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Pageable pageable = PageRequest.of(0, 5000, Sort.by("createdAt").descending());
         Specification<com.vcall.agent.entity.Agent> spec = Specification.where(null);
         if (keyword != null && !keyword.isEmpty()) {
             spec = spec.and((root, query, cb) ->
@@ -216,12 +228,13 @@ public class AgentController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportAgentsExcel(@RequestParam(required = false) String keyword,
-                                  @RequestParam(required = false) String status,
-                                  @RequestParam(required = false) Long groupId,
-                                  @RequestParam(required = false) String skill,
-                                  HttpServletResponse response) throws IOException {
-        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+                                   @RequestParam(required = false) String status,
+                                   @RequestParam(required = false) Long groupId,
+                                   @RequestParam(required = false) String skill,
+                                   HttpServletResponse response) throws IOException {
+        Pageable pageable = PageRequest.of(0, 5000, Sort.by("createdAt").descending());
         Specification<com.vcall.agent.entity.Agent> spec = Specification.where(null);
         if (keyword != null && !keyword.isEmpty()) {
             spec = spec.and((root, query, cb) ->
@@ -255,12 +268,14 @@ public class AgentController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
         Map<String, Object> stats = agentService.getAgentStats();
         return ResponseEntity.ok(ApiResponse.success(stats));
     }
 
     @PostMapping("/bulk-delete")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> bulkDelete(
             @RequestBody List<UUID> ids) {
         BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
@@ -276,6 +291,7 @@ public class AgentController {
     }
 
     @PostMapping("/bulk-status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> bulkStatus(
             @RequestBody BulkStatusRequest request) {
         BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
@@ -292,6 +308,7 @@ public class AgentController {
     }
 
     @PostMapping(value = "/import/csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<?>>> importCsv(
             @RequestParam("file") MultipartFile file) throws IOException {
         List<AgentRequest> items = new ArrayList<>();

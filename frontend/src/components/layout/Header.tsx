@@ -26,7 +26,7 @@ export default function Header({ onToggle, isMobile }: HeaderProps) {
       key: 'profile',
       icon: <UserOutlined />,
       label: 'Profile',
-      onClick: () => router.push('/settings'),
+      onClick: () => router.push('/settings?tab=profile'),
     },
     {
       key: 'settings',
@@ -47,12 +47,12 @@ export default function Header({ onToggle, isMobile }: HeaderProps) {
   return (
     <AntHeader
       style={{
-        background: '#fff',
+        background: mode === 'dark' ? '#141414' : '#fff',
         padding: '0 24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: isMobile ? 'space-between' : 'flex-end',
-        borderBottom: '1px solid #f0f0f0',
+        borderBottom: `1px solid ${mode === 'dark' ? '#303030' : '#f0f0f0'}`,
         height: 64,
         position: 'sticky',
         top: 0,

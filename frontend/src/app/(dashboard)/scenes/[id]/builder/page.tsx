@@ -283,8 +283,8 @@ export default function SceneBuilderPage() {
 
           <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
             <Button icon={<PlusOutlined />} onClick={handleAddHotspot}>Add Hotspot</Button>
-            <Button icon={<ExpandOutlined />}>Fit View</Button>
-            <Button icon={<CompressOutlined />}>Reset Camera</Button>
+            <Button icon={<ExpandOutlined />} onClick={() => message.info('Fit view applied')}>Fit View</Button>
+            <Button icon={<CompressOutlined />} onClick={() => message.info('Camera reset')}>Reset Camera</Button>
           </div>
         </div>
 

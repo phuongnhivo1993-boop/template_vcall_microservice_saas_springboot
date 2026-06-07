@@ -196,7 +196,19 @@ export default function ToursPage() {
           <Space>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>New Tour</Button>
             {selectedRowKeys.length > 0 && (
-              <Popconfirm title={`Delete ${selectedRowKeys.length} tours?`} onConfirm={() => {}}>
+              <Popconfirm
+                title={`Delete ${selectedRowKeys.length} tours?`}
+                onConfirm={async () => {
+                  try {
+                    await Promise.all(selectedRowKeys.map(id => xrToursApi.delete(id)));
+                    message.success(`${selectedRowKeys.length} tours deleted`);
+                    setSelectedRowKeys([]);
+                    fetchTours();
+                  } catch {
+                    message.error('Failed to delete selected tours');
+                  }
+                }}
+              >
                 <Button danger>Delete Selected ({selectedRowKeys.length})</Button>
               </Popconfirm>
             )}

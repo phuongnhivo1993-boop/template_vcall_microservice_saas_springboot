@@ -1,32 +1,20 @@
+Request URL
+https://3000-firebase-template3-1780317154956.cluster-osvg2nzmmzhzqqjio6oojllbg4.cloudworkstations.dev/api/v1/auth/login
+Request Method
+POST
+Status Code
+503 Service Unavailable
+Remote Address
+34.81.85.31:443
+Referrer Policy
+strict-origin-when-cross-origin
 
-Tất cả các lỗi đã được fix. Dưới đây là tổng kết các thay đổi:
+{"username":"admin","password":"admin@123","tenantId":"vcall"}
 
-## Tổng kết các lỗi đã fix
-
-### 🔴 Critical Bugs
-| # | Vấn đề | File | Fix |
-|---|--------|------|-----|
-| 1 | `crmApi.leads.updateStatus` gửi **raw string** thay vì `{ status }` → API backend không parse được | `frontend/src/lib/api/index.ts:92-95` | Đổi thành `{ status }` |
-| 2 | `crmApi.opportunities.updateStage` gửi **raw string** thay vì `{ stage }` | `frontend/src/lib/api/index.ts:107-110` | Đổi thành `{ stage }` |
-| 3 | `campaigns/page.tsx` **handleBulkDeleteResults là no-op** - không gọi API, chỉ show success giả | `frontend/src/app/(dashboard)/campaigns/page.tsx:141-157` | Thêm gọi `campaignsApi.bulkDeleteResults()` + thêm backend endpoint |
-| 4 | **3 controllers** trả về Spring `Page<T>` thay vì `PagedResponse` → frontend không parse được pagination | `TicketController`, `UserController`, `AgentController` | Chuyển sang `PagedResponse` wrapper đồng nhất |
-| 5 | **Frontend không unwrap ApiResponse** - `res.data` chứa `{ status, message, data: {...} }` nhưng code đọc `data.content` trực tiếp | `frontend/src/lib/axios.ts` | Thêm response interceptor tự động unwrap `response.data.data` |
-
-### 🟠 Missing CRUD/Search/Filter
-| # | Vấn đề | Fix |
-|---|--------|-----|
-| 6 | `knowledgeBaseApi` thiếu `search`, `exportCsv`, `exportExcel`, `getStats` | Thêm 4 methods |
-| 7 | `automationApi` thiếu `search`, `exportCsv`, `exportExcel`, `getStats` | Thêm 4 methods |
-| 8 | `webhooksApi` thiếu `search`, `exportCsv`, `exportExcel`, `getStats` | Thêm 4 methods |
-
-### 🟡 Consistency & Code Quality
-| # | Vấn đề | Fix |
-|---|--------|-----|
-| 9 | `callsApi.start` và `callsApi.create` là duplicate | Xoá `start`, giữ `create` |
-| 10 | `reportsApi.getAll` và `reportsApi.list` là duplicate | Xoá `getAll`, giữ `list` |
-| 11 | `auditApi.getAll` và `auditApi.list` là duplicate | Xoá `getAll`, giữ `list` |
-| 12 | `notificationsApi.getAll` và `notificationsApi.list` là duplicate | Xoá `getAll`, giữ `list` |
-| 13 | `callsApi.updateStatus` dùng **PUT** thay vì PATCH (không đồng nhất với các API khác) | Đổi thành PATCH |
-| 14 | `auditApi` cho phép create/update/delete trên audit logs (vi phạm immutability) | Xoá 3 methods |
-| 15 | `webhooks/page.tsx` **thiếu cleanup** setTimeout khi unmount | Thêm `useRef` + cleanup |
-| 16 | `showDeleteConfirm` không hỗ trợ `okText`/`cancelText` | Mở rộng interface |
+=>{
+    "timestamp": "2026-06-06T07:26:08.422+00:00",
+    "path": "/api/v1/auth/login",
+    "status": 503,
+    "error": "Service Unavailable",
+    "requestId": "0789b817-17"
+}

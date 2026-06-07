@@ -40,7 +40,7 @@ export default function NotificationBadge() {
     try {
       const res = await notificationsApi.getStats();
       setCount(res.data?.data?.unreadCount || 0);
-    } catch {} finally { setLoading(false); }
+    } catch { console.warn('Failed to fetch notification count'); } finally { setLoading(false); }
   };
 
   const fetchList = async () => {
@@ -48,7 +48,7 @@ export default function NotificationBadge() {
     try {
       const res = await notificationsApi.list({ page: 0, size: 10 });
       setNotifications(res.data?.data?.content || []);
-    } catch {} finally { setLoading(false); }
+    } catch { console.warn('Failed to fetch notification list'); } finally { setLoading(false); }
   };
 
   const handleOpenChange = (newOpen: boolean) => {

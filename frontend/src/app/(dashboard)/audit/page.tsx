@@ -9,6 +9,7 @@ import {
 import dayjs from 'dayjs';
 import CommonTable from '@/components/common/CommonTable';
 import CommonSearch from '@/components/common/CommonSearch';
+import SavedFilters from '@/components/common/SavedFilters';
 import { auditApi } from '@/lib/api';
 
 const { Title } = Typography;
@@ -193,6 +194,7 @@ export default function AuditPage() {
             onExportCsv={handleExportCsv}
             onExportExcel={handleExportExcel}
             extra={
+              <>
               <CommonSearch
                 fields={[
                   { name: 'search', label: 'Search', type: 'input', placeholder: 'Search by action, resource...' },
@@ -208,6 +210,8 @@ export default function AuditPage() {
                 onReset={handleReset}
                 loading={loading}
               />
+              <SavedFilters currentValues={searchParams} onApply={(v) => { setSearchParams(v); handleSearch(v); }} storageKey="vcall-saved-filters-audit" />
+              </>
             }
             onTableChange={(_pagination, _filters, sorter: any) => {
               if (sorter?.order) {

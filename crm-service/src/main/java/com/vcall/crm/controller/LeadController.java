@@ -24,6 +24,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -47,6 +48,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/crm/leads")
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 public class LeadController {
 
     private final LeadService leadService;
@@ -114,7 +116,7 @@ public class LeadController {
     public void exportLeadsCsv(@RequestParam(required = false) String keyword,
                                @RequestParam(required = false) LeadStatus status,
                                HttpServletResponse response) throws IOException {
-        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Pageable pageable = PageRequest.of(0, 5000, Sort.by("createdAt").descending());
         Specification<com.vcall.crm.entity.Lead> spec = Specification.where(null);
         if (keyword != null && !keyword.isEmpty()) {
             spec = spec.and((root, query, cb) ->
@@ -139,7 +141,7 @@ public class LeadController {
     public void exportLeadsExcel(@RequestParam(required = false) String keyword,
                                  @RequestParam(required = false) LeadStatus status,
                                  HttpServletResponse response) throws IOException {
-        Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
+        Pageable pageable = PageRequest.of(0, 5000, Sort.by("createdAt").descending());
         Specification<com.vcall.crm.entity.Lead> spec = Specification.where(null);
         if (keyword != null && !keyword.isEmpty()) {
             spec = spec.and((root, query, cb) ->

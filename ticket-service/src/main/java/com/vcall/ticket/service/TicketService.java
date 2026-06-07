@@ -122,6 +122,15 @@ public class TicketService {
     }
 
     @Transactional
+    public TicketResponse restoreTicket(UUID id) {
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
+        ticket.setIsDeleted(false);
+        ticket = ticketRepository.save(ticket);
+        return toResponse(ticket);
+    }
+
+    @Transactional
     public TicketResponse updateStatus(UUID id, TicketStatusRequest request) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));

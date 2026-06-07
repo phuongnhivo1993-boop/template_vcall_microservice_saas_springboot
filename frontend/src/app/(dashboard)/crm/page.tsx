@@ -13,6 +13,7 @@ import type { ColumnsType } from 'antd/es/table';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import CommonSearch from '@/components/common/CommonSearch';
+import SavedFilters from '@/components/common/SavedFilters';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { crmApi } from '@/lib/api';
 
@@ -451,6 +452,7 @@ export default function CrmPage() {
         onReset={handleReset}
         loading={loading[activeTab as keyof typeof loading]}
       />
+      <SavedFilters currentValues={filters} onApply={(v) => { setFilters(v); handleSearch(v); }} storageKey="vcall-saved-filters-crm" />
 
       <Card>
         <Tabs activeKey={activeTab} onChange={setActiveTab} tabBarExtraContent={

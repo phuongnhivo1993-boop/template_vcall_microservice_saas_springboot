@@ -162,7 +162,6 @@ export default function LoginPage() {
           layout="vertical"
           size="large"
           autoComplete="off"
-          initialValues={{ username: 'admin', password: 'admin@123', company: 'vcall' }}
         >
           <Form.Item name="company" label="Company">
             <Input prefix={<UserOutlined />} placeholder="your-company" />

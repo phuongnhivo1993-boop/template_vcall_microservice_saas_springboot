@@ -91,6 +91,15 @@ public class AgentService {
         agentRepository.save(agent);
     }
 
+    @Transactional
+    public AgentResponse restoreAgent(UUID id) {
+        Agent agent = agentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Agent not found with id: " + id));
+        agent.setIsDeleted(false);
+        agent = agentRepository.save(agent);
+        return toResponse(agent);
+    }
+
     @Transactional(readOnly = true)
     public List<AgentResponse> getByStatus(AgentStatusEnum status) {
         return agentRepository.findByStatus(status).stream()

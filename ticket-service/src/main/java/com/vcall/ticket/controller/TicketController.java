@@ -23,6 +23,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -48,6 +49,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/tickets")
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 public class TicketController {
 
     private final TicketService ticketService;
@@ -96,6 +98,13 @@ public class TicketController {
     public ResponseEntity<ApiResponse<Void>> deleteTicket(@PathVariable UUID id) {
         ticketService.deleteTicket(id);
         return ResponseEntity.ok(ApiResponse.success("Ticket deleted successfully", null));
+    }
+
+    @PostMapping("/{id}/restore")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<TicketResponse>> restoreTicket(@PathVariable UUID id) {
+        TicketResponse response = ticketService.restoreTicket(id);
+        return ResponseEntity.ok(ApiResponse.success("Ticket restored successfully", response));
     }
 
     @PatchMapping("/{id}/status")
@@ -152,7 +161,7 @@ public class TicketController {
     public void exportCsv(@RequestParam(required = false) String q,
                           @RequestParam(required = false) String status,
                           HttpServletResponse response) throws IOException {
-        Pageable pageable = PageRequest.of(0, 10000, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(0, 5000, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<TicketResponse> items = ticketService.search(q, status, null, null, null, null, pageable);
         List<String> headers = Arrays.asList("ID", "Ticket Number", "Title", "Customer ID", "Source", "Category", "Priority", "Status", "Assigned To", "Created At");
         List<List<String>> rows = CsvExportUtil.toRows(items.getContent(),
@@ -164,7 +173,7 @@ public class TicketController {
     public void exportExcel(@RequestParam(required = false) String q,
                             @RequestParam(required = false) String status,
                             HttpServletResponse response) throws IOException {
-        Pageable pageable = PageRequest.of(0, 10000, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(0, 5000, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<TicketResponse> items = ticketService.search(q, status, null, null, null, null, pageable);
         List<String> headers = Arrays.asList("ID", "Ticket Number", "Title", "Customer ID", "Source", "Category", "Priority", "Status", "Assigned To", "Created At");
         ExcelExportUtil.writeExcel(response, "tickets.xlsx", headers, items.getContent(),

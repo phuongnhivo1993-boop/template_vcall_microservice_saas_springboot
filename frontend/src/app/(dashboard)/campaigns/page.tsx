@@ -13,6 +13,7 @@ import type { ColumnsType } from 'antd/es/table';
 import CommonTable from '@/components/common/CommonTable';
 import CommonForm from '@/components/common/CommonForm';
 import CommonSearch from '@/components/common/CommonSearch';
+import SavedFilters from '@/components/common/SavedFilters';
 import { showDeleteConfirm } from '@/components/common/CommonConfirmDelete';
 import { campaignsApi } from '@/lib/api';
 
@@ -412,6 +413,7 @@ export default function CampaignsPage() {
                     onReset={handleReset}
                     loading={loading}
                   />
+                  <SavedFilters currentValues={filters} onApply={(v) => { setFilters(v); handleSearch(v); }} storageKey="vcall-saved-filters-campaigns" />
                   {selectedCampaignRowKeys.length > 0 && (
                     <Button danger onClick={handleBulkDeleteCampaigns} style={{ marginBottom: 16 }}>
                       Xóa đã chọn ({selectedCampaignRowKeys.length})

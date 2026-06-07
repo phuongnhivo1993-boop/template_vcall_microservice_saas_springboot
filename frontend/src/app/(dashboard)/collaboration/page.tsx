@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Card, Table, Button, Tag, Space, Modal, Form, Input, Select, InputNumber, message, Avatar, Tooltip } from 'antd';
 import { PlusOutlined, VideoCameraOutlined, UserOutlined, StopOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { useRouter } from 'next/navigation';
 
 interface CollaborationRoom {
   id: string;
@@ -23,6 +24,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function CollaborationPage() {
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
 
@@ -75,12 +77,18 @@ export default function CollaborationPage() {
         <Space>
           {record.status === 'ACTIVE' && (
             <Tooltip title="Join Room">
-              <Button type="primary" size="small" icon={<VideoCameraOutlined />} />
+              <Button type="primary" size="small" icon={<VideoCameraOutlined />} onClick={() => message.info('Joining room...')} />
             </Tooltip>
           )}
           {record.status !== 'ENDED' && (
             <Tooltip title="End Room">
-              <Button danger size="small" icon={<StopOutlined />} />
+              <Button danger size="small" icon={<StopOutlined />} onClick={() => {
+                Modal.confirm({
+                  title: 'End Room',
+                  content: `End "${record.name}"?`,
+                  onOk: () => message.success('Room ended'),
+                });
+              }} />
             </Tooltip>
           )}
         </Space>
@@ -112,7 +120,6 @@ export default function CollaborationPage() {
   ];
 
   const handleCreate = (values: any) => {
-    console.log('Creating room:', values);
     message.success('Collaboration room created');
     setIsModalOpen(false);
     form.resetFields();

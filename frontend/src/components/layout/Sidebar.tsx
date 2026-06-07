@@ -5,6 +5,7 @@ import { Layout, Menu } from 'antd';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { hasPermission } from '@/lib/permissions';
+import { useTheme } from '@/lib/theme';
 import { menuItems as allMenuItems, type MenuItem } from './menuConfig';
 
 const { Sider } = Layout;
@@ -34,6 +35,7 @@ export default function Sidebar({ collapsed, onCollapse, inDrawer, onItemClick }
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
+  const { mode } = useTheme();
 
   const isCollapsed = collapsed ?? localCollapsed;
   const handleCollapse = onCollapse || setLocalCollapsed;
@@ -51,7 +53,7 @@ export default function Sidebar({ collapsed, onCollapse, inDrawer, onItemClick }
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          borderBottom: '1px solid #f0f0f0',
+          borderBottom: `1px solid ${mode === 'dark' ? '#303030' : '#f0f0f0'}`,
         }}
       >
         {isCollapsed ? (
@@ -90,10 +92,10 @@ export default function Sidebar({ collapsed, onCollapse, inDrawer, onItemClick }
       collapsible
       collapsed={isCollapsed}
       onCollapse={handleCollapse}
-      theme="light"
+      theme={mode === 'dark' ? 'dark' : 'light'}
       width={240}
       style={{
-        borderRight: '1px solid #f0f0f0',
+        borderRight: `1px solid ${mode === 'dark' ? '#303030' : '#f0f0f0'}`,
         height: '100vh',
         position: 'fixed',
         left: 0,

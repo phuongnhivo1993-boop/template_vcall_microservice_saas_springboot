@@ -173,9 +173,9 @@ public class CustomerController {
                           HttpServletResponse response) throws IOException {
         List<CustomerResponse> customers;
         if (!keyword.isEmpty()) {
-            customers = customerService.search(keyword, PageRequest.of(0, 10000)).getContent();
+            customers = customerService.search(keyword, PageRequest.of(0, 5000)).getContent();
         } else {
-            customers = customerService.findAll(PageRequest.of(0, 10000, Sort.by("createdAt").descending())).getContent();
+            customers = customerService.findAll(PageRequest.of(0, 5000, Sort.by("createdAt").descending())).getContent();
         }
         List<String> headers = Arrays.asList("ID", "Customer Code", "Full Name", "Email", "Phone", "Company", "Gender", "Created At");
         List<List<String>> rows = CsvExportUtil.toRows(customers, Arrays.asList("id", "customerCode", "fullName", "email", "phone", "company", "gender", "createdAt"));
@@ -187,9 +187,9 @@ public class CustomerController {
                             HttpServletResponse response) throws IOException {
         List<CustomerResponse> customers;
         if (!keyword.isEmpty()) {
-            customers = customerService.search(keyword, PageRequest.of(0, 10000)).getContent();
+            customers = customerService.search(keyword, PageRequest.of(0, 5000)).getContent();
         } else {
-            customers = customerService.findAll(PageRequest.of(0, 10000, Sort.by("createdAt").descending())).getContent();
+            customers = customerService.findAll(PageRequest.of(0, 5000, Sort.by("createdAt").descending())).getContent();
         }
         List<String> headers = Arrays.asList("ID", "Customer Code", "Full Name", "Email", "Phone", "Company", "Gender", "Created At");
         ExcelExportUtil.writeExcel(response, "customers.xlsx", headers, customers,

@@ -222,7 +222,19 @@ export default function VideoPage() {
               </Button>
             </Upload>
             {selectedRowKeys.length > 0 && (
-              <Popconfirm title={`Delete ${selectedRowKeys.length} videos?`} onConfirm={() => {}}>
+              <Popconfirm
+                title={`Delete ${selectedRowKeys.length} videos?`}
+                onConfirm={async () => {
+                  try {
+                    await Promise.all(selectedRowKeys.map(id => xrVideoApi.delete(id)));
+                    message.success(`${selectedRowKeys.length} videos deleted`);
+                    setSelectedRowKeys([]);
+                    fetchVideos();
+                  } catch {
+                    message.error('Failed to delete selected videos');
+                  }
+                }}
+              >
                 <Button danger>Delete Selected ({selectedRowKeys.length})</Button>
               </Popconfirm>
             )}

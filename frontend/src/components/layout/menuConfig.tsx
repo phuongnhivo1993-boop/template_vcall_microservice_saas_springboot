@@ -4,6 +4,8 @@ import {
   BarChartOutlined, DollarOutlined, BellOutlined,
   SafetyOutlined, SettingOutlined, CustomerServiceOutlined,
   MessageOutlined, BookOutlined, ThunderboltOutlined,
+  VideoCameraOutlined, ExperimentOutlined, BuildOutlined,
+  AppstoreOutlined, LineChartOutlined,
 } from '@ant-design/icons';
 import { Permissions } from '@/lib/permissions';
 
@@ -32,6 +34,12 @@ export const menuItems: MenuItem[] = [
   { key: 'automation', label: 'Tự động hóa', icon: <ThunderboltOutlined />, path: '/automation', permission: Permissions.ADMIN_ACCESS },
   { key: 'webhooks', label: 'Webhooks', icon: <ApiOutlined />, path: '/webhooks', permission: Permissions.WEBHOOK_VIEW },
   { key: 'audit', label: 'Kiểm tra', icon: <SafetyOutlined />, path: '/audit', permission: Permissions.AUDIT_VIEW },
+  { key: 'video', label: 'Video 360°', icon: <VideoCameraOutlined />, path: '/video', permission: Permissions.ADMIN_ACCESS },
+  { key: 'scenes', label: 'Cảnh VR', icon: <ExperimentOutlined />, path: '/scenes', permission: Permissions.ADMIN_ACCESS },
+  { key: 'tours', label: 'Tour VR', icon: <AppstoreOutlined />, path: '/tours', permission: Permissions.ADMIN_ACCESS },
+  { key: 'assets', label: 'Tài nguyên', icon: <BuildOutlined />, path: '/assets', permission: Permissions.ADMIN_ACCESS },
+  { key: 'analytics', label: 'Phân tích XR', icon: <LineChartOutlined />, path: '/analytics', permission: Permissions.ADMIN_ACCESS },
+  { key: 'collaboration', label: 'Hợp tác VR', icon: <CustomerServiceOutlined />, path: '/collaboration', permission: Permissions.ADMIN_ACCESS },
   { key: 'settings', label: 'Cài đặt', icon: <SettingOutlined />, path: '/settings', permission: Permissions.SETTINGS_VIEW },
   { key: 'supervisor', label: 'Giám sát', icon: <CustomerServiceOutlined />, path: '/supervisor', permission: Permissions.ADMIN_ACCESS },
   { key: 'workspace', label: 'Làm việc', icon: <CustomerServiceOutlined />, path: '/workspace', permission: Permissions.CALL_MANAGE },

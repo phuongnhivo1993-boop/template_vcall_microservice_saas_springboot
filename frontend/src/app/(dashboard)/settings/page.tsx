@@ -3,11 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, Tabs, Form, Input, Button, Switch, Select, Typography, Divider, message, Space, Row, Col, Spin, Alert } from 'antd';
 import { UserOutlined, TeamOutlined, ApiOutlined, DollarOutlined, SafetyOutlined } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
 import { settingsApi, billingApi } from '@/lib/api';
 
 const { Title } = Typography;
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [profileForm] = Form.useForm();
   const [orgForm] = Form.useForm();
   const [securityForm] = Form.useForm();
@@ -385,8 +387,8 @@ export default function SettingsPage() {
                 </div>
                 <div style={{ color: '#666' }}>{billingInfo.description || '50 agents included • Unlimited calls • 24/7 support'}</div>
               </div>
-              <Button type="primary">Upgrade Plan</Button>
-              <Button style={{ marginLeft: 12 }}>View Invoices</Button>
+              <Button type="primary" onClick={() => message.info('Please contact support to upgrade your plan')}>Upgrade Plan</Button>
+              <Button style={{ marginLeft: 12 }} onClick={() => router.push('/billing')}>View Invoices</Button>
             </div>
             )}
           </Spin>

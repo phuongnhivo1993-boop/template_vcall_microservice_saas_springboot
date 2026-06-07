@@ -143,7 +143,7 @@ export default function ScenesPage() {
       a.download = `scenes_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch { /* ignore */ }
+    } catch { message.error('Failed to export CSV'); }
   };
 
   const handleExportExcel = async () => {
@@ -158,7 +158,7 @@ export default function ScenesPage() {
       a.download = `scenes_${new Date().toISOString().slice(0, 10)}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch { /* ignore */ }
+    } catch { message.error('Failed to export Excel'); }
   };
 
   const columns: ColumnsType<XRScene> = [

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Row, Col, Card, Statistic, Typography, Tag, Spin, Alert, Tabs } from 'antd';
+import { Row, Col, Card, Statistic, Typography, Tag, Spin, Alert, Tabs, message } from 'antd';
 import {
   PhoneOutlined,
   TeamOutlined,
@@ -120,7 +120,7 @@ export default function DashboardPage() {
       a.download = `dashboard_export.csv`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch { /* ignore */ }
+    } catch { message.error('Failed to export CSV'); }
   };
 
   const handleExportExcel = async () => {
@@ -133,7 +133,7 @@ export default function DashboardPage() {
       a.download = `dashboard_export.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch { /* ignore */ }
+    } catch { message.error('Failed to export Excel'); }
   };
 
   const recentCallColumns = [

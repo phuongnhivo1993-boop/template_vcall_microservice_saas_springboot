@@ -1,0 +1,1 @@
+ALTER TABLE refresh_tokens ADD COLUMN IF NOT EXISTS tenant_id VARCHAR(50);
