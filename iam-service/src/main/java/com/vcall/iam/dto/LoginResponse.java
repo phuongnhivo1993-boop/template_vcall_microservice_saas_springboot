@@ -16,4 +16,7 @@ public class LoginResponse {
     private String tokenType;
     private long expiresIn;
     private UserResponse user;
+
+    private boolean mfaRequired;
+    private String mfaToken;
 }

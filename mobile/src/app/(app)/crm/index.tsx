@@ -58,7 +58,7 @@ export default function CRMScreen() {
   };
 
   const renderItem = useCallback(({ item }: { item: Customer }) => (
-    <TouchableOpacity style={styles.customerCard} activeOpacity={0.7}>
+    <TouchableOpacity style={styles.customerCard} onPress={() => router.push(`/crm/${item.id}`)} activeOpacity={0.7}>
       <View style={styles.avatar}>
         <Ionicons name="person-circle" size={44} color={Colors.primary} />
       </View>

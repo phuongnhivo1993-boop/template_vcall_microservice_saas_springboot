@@ -295,7 +295,13 @@ export default function TicketsPage() {
       title: 'SLA',
       key: 'sla',
       render: (_: unknown, record: Ticket) => {
+        if (!record.slaDeadline || !record.created) {
+          return <Tag color="default">N/A</Tag>;
+        }
         const total = dayjs(record.slaDeadline).diff(dayjs(record.created), 'hour');
+        if (total <= 0) {
+          return <Tag color="red" icon={<ClockCircleOutlined />}>Overdue</Tag>;
+        }
         const remaining = dayjs(record.slaDeadline).diff(dayjs(), 'hour');
         const pct = Math.max(0, Math.min(100, ((total - remaining) / total) * 100));
         return (

@@ -3,9 +3,11 @@ package com.vcall.sipservice.controller;
 import com.vcall.common.dto.ApiResponse;
 import com.vcall.common.util.CsvExportUtil;
 import com.vcall.common.util.ExcelExportUtil;
+import com.vcall.sipservice.dto.SipRegistrationRequest;
 import com.vcall.sipservice.dto.SipRegistrationResponse;
 import com.vcall.sipservice.service.SipRegistrationService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,17 +40,10 @@ public class SipRegistrationController {
 
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
-    public ResponseEntity<ApiResponse<SipRegistrationResponse>> register(@RequestBody Map<String, Object> body) {
-        Long sipAccountId = Long.valueOf(body.get("sipAccountId").toString());
-        String contactUri = (String) body.get("contactUri");
-        String userAgent = (String) body.get("userAgent");
-        String ipAddress = (String) body.get("ipAddress");
-        Integer port = body.get("port") != null ? Integer.valueOf(body.get("port").toString()) : null;
-        String transport = (String) body.get("transport");
-        Integer expires = body.get("expires") != null ? Integer.valueOf(body.get("expires").toString()) : null;
-
+    public ResponseEntity<ApiResponse<SipRegistrationResponse>> register(@Valid @RequestBody SipRegistrationRequest request) {
         SipRegistrationResponse registration = sipRegistrationService.register(
-                sipAccountId, contactUri, userAgent, ipAddress, port, transport, expires);
+                request.getSipAccountId(), request.getContactUri(), request.getUserAgent(),
+                request.getIpAddress(), request.getPort(), request.getTransport(), request.getExpires());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("SipRegistration created", registration));
     }

@@ -104,7 +104,7 @@ public class UserController {
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserStatus(@PathVariable UUID id,
                                                                        @RequestParam String status) {
         UserResponse response = userService.updateUserStatus(id, status);
@@ -193,7 +193,7 @@ public class UserController {
     }
 
     @PostMapping("/bulk-status")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> bulkStatus(
             @RequestBody BulkStatusRequest request) {
         BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();

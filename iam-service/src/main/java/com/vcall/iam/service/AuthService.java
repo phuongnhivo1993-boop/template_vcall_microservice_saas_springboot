@@ -69,6 +69,16 @@ public class AuthService {
             user.setLastLogin(LocalDateTime.now());
             userRepository.save(user);
 
+            if (user.isMfaEnabled()) {
+                String mfaToken = jwtService.generateMfaToken(user.getUsername());
+                return LoginResponse.builder()
+                        .mfaRequired(true)
+                        .mfaToken(mfaToken)
+                        .tokenType("Bearer")
+                        .user(userService.toUserResponse(user))
+                        .build();
+            }
+
             Map<String, Object> claims = new HashMap<>();
             Set<String> roles = user.getUserRoles().stream()
                     .map(ur -> ur.getRole().getName().name())

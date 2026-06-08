@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Card, Tabs, Form, Input, Button, Switch, Select, Typography, Divider, message, Space, Row, Col, Spin, Alert } from 'antd';
-import { UserOutlined, TeamOutlined, ApiOutlined, DollarOutlined, SafetyOutlined } from '@ant-design/icons';
+import { UserOutlined, TeamOutlined, ApiOutlined, DollarOutlined, SafetyOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { settingsApi, billingApi } from '@/lib/api';
+import apiClient from '@/lib/axios';
+import { useTheme } from '@/lib/theme';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -39,6 +41,7 @@ export default function SettingsPage() {
   const [mfaVerifying, setMfaVerifying] = useState(false);
   const [mfaQrCode, setMfaQrCode] = useState<string | null>(null);
   const [mfaSecret, setMfaSecret] = useState<string | null>(null);
+  const { mode, toggleTheme } = useTheme();
 
   const fetchProfile = useCallback(async () => {
     setProfileLoading(true);
@@ -165,18 +168,11 @@ export default function SettingsPage() {
       const values = await securityForm.validateFields();
       setSecuritySaving(true);
       if (values.currentPassword && values.newPassword) {
-        const res = await fetch('/api/v1/auth/change-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            currentPassword: values.currentPassword,
-            newPassword: values.newPassword,
-          }),
+        const res = await apiClient.post('/auth/change-password', {
+          currentPassword: values.currentPassword,
+          newPassword: values.newPassword,
         });
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.message || data.error || 'Failed to change password');
-        }
+        if (!res.data) throw new Error('Failed to change password');
       }
       await settingsApi.updateSecurity(values);
       message.success('Security settings updated');
@@ -193,27 +189,25 @@ export default function SettingsPage() {
     if (checked) {
       setMfaLoading(true);
       try {
-        const res = await fetch('/api/v1/mfa/setup', { method: 'POST' });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to setup MFA');
-        setMfaQrCode(data.data?.qrCodeUri ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(data.data.qrCodeUri)}&size=200x200` : null);
-        setMfaSecret(data.data?.secret);
+        const res = await apiClient.post('/mfa/setup');
+        const data = res.data?.data || res.data;
+        setMfaQrCode(data?.qrCodeUri ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(data.qrCodeUri)}&size=200x200` : null);
+        setMfaSecret(data?.secret);
       } catch (err: any) {
-        message.error(err.message || 'Failed to setup MFA');
+        message.error(err?.response?.data?.message || err.message || 'Failed to setup MFA');
       } finally {
         setMfaLoading(false);
       }
     } else {
       setMfaLoading(true);
       try {
-        const res = await fetch('/api/v1/mfa/disable', { method: 'POST' });
-        if (!res.ok) throw new Error('Failed to disable MFA');
+        await apiClient.post('/mfa/disable');
         setMfaEnabled(false);
         setMfaQrCode(null);
         setMfaSecret(null);
         message.success('MFA disabled');
       } catch (err: any) {
-        message.error(err.message || 'Failed to disable MFA');
+        message.error(err?.response?.data?.message || err.message || 'Failed to disable MFA');
       } finally {
         setMfaLoading(false);
       }
@@ -228,21 +222,13 @@ export default function SettingsPage() {
     }
     setMfaVerifying(true);
     try {
-      const res = await fetch('/api/v1/mfa/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Invalid code');
-      }
+      await apiClient.post('/mfa/verify', { code });
       setMfaEnabled(true);
       setMfaQrCode(null);
       setMfaSecret(null);
       message.success('MFA enabled successfully');
     } catch (err: any) {
-      message.error(err.message || 'Verification failed');
+      message.error(err?.response?.data?.message || err.message || 'Verification failed');
     } finally {
       setMfaVerifying(false);
     }
@@ -392,6 +378,49 @@ export default function SettingsPage() {
             </div>
             )}
           </Spin>
+        </Card>
+      ),
+    },
+    {
+      key: 'appearance',
+      label: <span>{mode === 'dark' ? <MoonOutlined /> : <SunOutlined />} Appearance</span>,
+      children: (
+        <Card>
+          <Title level={4}>Theme Settings</Title>
+          <div style={{ maxWidth: 600 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontWeight: 500 }}>Dark Mode</div>
+                <div style={{ color: '#999', fontSize: 13 }}>Toggle between light and dark theme</div>
+              </div>
+              <Switch
+                checked={mode === 'dark'}
+                onChange={toggleTheme}
+                checkedChildren={<MoonOutlined />}
+                unCheckedChildren={<SunOutlined />}
+              />
+            </div>
+            <Divider />
+            <div style={{ textAlign: 'center', padding: 24 }}>
+              <div
+                style={{
+                  display: 'inline-block',
+                  padding: '32px 48px',
+                  borderRadius: 12,
+                  background: mode === 'dark' ? '#141414' : '#f5f5f5',
+                  border: `1px solid ${mode === 'dark' ? '#303030' : '#e8e8e8'}`,
+                  transition: 'all 0.3s',
+                }}
+              >
+                <div style={{ fontSize: 48, marginBottom: 12 }}>
+                  {mode === 'dark' ? <MoonOutlined /> : <SunOutlined />}
+                </div>
+                <Text strong style={{ fontSize: 16 }}>
+                  {mode === 'dark' ? 'Dark Mode Active' : 'Light Mode Active'}
+                </Text>
+              </div>
+            </div>
+          </div>
         </Card>
       ),
     },

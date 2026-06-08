@@ -3,20 +3,19 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
   Card, Button, Space, Typography, Tooltip, Divider, Input, Form,
-  Select, InputNumber, message, Spin, Drawer, List, Tag, Tabs, Modal,
+  Select, InputNumber, message, Spin, List, Tag, Modal, Layout,
 } from 'antd';
 import {
   SaveOutlined, EyeOutlined, CloudUploadOutlined, UndoOutlined,
-  RedoOutlined, PlusOutlined, DeleteOutlined, DragOutlined,
+  RedoOutlined, PlusOutlined, DeleteOutlined,
   VideoCameraOutlined, BlockOutlined, PictureOutlined, AudioOutlined,
   LinkOutlined, InfoCircleOutlined, BulbOutlined, AimOutlined,
-  ExpandOutlined, CompressOutlined, RotateRightOutlined, SettingOutlined,
+  ExpandOutlined, CompressOutlined, SettingOutlined,
 } from '@ant-design/icons';
 import { useRouter, useParams } from 'next/navigation';
 import { xrScenesApi, type XRScene, type XRHotspot } from '@/lib/api/xr-api';
 
 const { Title, Text } = Typography;
-const { Sider } = require('antd').Layout;
 
 interface AssetItem {
   id: string;

@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../../constants/colors';
 import CallCard from '../../../components/CallCard';
 import SearchBar from '../../../components/SearchBar';
-import EmptyView from '../../../components/EmptyView';
+import EmptyState from '../../../components/EmptyState';
 import { callsApi } from '../../../lib/api';
 import type { Call } from '../../../types';
 
@@ -79,7 +79,7 @@ export default function CallsScreen() {
       </View>
     );
     return (
-      <EmptyView
+      <EmptyState
         icon="call-outline"
         title={search ? 'Không tìm thấy cuộc gọi' : 'Chưa có cuộc gọi nào'}
         subtitle={search ? 'Thử tìm kiếm với từ khóa khác' : 'Thực hiện cuộc gọi đầu tiên để bắt đầu'}

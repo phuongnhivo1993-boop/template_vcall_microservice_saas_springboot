@@ -5,6 +5,8 @@ export const authApi = {
     api.post('/auth/login', data),
   logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
+  forgotPassword: (data: { email: string }) =>
+    api.post('/auth/forgot-password', data),
 };
 
 export const callsApi = {
@@ -32,12 +34,17 @@ export const agentsApi = {
 export const customersApi = {
   search: (keyword: string) => api.get('/customers/search', { params: { keyword } }),
   getCustomer: (id: string) => api.get(`/customers/${id}`),
+  getContacts: (customerId: string) => api.get(`/customers/${customerId}/contacts`),
+  getAddresses: (customerId: string) => api.get(`/customers/${customerId}/addresses`),
+  getNotes: (customerId: string) => api.get(`/customers/${customerId}/notes`),
 };
 
 export const ticketsApi = {
   getAll: (params?: { status?: string; priority?: string; page?: number }) =>
     api.get('/tickets', { params }),
   getTicket: (id: string) => api.get(`/tickets/${id}`),
+  create: (data: { title: string; description: string; priority: string; category?: string }) =>
+    api.post('/tickets', data),
   createComment: (id: string, data: { content: string; isInternal?: boolean }) =>
     api.post(`/tickets/${id}/comments`, data),
   updateStatus: (id: string, status: string) =>

@@ -72,9 +72,24 @@ export default function Sidebar({ collapsed, onCollapse, inDrawer, onItemClick }
           key: item.key,
           icon: item.icon,
           label: item.label,
+          children: item.children?.map((child) => ({
+            key: child.key,
+            icon: child.icon,
+            label: child.label,
+          })),
         }))}
         onClick={({ key }) => {
-          const menuItem = allMenuItems.find((m) => m.key === key);
+          const findItem = (items: MenuItem[]): MenuItem | undefined => {
+            for (const item of items) {
+              if (item.key === key) return item;
+              if (item.children) {
+                const found = findItem(item.children);
+                if (found) return found;
+              }
+            }
+            return undefined;
+          };
+          const menuItem = findItem(allMenuItems);
           if (menuItem?.path) router.push(menuItem.path);
           onItemClick?.();
         }}

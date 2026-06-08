@@ -71,12 +71,15 @@ export default function DialerScreen() {
       if (callData?.id) {
         dispatch(setActiveCall({
           id: callData.id,
-          caller: callData.callerNumber || number.trim(),
-          callee: callData.calleeNumber || number.trim(),
+          channelId: callData.channelId || '',
+          callerName: callData.callerName || '',
+          callerNumber: callData.callerNumber || number.trim(),
+          direction: 'outgoing',
           status: 'connected',
+          startTime: Date.now(),
           isMuted: false,
           isSpeakerOn: false,
-          startedAt: new Date().toISOString(),
+          isOnHold: false,
         }));
       }
       router.push('/calls/active');

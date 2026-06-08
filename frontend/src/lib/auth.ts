@@ -76,5 +76,5 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
     maxAge: 24 * 60 * 60,
   },
-  secret: process.env.NEXTAUTH_SECRET || 'vcall-secret-change-in-production',
+  secret: process.env.NEXTAUTH_SECRET,
 };

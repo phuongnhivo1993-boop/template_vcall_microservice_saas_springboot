@@ -1,0 +1,131 @@
+I. Tao nhieu subagent phan tich cung luc cac task duoi day, AI Product Owner Verification Checklist
+1. Giao diện (UI)
+* Giao diện đã hoàn thiện 100% chưa?
+* Có màn hình nào còn placeholder không?
+* Có màn hình nào chưa có dữ liệu mẫu không?
+* Layout có bị vỡ trên màn hình nhỏ không?
+* Responsive Desktop/Tablet/Mobile đã đầy đủ chưa?
+* Dark mode có hoạt động không?
+* Font, spacing, màu sắc có đồng nhất không?
+* Có màn hình nào nhìn giống trang admin mặc định chưa được thiết kế không?
+
+2. Trải nghiệm người dùng (UX)
+* Người dùng mới có hiểu cách sử dụng ngay không?
+* Có thao tác nào dư thừa không?
+* Có thể giảm số click không?
+* Form nhập liệu có quá dài không?
+* Có tooltip hoặc hướng dẫn khi cần không?
+* Có loading state không?
+* Có empty state không?
+* Có success state không?
+* Có error state không?
+* Có confirm trước khi xóa không?
+
+3. CRUD
+Đối với từng module:
+* Đã có Create chưa?
+* Đã có List chưa?
+* Đã có Detail chưa?
+* Đã có Update chưa?
+* Đã có Delete chưa?
+* Đã có Restore chưa?
+* Đã có Bulk Delete chưa?
+* Đã có Duplicate chưa?
+
+4. Tìm kiếm dữ liệu
+* Có Search không?
+* Có Filter không?
+* Có Sort không?
+* Có Pagination không?
+* Có lưu điều kiện tìm kiếm không?
+
+5. Chức năng bị thiếu
+* Có màn hình nào không truy cập được không?
+* Có nút nào chưa hoạt động không?
+* Có menu nào chưa hoàn thiện không?
+* Có API nào chưa được tích hợp không?
+* Có tính năng nào được mô tả nhưng chưa triển khai không?
+
+6. Web và Mobile
+* Mobile có đầy đủ chức năng như Web không?
+* Nếu khác biệt thì có lý do hợp lý không?
+* Navigation trên Mobile có dễ sử dụng không?
+* Form trên Mobile có nhập liệu thuận tiện không?
+
+7. Dữ liệu
+* Đã validate toàn bộ field chưa?
+* Có kiểm tra dữ liệu trùng chưa?
+* Có xử lý dữ liệu rỗng chưa?
+* Có xử lý dữ liệu quá dài chưa?
+* Có xử lý ký tự đặc biệt chưa?
+
+8. Phân quyền
+* Mỗi role chỉ thấy chức năng được phép không?
+* Có chặn API trái quyền không?
+* Có chặn truy cập URL trực tiếp không?
+* Có kiểm tra tenant isolation không?
+
+9. Workflow
+* Luồng nghiệp vụ đã hoàn chỉnh chưa?
+* Có trạng thái nào bị thiếu không?
+* Có trường hợp chuyển trạng thái sai không?
+* Có rollback workflow không?
+
+10. Thông báo
+* Email hoạt động chưa?
+* Push notification hoạt động chưa?
+* In-app notification hoạt động chưa?
+* Nội dung thông báo có rõ ràng không?
+
+11. Dashboard và Báo cáo
+* Dashboard có đủ KPI không?
+* Dashboard có hữu ích cho người dùng không?
+* Có báo cáo nào còn thiếu không?
+* Có Export Excel/PDF không?
+
+12. Hiệu năng
+* Danh sách 10.000 bản ghi có chạy ổn không?
+* Có N+1 query không?
+* Có cache cần thiết không?
+* Có API nào phản hồi chậm không?
+
+13. Bảo mật
+* Có lộ dữ liệu nhạy cảm không?
+* Có kiểm tra XSS không?
+* Có kiểm tra SQL Injection không?
+* Có kiểm tra CSRF không?
+* Có log audit không?
+
+14. Chất lượng mã nguồn
+* Có code trùng lặp không?
+* Có component tái sử dụng không?
+* Có hardcode không?
+* Có cấu hình qua environment không?
+* Có logging đầy đủ không?
+
+15. Production Readiness
+* Có thể deploy production ngay không?
+* Có tài liệu API chưa?
+* Có tài liệu cài đặt chưa?
+* Có migration database chưa?
+* Có backup strategy chưa?
+* Có monitoring chưa?
+
+16. Gap Analysis (Bắt buộc)
+AI phải tự trả lời:
+1. Tôi phát hiện những chức năng còn thiếu nào?
+2. Tôi phát hiện những màn hình còn thiếu nào?
+3. Tôi phát hiện những API còn thiếu nào?
+4. Tôi phát hiện những vấn đề UX nào?
+5. Tôi phát hiện những vấn đề UI nào?
+6. Tôi phát hiện những rủi ro bảo mật nào?
+7. Tôi phát hiện những vấn đề hiệu năng nào?
+8. Tôi đề xuất những cải tiến nào?
+9. Nếu là tôi làm Product Owner, tôi sẽ bổ sung tính năng gì?
+10. Sản phẩm hiện tại đã đạt mức Production Ready (%) là bao nhiêu?
+
+II. QUAN TRONG NHAT LA SAU DO PHAT TRIEN CAC TINH NANG NAY MA KHONG CAN HOI LAI
+
+III. PHAN TICH VA TIM RA CACH GIẢI QUYẾT VÀ PHÁT TRIỂN LUÔN
+IV. Build va run backend va web dam bao chung khong co loi trong qua trinh fix
+V.Commit toan bo source len github

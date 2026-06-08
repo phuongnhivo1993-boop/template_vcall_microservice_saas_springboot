@@ -123,6 +123,33 @@ export interface Activity {
   timestamp: string;
 }
 
+export interface Contact {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  position?: string;
+  isPrimary: boolean;
+}
+
+export interface Address {
+  id: string;
+  street: string;
+  city: string;
+  state?: string;
+  zipCode?: string;
+  country: string;
+  type: 'billing' | 'shipping' | 'home' | 'work' | 'other';
+  isPrimary: boolean;
+}
+
+export interface CustomerNote {
+  id: string;
+  content: string;
+  authorName: string;
+  createdAt: string;
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -132,6 +159,9 @@ export interface Customer {
   totalTickets: number;
   lastContact: string;
   status: 'active' | 'inactive' | 'lead';
+  contacts?: Contact[];
+  addresses?: Address[];
+  notes?: CustomerNote[];
 }
 
 export interface Campaign {

@@ -34,6 +34,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/recordings")
@@ -122,6 +123,14 @@ public class RecordingController {
         RecordingResponse response = recordingService.createRecording(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Recording created successfully", response));
+    }
+
+    @PostMapping("/{id}/upload")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<RecordingResponse>> uploadRecording(
+            @PathVariable UUID id, @RequestParam("file") MultipartFile file) {
+        RecordingResponse response = recordingService.uploadFile(id, file);
+        return ResponseEntity.ok(ApiResponse.success("Recording file uploaded successfully", response));
     }
 
     @PutMapping("/{id}")

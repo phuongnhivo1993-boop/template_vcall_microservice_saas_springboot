@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -72,6 +73,16 @@ public class RecordingService {
         recording = recordingRepository.save(recording);
 
         eventPublisher.publishRecordingCompleted(recording);
+        return toResponse(recording);
+    }
+
+    @Transactional
+    public RecordingResponse uploadFile(UUID id, MultipartFile file) {
+        Recording recording = recordingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Recording not found with id: " + id));
+        storageService.uploadFile(recording.getFilePath(), file);
+        recording.setFileSize(file.getSize());
+        recording = recordingRepository.save(recording);
         return toResponse(recording);
     }
 

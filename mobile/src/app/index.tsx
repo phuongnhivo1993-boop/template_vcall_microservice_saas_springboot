@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { useRouter, useSelector } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useSelector } from 'react-redux';
 import { Colors } from '../constants/colors';
 import type { RootState } from '../store';
 

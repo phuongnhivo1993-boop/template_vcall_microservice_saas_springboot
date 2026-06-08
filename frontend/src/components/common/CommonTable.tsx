@@ -67,11 +67,17 @@ export default function CommonTable<T extends object>({
   }
 
   const createButton = onCreateNew ? (
-    <Can I={createPermission!} fallback={null}>
+    createPermission ? (
+      <Can I={createPermission} fallback={null}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={onCreateNew}>
+          {createLabel}
+        </Button>
+      </Can>
+    ) : (
       <Button type="primary" icon={<PlusOutlined />} onClick={onCreateNew}>
         {createLabel}
       </Button>
-    </Can>
+    )
   ) : null;
 
   return (

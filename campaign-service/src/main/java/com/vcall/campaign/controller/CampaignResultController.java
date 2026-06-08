@@ -1,5 +1,6 @@
 package com.vcall.campaign.controller;
 
+import com.vcall.campaign.dto.CampaignResultRequest;
 import com.vcall.campaign.dto.CampaignResultResponse;
 import com.vcall.campaign.service.CampaignResultService;
 import com.vcall.common.dto.ApiResponse;
@@ -7,11 +8,13 @@ import com.vcall.common.util.BulkOperationUtil;
 import com.vcall.common.util.CsvExportUtil;
 import com.vcall.common.util.ExcelExportUtil;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,6 +38,19 @@ import org.springframework.security.access.prepost.PreAuthorize;
 public class CampaignResultController {
 
     private final CampaignResultService campaignResultService;
+
+    @PostMapping
+    @PreAuthorize("hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<CampaignResultResponse>> recordResult(
+            @PathVariable Long campaignId,
+            @Valid @RequestBody CampaignResultRequest request) {
+        CampaignResultResponse response = campaignResultService.recordResult(
+                campaignId, request.getMemberId(), request.getAgentId(),
+                request.getCallId(), request.getResultType(),
+                request.getDuration(), request.getNotes(), request.getDisposition());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Result recorded successfully", response));
+    }
 
     @GetMapping
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")

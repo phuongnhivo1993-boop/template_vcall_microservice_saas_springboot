@@ -3,11 +3,12 @@ import { Colors } from '../constants/colors';
 
 interface Props {
   message?: string;
+  fullScreen?: boolean;
 }
 
-export default function LoadingScreen({ message = 'Đang tải...' }: Props) {
+export default function LoadingScreen({ message = 'Đang tải...', fullScreen = true }: Props) {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, !fullScreen && styles.inline]}>
       <ActivityIndicator size="large" color={Colors.primary} />
       <Text style={styles.text}>{message}</Text>
     </View>
@@ -21,6 +22,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.background,
     paddingHorizontal: 32,
+  },
+  inline: {
+    flex: 0,
+    paddingVertical: 60,
   },
   text: {
     marginTop: 16,

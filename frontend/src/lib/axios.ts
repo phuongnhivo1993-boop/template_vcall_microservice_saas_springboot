@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { signOut } from 'next-auth/react';
 
 const apiClient = axios.create({
   baseURL: '/api/v1',
@@ -31,7 +32,6 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401 && typeof window !== 'undefined') {
-      const { signOut } = require('next-auth/react');
       signOut({ callbackUrl: '/auth/login' });
     }
     return Promise.reject(error);

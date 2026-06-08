@@ -10,7 +10,7 @@ MODELS=(
 #   "opencode/nemotron-3-ultra-free"
 )
 
-TIMEOUT=10
+TIMEOUT=30
 PROMPT=$(cat "$PROMPT_FILE")
 
 while true

@@ -8,7 +8,7 @@ import { Colors } from '../../../constants/colors';
 import { ticketsApi } from '../../../lib/api';
 import type { Ticket, TicketStatus, TicketPriority } from '../../../types';
 import SearchBar from '../../../components/SearchBar';
-import EmptyView from '../../../components/EmptyView';
+import EmptyState from '../../../components/EmptyState';
 
 const FILTERS: { label: string; value: TicketStatus | 'all' }[] = [
   { label: 'Tất cả', value: 'all' },
@@ -146,7 +146,7 @@ export default function TicketsScreen() {
             </View>
           );
           return (
-            <EmptyView
+            <EmptyState
               icon="ticket-outline"
         title={search ? 'Không tìm thấy phiếu yêu cầu' : 'Chưa có phiếu yêu cầu'}
         subtitle={search ? 'Thử tìm kiếm với từ khóa khác' : 'Tạo phiếu yêu cầu mới để bắt đầu'}

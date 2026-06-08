@@ -8,7 +8,7 @@ import { Colors } from '../../../constants/colors';
 import { chatApi } from '../../../lib/api';
 import type { Conversation } from '../../../types';
 import SearchBar from '../../../components/SearchBar';
-import EmptyView from '../../../components/EmptyView';
+import EmptyState from '../../../components/EmptyState';
 
 function formatRelativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -91,7 +91,7 @@ export default function ChatListScreen() {
       </View>
     );
     return (
-      <EmptyView
+      <EmptyState
         icon="chatbubbles-outline"
         title={search ? 'Không tìm thấy cuộc trò chuyện' : 'Chưa có cuộc trò chuyện'}
         subtitle={search ? 'Thử tìm kiếm với từ khóa khác' : 'Bắt đầu một cuộc trò chuyện mới'}

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
@@ -38,6 +39,12 @@ public class JwtService {
 
     public String generateRefreshToken(String username) {
         return buildToken(username, Map.of(), refreshExpiration);
+    }
+
+    public String generateMfaToken(String username) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("mfa_pending", true);
+        return buildToken(username, claims, 300000L);
     }
 
     private String buildToken(String username, Map<String, Object> claims, long expirationMs) {

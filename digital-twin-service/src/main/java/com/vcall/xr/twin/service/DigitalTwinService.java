@@ -65,7 +65,7 @@ public class DigitalTwinService {
         twin.setName(update.getName());
         twin.setType(update.getType());
         twin.setBimAssetId(update.getBimAssetId());
-        twin.setSceneId(update.setSceneId());
+        twin.setSceneId(update.getSceneId());
         twin.setIotEndpoints(update.getIotEndpoints());
         twin.setSyncIntervalSeconds(update.getSyncIntervalSeconds());
         twin.setFloors(update.getFloors());
