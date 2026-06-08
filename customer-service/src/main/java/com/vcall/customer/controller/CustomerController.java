@@ -131,6 +131,14 @@ public class CustomerController {
         return ResponseEntity.ok(ApiResponse.success("Customer deleted", null));
     }
 
+    @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR') or hasRole('AGENT')")
+    public ResponseEntity<ApiResponse<CustomerResponse>> duplicateCustomer(@PathVariable UUID id) {
+        CustomerResponse response = customerService.duplicateCustomer(id);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Customer duplicated successfully", response));
+    }
+
     @PostMapping("/{id}/restore")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CustomerResponse>> restore(@PathVariable UUID id) {

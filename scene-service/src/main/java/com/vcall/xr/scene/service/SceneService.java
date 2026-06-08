@@ -89,6 +89,16 @@ public class SceneService {
     }
 
     @Transactional
+    public SceneResponse restoreScene(UUID id) {
+        Scene scene = sceneRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Scene not found with id: " + id));
+        scene.restore();
+        scene = sceneRepository.save(scene);
+        log.info("Scene restored: {}", id);
+        return toSceneResponse(scene);
+    }
+
+    @Transactional
     public void deleteScene(UUID id) {
         Scene scene = sceneRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Scene not found with id: " + id));

@@ -107,6 +107,14 @@ public class TicketController {
         return ResponseEntity.ok(ApiResponse.success("Ticket deleted successfully", null));
     }
 
+    @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR') or hasRole('AGENT')")
+    public ResponseEntity<ApiResponse<TicketResponse>> duplicateTicket(@PathVariable UUID id) {
+        TicketResponse response = ticketService.duplicateTicket(id);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Ticket duplicated successfully", response));
+    }
+
     @PostMapping("/{id}/restore")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<TicketResponse>> restoreTicket(@PathVariable UUID id) {

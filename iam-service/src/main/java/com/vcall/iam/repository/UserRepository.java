@@ -18,13 +18,16 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     @EntityGraph(attributePaths = {"userRoles", "userRoles.role", "userRoles.role.rolePermissions"})
     Optional<User> findById(UUID id);
 
+    @EntityGraph(attributePaths = {"userRoles", "userRoles.role", "userRoles.role.rolePermissions"})
     Optional<User> findByEmail(String email);
 
+    @EntityGraph(attributePaths = {"userRoles", "userRoles.role", "userRoles.role.rolePermissions"})
     Optional<User> findByPhone(String phone);
 
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);
 
+    @EntityGraph(attributePaths = {"userRoles", "userRoles.role", "userRoles.role.rolePermissions"})
     Optional<User> findByEmailVerificationToken(String token);
 }

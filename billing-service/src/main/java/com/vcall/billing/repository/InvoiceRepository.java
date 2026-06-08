@@ -24,8 +24,11 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @EntityGraph(attributePaths = {"items"})
     Page<Invoice> findBySubscriberIdOrderByIssueDateDesc(UUID subscriberId, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"items"})
     List<Invoice> findByStatus(Invoice.InvoiceStatus status);
+    @EntityGraph(attributePaths = {"items"})
     Page<Invoice> findByStatus(Invoice.InvoiceStatus status, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"items"})
     List<Invoice> findByDueDateBeforeAndStatus(LocalDateTime dueDate, Invoice.InvoiceStatus status);
 }

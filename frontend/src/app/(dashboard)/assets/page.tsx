@@ -68,8 +68,9 @@ export default function AssetsPage() {
       message.success(`${file.name} uploaded successfully`);
       setUploadModalOpen(false);
       fetchAssets();
-    } catch (err) {
-      message.error(err?.response?.data?.message || 'Upload failed');
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string } } };
+      message.error(axiosError?.response?.data?.message || 'Upload failed');
     } finally {
       setUploading(false);
     }

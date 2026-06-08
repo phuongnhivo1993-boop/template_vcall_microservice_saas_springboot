@@ -84,6 +84,23 @@ public class AgentService {
     }
 
     @Transactional
+    public AgentResponse duplicateAgent(UUID id) {
+        Agent original = agentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Agent not found with id: " + id));
+        Agent duplicate = new Agent();
+        duplicate.setUserId(original.getUserId());
+        duplicate.setAgentCode(original.getAgentCode() + "-copy");
+        duplicate.setFullName(original.getFullName());
+        duplicate.setEmail(original.getEmail());
+        duplicate.setPhone(original.getPhone());
+        duplicate.setStatus(AgentStatusEnum.OFFLINE);
+        duplicate.setSkill(original.getSkill());
+        duplicate.setMaxConcurrentCalls(original.getMaxConcurrentCalls());
+        duplicate = agentRepository.save(duplicate);
+        return toResponse(duplicate);
+    }
+
+    @Transactional
     public void deleteAgent(UUID id) {
         Agent agent = agentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Agent not found with id: " + id));

@@ -145,6 +145,26 @@ public class CustomerService {
         return toResponse(saved);
     }
 
+    @Transactional
+    public CustomerResponse duplicateCustomer(UUID id) {
+        Customer original = customerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+        Customer duplicate = new Customer();
+        duplicate.setCustomerCode(generateCustomerCode());
+        duplicate.setFullName(original.getFullName());
+        duplicate.setEmail(original.getEmail());
+        duplicate.setPhone(original.getPhone());
+        duplicate.setDateOfBirth(original.getDateOfBirth());
+        duplicate.setGender(original.getGender());
+        duplicate.setIdNumber(original.getIdNumber());
+        duplicate.setNationality(original.getNationality());
+        duplicate.setCompany(original.getCompany());
+        duplicate.setPosition(original.getPosition());
+        duplicate.setNotes(original.getNotes());
+        duplicate = customerRepository.save(duplicate);
+        return toResponse(duplicate);
+    }
+
     public void delete(UUID id) {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));

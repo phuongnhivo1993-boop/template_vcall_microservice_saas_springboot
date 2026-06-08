@@ -1,4 +1,5 @@
 FROM eclipse-temurin:17-jre-alpine
+RUN addgroup -S vcall && adduser -S vcall -G vcall
 
 LABEL maintainer="vcall-team"
 LABEL description="Video Service - 360 Video Processing"
@@ -25,4 +26,5 @@ ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8123/actuator/health || exit 1
 
+USER vcall
 ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -jar app.jar"]

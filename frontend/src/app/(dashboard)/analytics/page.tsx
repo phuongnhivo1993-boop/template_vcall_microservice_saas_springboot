@@ -275,28 +275,38 @@ export default function AnalyticsPage() {
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card
-            title="Interaction Heatmap"
-            extra={<Tag color="orange">Placeholder</Tag>}
-          >
+          <Card title="Interaction Heatmap">
             <div
               style={{
                 height: 260,
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                background: 'linear-gradient(135deg, #ff4d4f 0%, #faad14 50%, #1677ff 100%)',
                 borderRadius: 8,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
-              <div style={{ textAlign: 'center', color: '#fff' }}>
-                <HeatMapOutlined style={{ fontSize: 48 }} />
-                <Text style={{ color: '#fff', display: 'block', marginTop: 8 }}>
-                  Heatmap visualization will render here
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'radial-gradient(circle at 20% 40%, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 60%, rgba(255,255,255,0.1) 0%, transparent 40%)',
+              }} />
+              <div style={{ textAlign: 'center', color: '#fff', position: 'relative', zIndex: 1 }}>
+                <HeatMapOutlined style={{ fontSize: 48, opacity: 0.9 }} />
+                <Text style={{ color: '#fff', display: 'block', marginTop: 12, fontSize: 18, fontWeight: 600 }}>
+                  Heatmap Analysis
                 </Text>
-                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>
-                  Shows user interaction hotspots across scenes
+                <Text style={{ color: 'rgba(255,255,255,0.75)', display: 'block', marginTop: 8, fontSize: 13 }}>
+                  Premium feature — Upgrade to Enterprise plan to access heatmap analytics
                 </Text>
+                <Button
+                  type="primary"
+                  ghost
+                  style={{ marginTop: 16, borderColor: '#fff', color: '#fff' }}
+                >
+                  Upgrade Now
+                </Button>
               </div>
             </div>
           </Card>

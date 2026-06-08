@@ -1,6 +1,7 @@
 package com.vcall.email.repository;
 
 import com.vcall.email.entity.EmailMessage;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
@@ -13,15 +14,21 @@ import java.util.UUID;
 @Repository
 public interface EmailMessageRepository extends JpaRepository<EmailMessage, UUID>, JpaSpecificationExecutor<EmailMessage> {
 
+    @EntityGraph(attributePaths = {"attachments"})
     Optional<EmailMessage> findByMessageId(String messageId);
 
+    @EntityGraph(attributePaths = {"attachments"})
     List<EmailMessage> findByConversationIdOrderByReceivedAt(UUID conversationId);
 
+    @EntityGraph(attributePaths = {"attachments"})
     List<EmailMessage> findByFromAddress(String fromAddress);
 
+    @EntityGraph(attributePaths = {"attachments"})
     List<EmailMessage> findByToAddressesContaining(String emailAddress);
 
+    @EntityGraph(attributePaths = {"attachments"})
     List<EmailMessage> findByDirectionAndStatus(EmailMessage.EmailDirection direction, EmailMessage.EmailStatus status);
 
+    @EntityGraph(attributePaths = {"attachments"})
     List<EmailMessage> findByReceivedAtBetween(LocalDateTime start, LocalDateTime end);
 }

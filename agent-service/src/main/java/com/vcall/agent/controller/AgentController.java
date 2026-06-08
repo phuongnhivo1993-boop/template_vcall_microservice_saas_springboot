@@ -106,6 +106,14 @@ public class AgentController {
         return ResponseEntity.ok(ApiResponse.success("Agent deleted successfully", null));
     }
 
+    @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<AgentResponse>> duplicateAgent(@PathVariable UUID id) {
+        AgentResponse response = agentService.duplicateAgent(id);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Agent duplicated successfully", response));
+    }
+
     @PostMapping("/{id}/restore")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AgentResponse>> restoreAgent(@PathVariable UUID id) {

@@ -13,9 +13,9 @@ import java.util.Optional;
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Long>, JpaSpecificationExecutor<Role> {
 
-    @EntityGraph(attributePaths = {"rolePermissions"})
+    @EntityGraph(attributePaths = {"rolePermissions", "userRoles"})
     List<Role> findAll();
 
-    @EntityGraph(attributePaths = {"rolePermissions"})
+    @EntityGraph(attributePaths = {"rolePermissions", "userRoles"})
     Optional<Role> findByName(RoleName name);
 }

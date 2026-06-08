@@ -21,6 +21,7 @@ public interface CustomerRepository extends TenantAwareRepository<Customer, UUID
     @EntityGraph(attributePaths = {"contacts", "addresses", "tagMappings"})
     Optional<Customer> findByEmail(String email);
 
+    @EntityGraph(attributePaths = {"contacts", "addresses", "tagMappings"})
     Optional<Customer> findByPhone(String phone);
 
     boolean existsByEmail(String email);

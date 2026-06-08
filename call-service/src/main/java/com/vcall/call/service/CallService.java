@@ -234,6 +234,16 @@ public class CallService {
     }
 
     @Transactional
+    public CallResponse restoreCall(UUID id) {
+        Call call = callRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Call not found with id: " + id));
+        call.setIsDeleted(false);
+        call.setDeletedAt(null);
+        call = callRepository.save(call);
+        return toResponse(call);
+    }
+
+    @Transactional
     public void deleteCall(UUID id) {
         Call call = callRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Call not found with id: " + id));

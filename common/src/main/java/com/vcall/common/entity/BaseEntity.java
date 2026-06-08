@@ -60,7 +60,10 @@ public abstract class BaseEntity {
     @PrePersist
     public void prePersist() {
         if (tenantId == null) {
-            tenantId = TenantContext.getTenantId();
+            String tenant = TenantContext.getTenantId();
+            if (tenant != null) {
+                tenantId = tenant;
+            }
         }
         if (isDeleted == null) {
             isDeleted = false;

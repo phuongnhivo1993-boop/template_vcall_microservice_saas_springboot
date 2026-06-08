@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.cloud.gateway.route.Route;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -32,10 +33,8 @@ public class RateLimiterFilter implements GlobalFilter, Ordered {
         }
 
         String clientIp = getClientIp(exchange);
-        String routeId = exchange.getAttribute(org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
-        if (routeId == null) {
-            routeId = "default";
-        }
+        Route route = exchange.getAttribute(org.springframework.cloud.gateway.support.ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
+        String routeId = route != null ? route.getId() : "default";
 
         RateLimiterConfig.RouteLimit routeLimit = config.getRoutes().get(routeId);
         int capacity = routeLimit != null ? routeLimit.getCapacity() : config.getDefaultCapacity();

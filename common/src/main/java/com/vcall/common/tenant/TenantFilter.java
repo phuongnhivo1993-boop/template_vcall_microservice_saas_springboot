@@ -69,7 +69,17 @@ public class TenantFilter extends OncePerRequestFilter {
                 Map<String, Object> claims = objectMapper.readValue(payload,
                         new TypeReference<Map<String, Object>>() {});
                 Object tenantClaim = claims.get("tenantId");
-                return tenantClaim != null ? tenantClaim.toString() : null;
+                Object expClaim = claims.get("exp");
+                if (tenantClaim != null) {
+                    if (expClaim instanceof Number) {
+                        long exp = ((Number) expClaim).longValue() * 1000;
+                        if (System.currentTimeMillis() > exp) {
+                            log.warn("Expired JWT token during tenant extraction");
+                            return null;
+                        }
+                    }
+                    return tenantClaim.toString();
+                }
             }
         } catch (Exception e) {
             log.trace("Could not extract tenant from JWT: {}", e.getMessage());

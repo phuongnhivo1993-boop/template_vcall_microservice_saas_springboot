@@ -1,6 +1,7 @@
 package com.vcall.xr.scene.controller;
 
 import com.vcall.common.dto.ApiResponse;
+import com.vcall.common.util.BulkOperationUtil;
 import com.vcall.xr.scene.domain.Scene;
 import com.vcall.xr.scene.dto.HotspotRequest;
 import com.vcall.xr.scene.dto.HotspotResponse;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -228,5 +230,28 @@ public class SceneController {
             @PathVariable UUID sceneId, @PathVariable UUID hotspotId) {
         hotspotService.deleteHotspot(hotspotId);
         return ResponseEntity.ok(ApiResponse.success("Hotspot deleted successfully", null));
+    }
+
+    @PostMapping("/{id}/restore")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<SceneResponse>> restoreScene(@PathVariable UUID id) {
+        SceneResponse response = sceneService.restoreScene(id);
+        return ResponseEntity.ok(ApiResponse.success("Scene restored successfully", response));
+    }
+
+    @PostMapping("/restore-bulk")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> restoreBulk(
+            @RequestBody List<UUID> ids) {
+        BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
+        for (UUID id : ids) {
+            try {
+                sceneService.restoreScene(id);
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk restore completed", result));
     }
 }

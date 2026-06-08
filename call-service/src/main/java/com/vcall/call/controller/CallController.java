@@ -11,6 +11,7 @@ import com.vcall.call.entity.Call;
 import com.vcall.call.service.CallService;
 import com.vcall.call.service.EvaluationService;
 import com.vcall.common.dto.ApiResponse;
+import com.vcall.common.util.BulkOperationUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -189,6 +190,29 @@ public class CallController {
         CallResponse response = callService.duplicateCall(id);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Call duplicated successfully", response));
+    }
+
+    @PostMapping("/{id}/restore")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<CallResponse>> restoreCall(@PathVariable UUID id) {
+        CallResponse response = callService.restoreCall(id);
+        return ResponseEntity.ok(ApiResponse.success("Call restored successfully", response));
+    }
+
+    @PostMapping("/restore-bulk")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> restoreBulk(
+            @RequestBody List<UUID> ids) {
+        BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
+        for (UUID id : ids) {
+            try {
+                callService.restoreCall(id);
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk restore completed", result));
     }
 
     @PostMapping("/bulk-delete")

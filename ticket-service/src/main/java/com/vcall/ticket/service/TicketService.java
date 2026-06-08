@@ -124,6 +124,28 @@ public class TicketService {
     }
 
     @Transactional
+    public TicketResponse duplicateTicket(UUID id) {
+        Ticket original = ticketRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));
+        Ticket duplicate = new Ticket();
+        duplicate.setTicketNumber(generateTicketNumber());
+        duplicate.setTitle(original.getTitle());
+        duplicate.setDescription(original.getDescription());
+        duplicate.setCustomerId(original.getCustomerId());
+        duplicate.setSource(original.getSource());
+        duplicate.setCategory(original.getCategory());
+        duplicate.setPriority(original.getPriority());
+        duplicate.setStatus(TicketStatus.OPEN);
+        duplicate.setAssignedTo(original.getAssignedTo());
+        duplicate.setRelatedCallId(original.getRelatedCallId());
+        duplicate.setRelatedConversationId(original.getRelatedConversationId());
+        duplicate = ticketRepository.save(duplicate);
+        recordStatusHistory(duplicate, null, TicketStatus.OPEN, "system", "Ticket duplicated");
+        eventPublisher.publishTicketCreated(duplicate);
+        return toResponse(duplicate);
+    }
+
+    @Transactional
     public void deleteTicket(UUID id) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with id: " + id));

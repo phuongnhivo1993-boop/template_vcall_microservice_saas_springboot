@@ -8,7 +8,7 @@ import {
 import {
   UploadOutlined, DeleteOutlined, EyeOutlined, ReloadOutlined,
   VideoCameraOutlined, CheckCircleOutlined, ClockCircleOutlined,
-  CloseCircleOutlined, SyncOutlined, DownloadOutlined,
+  CloseCircleOutlined, SyncOutlined, DownloadOutlined, PlayCircleOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { xrVideoApi, type XRVideo } from '@/lib/api/xr-api';
@@ -266,20 +266,34 @@ export default function VideoPage() {
             <div
               style={{
                 height: 400,
-                background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+                background: 'linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 30%, #2d1b4e 70%, #1a0a2e 100%)',
                 borderRadius: 8,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: 16,
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
-              <div style={{ textAlign: 'center', color: '#fff' }}>
-                <VideoCameraOutlined style={{ fontSize: 64 }} />
-                <Title level={4} style={{ color: '#fff' }}>360° Video Player</Title>
-                <Text style={{ color: 'rgba(255,255,255,0.6)' }}>
-                  Interactive 360° preview will render here
+              <div style={{
+                position: 'absolute', inset: 0,
+                background: 'radial-gradient(ellipse at 30% 40%, rgba(114,46,209,0.2) 0%, transparent 60%), radial-gradient(ellipse at 70% 60%, rgba(22,119,255,0.15) 0%, transparent 50%)',
+              }} />
+              <div style={{ textAlign: 'center', color: '#fff', position: 'relative', zIndex: 1 }}>
+                <PlayCircleOutlined style={{ fontSize: 72, opacity: 0.9, cursor: 'pointer' }} />
+                <Title level={4} style={{ color: '#fff', marginTop: 16 }}>{previewVideo.name}</Title>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', display: 'block', marginTop: 4 }}>
+                  {formatDuration(previewVideo.duration)} &middot; {previewVideo.resolution}
                 </Text>
+                <div style={{ maxWidth: 300, margin: '12px auto 0' }}>
+                  <Progress
+                    percent={previewVideo.transcodingStatus === 'COMPLETED' ? 100 : (previewVideo.transcodingProgress || 0)}
+                    size="small"
+                    strokeColor={previewVideo.transcodingStatus === 'FAILED' ? '#ff4d4f' : '#1677ff'}
+                    status={previewVideo.transcodingStatus === 'FAILED' ? 'exception' : 'active'}
+                  />
+                </div>
               </div>
             </div>
             <Row gutter={[16, 16]}>

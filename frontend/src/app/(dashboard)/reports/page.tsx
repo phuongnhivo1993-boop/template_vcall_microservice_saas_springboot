@@ -269,7 +269,6 @@ export default function ReportsPage() {
           dataSource={topCustomers}
           rowKey="rank"
           pagination={false}
-          locale={{ emptyText: 'No customer data available' }}
         />
       ),
     },
