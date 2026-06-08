@@ -17,12 +17,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/push/devices")
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 public class PushDeviceController {
 
     private final PushDeviceService pushDeviceService;

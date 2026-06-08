@@ -216,15 +216,15 @@ export const reportsApi = {
   getExecutionHistory: (id: number) => apiClient.get(`/reports/executions/definition/${id}`),
   getAgentPerformance: (params?: Record<string, unknown>) =>
     apiClient.get('/reports/agent-performance/summary', { params }),
-  getDashboardWidgets: () => apiClient.get('/reports/dashboard/widgets'),
+  getDashboardWidgets: () => apiClient.get('/dashboard/widgets'),
   getAnalytics: (params?: Record<string, unknown>) =>
     apiClient.get('/reports/analytics', { params }),
-  search: (params?: Record<string, unknown>) => apiClient.get('/reports/search', { params }),
+  search: (params?: Record<string, unknown>) => apiClient.get('/reports/definitions/search', { params }),
   exportCsv: (params?: Record<string, unknown>) =>
     apiClient.get('/reports/export/csv', { params, responseType: 'blob' }),
   exportExcel: (params?: Record<string, unknown>) =>
     apiClient.get('/reports/export/excel', { params, responseType: 'blob' }),
-  getStats: () => apiClient.get('/reports/stats'),
+  getStats: () => apiClient.get('/reports/definitions/stats'),
   getSchedules: (params?: Record<string, unknown>) =>
     apiClient.get('/reports/schedules', { params }),
   createSchedule: (data: Record<string, unknown>) =>
@@ -357,8 +357,8 @@ export const auditApi = {
 
 export const dashboardApi = {
   getStats: () => apiClient.get('/dashboard/stats'),
-  getRecentCalls: (params?: Record<string, unknown>) => apiClient.get('/calls/recent', { params }),
-  getAgentStatusDistribution: () => apiClient.get('/agents/stats/status-distribution'),
+  getRecentCalls: (params?: Record<string, unknown>) => apiClient.get('/calls/search', { params }),
+  getAgentStatusDistribution: () => apiClient.get('/agents/stats'),
   getTicketStatusBreakdown: () => apiClient.get('/tickets/stats/by-status'),
   exportCsv: (params?: Record<string, unknown>) =>
     apiClient.get('/dashboard/export/csv', { params, responseType: 'blob' }),
@@ -383,7 +383,7 @@ export const notificationsApi = {
   markAllAsRead: (recipientId: string) =>
     apiClient.patch(`/notifications/recipient/${recipientId}/read-all`),
   send: (data: Record<string, unknown>) => apiClient.post('/notifications/send', data),
-  sendBatch: (data: Record<string, unknown>) => apiClient.post('/notifications/send-batch', data),
+  sendBatch: (data: Record<string, unknown>) => apiClient.post('/notifications/batch', data),
   getTemplates: (params?: Record<string, unknown>) =>
     apiClient.get('/notifications/templates', { params }),
   createTemplate: (data: Record<string, unknown>) =>
@@ -392,9 +392,9 @@ export const notificationsApi = {
     apiClient.put(`/notifications/templates/${id}`, data),
   deleteTemplate: (id: number) => apiClient.delete(`/notifications/templates/${id}`),
   getPreferences: (userId: string) =>
-    apiClient.get(`/notifications/preferences/${userId}`),
+    apiClient.get(`/notification-preferences/${userId}`),
   updatePreferences: (userId: string, data: Record<string, unknown>) =>
-    apiClient.put(`/notifications/preferences/${userId}`, data),
+    apiClient.put('/notification-preferences', data),
   search: (params?: Record<string, unknown>) => apiClient.get('/notifications/search', { params }),
   exportCsv: (params?: Record<string, unknown>) =>
     apiClient.get('/notifications/export/csv', { params, responseType: 'blob' }),

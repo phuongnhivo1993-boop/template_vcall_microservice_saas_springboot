@@ -143,6 +143,14 @@ public class SurveyController {
                 Arrays.asList("id", "title", "description", "type", "isActive", "createdAt"));
     }
 
+    @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    @Operation(summary = "Duplicate a survey")
+    public ResponseEntity<ApiResponse<SurveyResponse>> duplicateSurvey(@PathVariable UUID id) {
+        SurveyResponse response = surveyService.duplicateSurvey(id);
+        return ResponseEntity.ok(ApiResponse.success("Survey duplicated successfully", response));
+    }
+
     @PostMapping("/bulk-delete")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Bulk delete surveys")

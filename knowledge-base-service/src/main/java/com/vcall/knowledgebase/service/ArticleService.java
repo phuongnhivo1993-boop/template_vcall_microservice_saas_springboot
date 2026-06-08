@@ -82,6 +82,21 @@ public class ArticleService {
     }
 
     @Transactional
+    public ArticleResponse duplicateArticle(Long id) {
+        Article original = articleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Article not found with id: " + id));
+        Article copy = new Article();
+        copy.setTitle(original.getTitle() + " (Copy)");
+        copy.setContent(original.getContent());
+        copy.setCategory(original.getCategory());
+        copy.setTags(original.getTags());
+        copy.setStatus("DRAFT");
+        copy.setViewCount(0);
+        copy = articleRepository.save(copy);
+        return toResponse(copy);
+    }
+
+    @Transactional
     public ArticleResponse incrementViewCount(Long id) {
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Article not found with id: " + id));

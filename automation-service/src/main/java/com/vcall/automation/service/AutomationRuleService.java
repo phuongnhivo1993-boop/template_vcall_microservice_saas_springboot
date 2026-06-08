@@ -85,6 +85,22 @@ public class AutomationRuleService {
     }
 
     @Transactional
+    public AutomationRuleResponse duplicateRule(Long id) {
+        AutomationRule original = automationRuleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Automation rule not found with id: " + id));
+        AutomationRule copy = new AutomationRule();
+        copy.setName(original.getName() + " (Copy)");
+        copy.setDescription(original.getDescription());
+        copy.setTrigger(original.getTrigger());
+        copy.setAction(original.getAction());
+        copy.setIsActive(false);
+        copy.setPriority(original.getPriority());
+        copy.setExecutionCount(0);
+        copy = automationRuleRepository.save(copy);
+        return toResponse(copy);
+    }
+
+    @Transactional
     public AutomationRuleResponse toggleRule(Long id, boolean isActive) {
         AutomationRule rule = automationRuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Automation rule not found with id: " + id));

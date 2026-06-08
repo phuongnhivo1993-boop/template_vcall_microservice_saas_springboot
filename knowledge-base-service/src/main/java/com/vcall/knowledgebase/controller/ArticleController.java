@@ -1,6 +1,7 @@
 package com.vcall.knowledgebase.controller;
 
 import com.vcall.common.dto.ApiResponse;
+import com.vcall.common.util.BulkOperationUtil;
 import com.vcall.knowledgebase.dto.ArticleRequest;
 import com.vcall.knowledgebase.dto.ArticleResponse;
 import com.vcall.knowledgebase.service.ArticleService;
@@ -20,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.access.prepost.PreAuthorize;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/knowledge-base/articles")
@@ -68,6 +71,29 @@ public class ArticleController {
     public ResponseEntity<ApiResponse<Void>> deleteArticle(@PathVariable Long id) {
         articleService.deleteArticle(id);
         return ResponseEntity.ok(ApiResponse.success("Article deleted successfully", null));
+    }
+
+    @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<ArticleResponse>> duplicateArticle(@PathVariable Long id) {
+        ArticleResponse response = articleService.duplicateArticle(id);
+        return ResponseEntity.ok(ApiResponse.success("Article duplicated successfully", response));
+    }
+
+    @PostMapping("/bulk-delete")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<Long>>> bulkDelete(
+            @RequestBody List<Long> ids) {
+        BulkOperationUtil.BulkResult<Long> result = new BulkOperationUtil.BulkResult<>();
+        for (Long id : ids) {
+            try {
+                articleService.deleteArticle(id);
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk delete completed", result));
     }
 
     @PostMapping("/{id}/view")

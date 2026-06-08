@@ -4,6 +4,7 @@ import com.vcall.common.exception.ResourceNotFoundException;
 import com.vcall.survey.dto.request.SurveyRequest;
 import com.vcall.survey.dto.response.SurveyResponse;
 import com.vcall.survey.entity.Survey;
+import com.vcall.survey.entity.SurveyStatus;
 import com.vcall.survey.mapper.SurveyMapper;
 import com.vcall.survey.repository.SurveyRepository;
 import lombok.RequiredArgsConstructor;
@@ -61,5 +62,19 @@ public class SurveyService {
                 .orElseThrow(() -> new ResourceNotFoundException("Survey not found with id: " + id));
         survey.setIsDeleted(true);
         surveyRepository.save(survey);
+    }
+
+    @Transactional
+    public SurveyResponse duplicateSurvey(UUID id) {
+        Survey original = surveyRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Survey not found with id: " + id));
+        Survey copy = new Survey();
+        copy.setTitle(original.getTitle() + " (Copy)");
+        copy.setDescription(original.getDescription());
+        copy.setType(original.getType());
+        copy.setIsActive(false);
+        copy.setStatus(SurveyStatus.DRAFT);
+        copy = surveyRepository.save(copy);
+        return mapper.toResponse(copy);
     }
 }

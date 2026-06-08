@@ -114,6 +114,30 @@ public class CampaignService {
     }
 
     @Transactional
+    public CampaignResponse duplicateCampaign(Long id) {
+        Campaign original = campaignRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));
+        Campaign copy = new Campaign();
+        copy.setName(original.getName() + " (Copy)");
+        copy.setDescription(original.getDescription());
+        copy.setType(original.getType());
+        copy.setStatus(CampaignStatus.DRAFT);
+        copy.setStrategy(original.getStrategy());
+        copy.setScheduleStart(original.getScheduleStart());
+        copy.setScheduleEnd(original.getScheduleEnd());
+        copy.setTimezone(original.getTimezone());
+        copy.setCallerId(original.getCallerId());
+        copy.setDailyStart(original.getDailyStart());
+        copy.setDailyEnd(original.getDailyEnd());
+        copy.setMaxAttempts(original.getMaxAttempts());
+        copy.setRetryInterval(original.getRetryInterval());
+        copy.setAgentIdleThreshold(original.getAgentIdleThreshold());
+        copy.setIsActive(false);
+        copy = campaignRepository.save(copy);
+        return toResponse(copy);
+    }
+
+    @Transactional
     public CampaignResponse startCampaign(Long id) {
         Campaign campaign = campaignRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));

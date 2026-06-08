@@ -182,6 +182,20 @@ public class LeadController {
         return ResponseEntity.ok(ApiResponse.success("Lead deleted successfully", null));
     }
 
+    @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR') or hasRole('AGENT')")
+    public ResponseEntity<ApiResponse<LeadResponse>> duplicateLead(@PathVariable UUID id) {
+        LeadResponse response = leadService.duplicateLead(id);
+        return ResponseEntity.ok(ApiResponse.success("Lead duplicated successfully", response));
+    }
+
+    @PostMapping("/{id}/restore")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<LeadResponse>> restoreLead(@PathVariable UUID id) {
+        LeadResponse response = leadService.restoreLead(id);
+        return ResponseEntity.ok(ApiResponse.success("Lead restored successfully", response));
+    }
+
     @PostMapping("/bulk-delete")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> bulkDelete(

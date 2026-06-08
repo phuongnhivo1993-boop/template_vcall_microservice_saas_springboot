@@ -71,6 +71,13 @@ public class WebhookController {
         return ResponseEntity.ok(ApiResponse.success("Webhook deleted successfully", null));
     }
 
+    @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<WebhookResponse>> duplicateWebhook(@PathVariable Long id) {
+        WebhookResponse response = webhookService.duplicateWebhook(id);
+        return ResponseEntity.ok(ApiResponse.success("Webhook duplicated successfully", response));
+    }
+
     @PostMapping("/{id}/test")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<TestResultResponse>> testWebhook(@PathVariable Long id) {

@@ -74,6 +74,13 @@ public class AutomationRuleController {
         return ResponseEntity.ok(ApiResponse.success("Rule deleted successfully", null));
     }
 
+    @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<AutomationRuleResponse>> duplicateRule(@PathVariable Long id) {
+        AutomationRuleResponse response = automationRuleService.duplicateRule(id);
+        return ResponseEntity.ok(ApiResponse.success("Rule duplicated successfully", response));
+    }
+
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AutomationRuleResponse>> toggleRule(

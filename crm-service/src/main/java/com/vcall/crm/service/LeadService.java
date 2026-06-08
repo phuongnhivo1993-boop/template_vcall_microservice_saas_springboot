@@ -182,6 +182,35 @@ public class LeadService {
         leadRepository.save(lead);
     }
 
+    @Transactional
+    public LeadResponse duplicateLead(UUID id) {
+        Lead original = leadRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + id));
+        Lead copy = new Lead();
+        copy.setFirstName(original.getFirstName());
+        copy.setLastName(original.getLastName() + " (Copy)");
+        copy.setEmail(original.getEmail());
+        copy.setPhone(original.getPhone());
+        copy.setCompany(original.getCompany());
+        copy.setTitle(original.getTitle());
+        copy.setSource(original.getSource());
+        copy.setStatus(original.getStatus());
+        copy.setScore(original.getScore());
+        copy.setAssignedTo(original.getAssignedTo());
+        copy.setNotes(original.getNotes());
+        copy = leadRepository.save(copy);
+        return mapToResponse(copy);
+    }
+
+    @Transactional
+    public LeadResponse restoreLead(UUID id) {
+        Lead lead = leadRepository.findByIdIncludingDeleted(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + id));
+        lead.restore();
+        lead = leadRepository.save(lead);
+        return mapToResponse(lead);
+    }
+
     public long getLeadCountByStatus(LeadStatus status) {
         return leadRepository.countByStatus(status);
     }

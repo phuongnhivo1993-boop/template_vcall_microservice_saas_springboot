@@ -1,6 +1,7 @@
 package com.vcall.crm.controller;
 
 import com.vcall.common.dto.ApiResponse;
+import com.vcall.common.util.BulkOperationUtil;
 import com.vcall.common.util.CsvExportUtil;
 import com.vcall.common.util.ExcelExportUtil;
 import com.vcall.crm.dto.ActivityRequest;
@@ -166,5 +167,21 @@ public class ActivityController {
     public ResponseEntity<ApiResponse<Void>> deleteActivity(@PathVariable Long id) {
         activityService.deleteActivity(id);
         return ResponseEntity.ok(ApiResponse.success("Activity deleted successfully", null));
+    }
+
+    @PostMapping("/bulk-delete")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<Long>>> bulkDelete(
+            @RequestBody List<Long> ids) {
+        BulkOperationUtil.BulkResult<Long> result = new BulkOperationUtil.BulkResult<>();
+        for (Long id : ids) {
+            try {
+                activityService.deleteActivity(id);
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk delete completed", result));
     }
 }

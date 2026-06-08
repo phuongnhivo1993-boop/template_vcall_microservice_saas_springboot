@@ -103,6 +103,33 @@ public class OpportunityService {
         opportunityRepository.save(opportunity);
     }
 
+    @Transactional
+    public OpportunityResponse duplicateOpportunity(UUID id) {
+        Opportunity original = opportunityRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Opportunity not found with id: " + id));
+        Opportunity copy = new Opportunity();
+        copy.setLead(original.getLead());
+        copy.setTitle(original.getTitle() + " (Copy)");
+        copy.setDescription(original.getDescription());
+        copy.setValue(original.getValue());
+        copy.setCurrency(original.getCurrency());
+        copy.setStage(original.getStage());
+        copy.setProbability(original.getProbability());
+        copy.setExpectedCloseDate(original.getExpectedCloseDate());
+        copy.setAssignedTo(original.getAssignedTo());
+        copy = opportunityRepository.save(copy);
+        return mapToResponse(copy);
+    }
+
+    @Transactional
+    public OpportunityResponse restoreOpportunity(UUID id) {
+        Opportunity opportunity = opportunityRepository.findByIdIncludingDeleted(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Opportunity not found with id: " + id));
+        opportunity.restore();
+        opportunity = opportunityRepository.save(opportunity);
+        return mapToResponse(opportunity);
+    }
+
     private void mapToEntity(OpportunityRequest request, Opportunity opportunity) {
         opportunity.setTitle(request.getTitle());
         opportunity.setDescription(request.getDescription());

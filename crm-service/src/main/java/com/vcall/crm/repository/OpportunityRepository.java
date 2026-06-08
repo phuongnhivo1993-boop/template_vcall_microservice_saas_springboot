@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -23,4 +24,7 @@ public interface OpportunityRepository extends JpaRepository<Opportunity, UUID>,
     Page<Opportunity> findByStage(OpportunityStage stage, Pageable pageable);
 
     List<Opportunity> findByAssignedTo(UUID assignedTo);
+
+    @Query(value = "SELECT * FROM opportunities WHERE id = ?1", nativeQuery = true)
+    java.util.Optional<Opportunity> findByIdIncludingDeleted(java.util.UUID id);
 }

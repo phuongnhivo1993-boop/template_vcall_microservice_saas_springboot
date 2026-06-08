@@ -86,6 +86,20 @@ public class WebhookService {
     }
 
     @Transactional
+    public WebhookResponse duplicateWebhook(Long id) {
+        Webhook original = webhookRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Webhook not found with id: " + id));
+        Webhook copy = new Webhook();
+        copy.setName(original.getName() + " (Copy)");
+        copy.setUrl(original.getUrl());
+        copy.setEvents(original.getEvents());
+        copy.setIsActive(false);
+        copy.setSecretKey(java.util.UUID.randomUUID().toString());
+        copy = webhookRepository.save(copy);
+        return toResponse(copy);
+    }
+
+    @Transactional
     public TestResultResponse testWebhook(Long id) {
         Webhook webhook = webhookRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Webhook not found with id: " + id));

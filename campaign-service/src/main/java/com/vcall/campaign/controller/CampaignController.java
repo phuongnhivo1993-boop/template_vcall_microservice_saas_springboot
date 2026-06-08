@@ -81,6 +81,13 @@ public class CampaignController {
         return ResponseEntity.ok(ApiResponse.success("Campaign deleted successfully", null));
     }
 
+    @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<CampaignResponse>> duplicateCampaign(@PathVariable Long id) {
+        CampaignResponse response = campaignService.duplicateCampaign(id);
+        return ResponseEntity.ok(ApiResponse.success("Campaign duplicated successfully", response));
+    }
+
     @PostMapping("/{id}/start")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CampaignResponse>> startCampaign(@PathVariable Long id) {

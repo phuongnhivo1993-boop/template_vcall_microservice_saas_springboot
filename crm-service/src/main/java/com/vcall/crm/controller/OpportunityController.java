@@ -1,6 +1,7 @@
 package com.vcall.crm.controller;
 
 import com.vcall.common.dto.ApiResponse;
+import com.vcall.common.util.BulkOperationUtil;
 import com.vcall.common.util.CsvExportUtil;
 import com.vcall.common.util.ExcelExportUtil;
 import com.vcall.crm.dto.OpportunityRequest;
@@ -167,5 +168,35 @@ public class OpportunityController {
     public ResponseEntity<ApiResponse<Void>> deleteOpportunity(@PathVariable UUID id) {
         opportunityService.deleteOpportunity(id);
         return ResponseEntity.ok(ApiResponse.success("Opportunity deleted successfully", null));
+    }
+
+    @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<OpportunityResponse>> duplicateOpportunity(@PathVariable UUID id) {
+        OpportunityResponse response = opportunityService.duplicateOpportunity(id);
+        return ResponseEntity.ok(ApiResponse.success("Opportunity duplicated successfully", response));
+    }
+
+    @PostMapping("/{id}/restore")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<OpportunityResponse>> restoreOpportunity(@PathVariable UUID id) {
+        OpportunityResponse response = opportunityService.restoreOpportunity(id);
+        return ResponseEntity.ok(ApiResponse.success("Opportunity restored successfully", response));
+    }
+
+    @PostMapping("/bulk-delete")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
+    public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<UUID>>> bulkDelete(
+            @RequestBody List<UUID> ids) {
+        BulkOperationUtil.BulkResult<UUID> result = new BulkOperationUtil.BulkResult<>();
+        for (UUID id : ids) {
+            try {
+                opportunityService.deleteOpportunity(id);
+                result.addSuccess(id);
+            } catch (Exception e) {
+                result.addFailure(id, e.getMessage());
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success("Bulk delete completed", result));
     }
 }
