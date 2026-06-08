@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MfaVerifyRequest {
+    @NotBlank(message = "Secret is required")
+    private String secret;
+
     @NotBlank(message = "Verification code is required")
     @Pattern(regexp = "^\\d{6}$", message = "Code must be exactly 6 digits")
     private String code;

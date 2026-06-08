@@ -36,10 +36,10 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     Optional<User> findByEmailVerificationToken(String token);
 
     @NonNull
-    @EntityGraph(attributePaths = {"userRoles", "userRoles.role"})
+    @EntityGraph(attributePaths = {"userRoles", "userRoles.role", "userRoles.role.rolePermissions"})
     Page<User> findAll(Pageable pageable);
 
     @NonNull
-    @EntityGraph(attributePaths = {"userRoles", "userRoles.role"})
+    @EntityGraph(attributePaths = {"userRoles", "userRoles.role", "userRoles.role.rolePermissions"})
     Page<User> findAll(Specification<User> spec, Pageable pageable);
 }

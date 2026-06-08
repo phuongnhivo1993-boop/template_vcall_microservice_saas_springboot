@@ -32,7 +32,7 @@ public class MfaController {
     public ResponseEntity<ApiResponse<String>> verify(
             @AuthenticationPrincipal UUID userId,
             @Valid @RequestBody MfaVerifyRequest request) {
-        boolean verified = mfaService.enableMfa(userId, request.getCode(), request.getCode());
+        boolean verified = mfaService.enableMfa(userId, request.getSecret(), request.getCode());
         if (verified) {
             return ResponseEntity.ok(ApiResponse.success("MFA enabled successfully", "verified"));
         }

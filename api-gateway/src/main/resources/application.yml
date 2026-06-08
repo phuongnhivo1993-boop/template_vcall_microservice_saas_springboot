@@ -34,7 +34,7 @@ spring:
         - id: push-devices
           uri: lb://notification-service
           predicates:
-            - Path=/api/v1/push-devices/**
+            - Path=/api/v1/push/devices/**
           filters:
             - name: Retry
               args:
@@ -144,11 +144,19 @@ spring:
         - id: survey-service
           uri: lb://survey-service
           predicates:
-            - Path=/api/v1/survey/**
+            - Path=/api/v1/surveys/**
         - id: agent-sessions
           uri: lb://agent-service
           predicates:
             - Path=/api/v1/agent-sessions/**
+        - id: mfa-service
+          uri: lb://iam-service
+          predicates:
+            - Path=/api/v1/mfa/**
+        - id: gdpr-service
+          uri: lb://iam-service
+          predicates:
+            - Path=/api/v1/gdpr/**
         - id: permissions-service
           uri: lb://iam-service
           predicates:

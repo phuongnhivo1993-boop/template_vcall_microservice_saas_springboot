@@ -38,6 +38,9 @@
         <module>audit-service</module>
         <module>scheduling-service</module>
         <module>survey-service</module>
+        <module>automation-service</module>
+        <module>knowledge-base-service</module>
+        <module>webhooks-service</module>
         <!-- XR Platform Microservices -->
         <module>tenant-service</module>
         <module>asset-service</module>
