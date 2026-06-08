@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/analytics")
@@ -30,18 +31,21 @@ public class AnalyticsController {
     private final AnalyticsService analyticsService;
 
     @PostMapping("/events")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AnalyticsEvent>> trackEvent(@Valid @RequestBody AnalyticsEvent event) {
         AnalyticsEvent saved = analyticsService.trackEvent(event);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Event tracked", saved));
     }
 
     @PostMapping("/events/batch")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<String>> trackEventsBatch(@RequestBody java.util.List<AnalyticsEvent> events) {
         events.forEach(analyticsService::trackEvent);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Batch events tracked"));
     }
 
     @GetMapping("/events/session/{sessionId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<AnalyticsEvent>>> getEventsBySession(
             @PathVariable UUID sessionId, Pageable pageable) {
         Page<AnalyticsEvent> events = analyticsService.getEventsBySession(sessionId, pageable);
@@ -49,6 +53,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/events/user/{userId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<AnalyticsEvent>>> getEventsByUser(
             @PathVariable UUID userId, Pageable pageable) {
         Page<AnalyticsEvent> events = analyticsService.getEventsByUser(userId, pageable);
@@ -56,6 +61,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/events/scene/{sceneId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<AnalyticsEvent>>> getEventsByScene(
             @PathVariable UUID sceneId, Pageable pageable) {
         Page<AnalyticsEvent> events = analyticsService.getEventsByScene(sceneId, pageable);
@@ -63,6 +69,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/events/type/{eventType}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<AnalyticsEvent>>> getEventsByType(
             @PathVariable String eventType, Pageable pageable) {
         Page<AnalyticsEvent> events = analyticsService.getEventsByType(eventType, pageable);
@@ -70,6 +77,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/events/date-range")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<AnalyticsEvent>>> getEventsByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
@@ -79,6 +87,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getEventStats(
             @RequestParam(defaultValue = "default") String tenantId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
@@ -88,6 +97,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/scenes/top-views")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<java.util.List<Object[]>>> getTopScenesByViews(
             @RequestParam(defaultValue = "default") String tenantId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
@@ -98,6 +108,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/scenes/top-interactions")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<java.util.List<Object[]>>> getTopScenesByInteractions(
             @RequestParam(defaultValue = "default") String tenantId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
@@ -108,6 +119,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/gaze-heatmap/{sceneId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getGazeHeatmap(
             @PathVariable UUID sceneId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,

@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @Slf4j
 @RestController
@@ -29,6 +30,7 @@ public class VideoController {
     private final VideoService videoService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Create a new video processing job")
     public ResponseEntity<VideoJobResponse> createJob(
             @Parameter(description = "Tenant ID") @RequestHeader("X-Tenant-ID") UUID tenantId,
@@ -47,6 +49,7 @@ public class VideoController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get video job by ID")
     public ResponseEntity<VideoJobResponse> getJob(
             @Parameter(description = "Tenant ID") @RequestHeader("X-Tenant-ID") UUID tenantId,
@@ -56,6 +59,7 @@ public class VideoController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "List all video jobs for tenant")
     public ResponseEntity<List<VideoJobResponse>> listJobs(
             @Parameter(description = "Tenant ID") @RequestHeader("X-Tenant-ID") UUID tenantId) {
@@ -67,6 +71,7 @@ public class VideoController {
     }
 
     @PostMapping("/{id}/process")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Start processing a video job")
     public ResponseEntity<VideoJobResponse> processJob(
             @Parameter(description = "Tenant ID") @RequestHeader("X-Tenant-ID") UUID tenantId,
@@ -77,6 +82,7 @@ public class VideoController {
     }
 
     @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Cancel a video job")
     public ResponseEntity<VideoJobResponse> cancelJob(
             @Parameter(description = "Tenant ID") @RequestHeader("X-Tenant-ID") UUID tenantId,
@@ -87,6 +93,7 @@ public class VideoController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get active job count for tenant")
     public ResponseEntity<JobStatsResponse> getStats(
             @Parameter(description = "Tenant ID") @RequestHeader("X-Tenant-ID") UUID tenantId) {

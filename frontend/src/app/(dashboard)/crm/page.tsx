@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useUrlState } from '@/lib/hooks/useUrlState';
 import {
   Card, Tabs, Select, Tag, Typography, Space, Button, Modal, Form,
-  Input, message, Row, Col, Statistic, Tooltip
+  Input, message, Row, Col, Statistic, Tooltip, Checkbox
 } from 'antd';
 import {
   PlusOutlined, TeamOutlined, DollarOutlined, PhoneOutlined,
-  EditOutlined, DeleteOutlined, SwapOutlined, CheckCircleOutlined, CopyOutlined, EyeOutlined
+  EditOutlined, DeleteOutlined, SwapOutlined, CheckCircleOutlined, CopyOutlined, EyeOutlined, UndoOutlined
 } from '@ant-design/icons';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
@@ -58,7 +58,7 @@ export default function CrmPage() {
   const [convertModalOpen, setConvertModalOpen] = useState(false);
   const [convertingLead, setConvertingLead] = useState<any>(null);
   const [urlParams, setUrlParams] = useUrlState({
-    keyword: '', status: '', stage: '', type: '',
+    keyword: '', status: '', stage: '', type: '', includeDeleted: '',
     page: '1', pageSize: '10',
   });
   const [filters, setFilters] = useState<Record<string, any>>({});
@@ -263,6 +263,26 @@ export default function CrmPage() {
     });
   };
 
+  const handleRestoreLead = async (id: string) => {
+    try {
+      await crmApi.leads.restore(id);
+      message.success('Lead restored successfully');
+      fetchLeads(leadsPagination.current, leadsPagination.pageSize, filters);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Failed to restore lead');
+    }
+  };
+
+  const handleRestoreOpp = async (id: string) => {
+    try {
+      await crmApi.opportunities.restore(id);
+      message.success('Opportunity restored successfully');
+      fetchOpps(oppsPagination.current, oppsPagination.pageSize, filters);
+    } catch (err: any) {
+      message.error(err?.response?.data?.message || 'Failed to restore opportunity');
+    }
+  };
+
   const handleDeleteConfirm = (id: string, type: string, label: string) => {
     showDeleteConfirm({
       title: `Delete ${type}`,
@@ -344,6 +364,7 @@ export default function CrmPage() {
       status: cleaned.status || '',
       stage: cleaned.stage || '',
       type: cleaned.type || '',
+      includeDeleted: cleaned.includeDeleted ? 'true' : '',
       page: '1',
       pageSize: leadsPagination.pageSize?.toString() || '10',
     });
@@ -355,7 +376,7 @@ export default function CrmPage() {
   };
 
   const handleReset = () => {
-    setUrlParams({ keyword: '', status: '', stage: '', type: '', page: '1', pageSize: leadsPagination.pageSize?.toString() || '10' });
+    setUrlParams({ keyword: '', status: '', stage: '', type: '', includeDeleted: '', page: '1', pageSize: leadsPagination.pageSize?.toString() || '10' });
     setFilters({});
     fetchLeads(1, leadsPagination.pageSize);
     fetchOpps(1, oppsPagination.pageSize);
@@ -414,7 +435,12 @@ export default function CrmPage() {
   };
 
   const leadColumns: ColumnsType<any> = [
-    { title: 'Name', key: 'name', render: (_: any, r: any) => <span style={{ fontWeight: 500 }}>{r.firstName} {r.lastName}</span> },
+    { title: 'Name', key: 'name', render: (_: any, r: any) => (
+      <span style={{ fontWeight: 500, textDecoration: r.deleted ? 'line-through' : 'none', color: r.deleted ? '#ff4d4f' : undefined }}>
+        {r.firstName} {r.lastName}
+        {r.deleted && <Tag color="red" style={{ marginLeft: 8 }}>Deleted</Tag>}
+      </span>
+    )},
     { title: 'Email', dataIndex: 'email', key: 'email', sorter: true },
     { title: 'Company', dataIndex: 'company', key: 'company', sorter: true },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
@@ -427,19 +453,32 @@ export default function CrmPage() {
       render: (_: any, r: any) => (
         <Space>
           <Tooltip title="View"><Button size="small" icon={<EyeOutlined />} onClick={() => router.push(`/crm/leads/${r.id}`)} /></Tooltip>
-          <Tooltip title="Convert to Opportunity">
-            <Button size="small" icon={<SwapOutlined />} onClick={() => { setConvertingLead(r); setConvertModalOpen(true); }} />
-          </Tooltip>
+          {!r.deleted && (
+            <Tooltip title="Convert to Opportunity">
+              <Button size="small" icon={<SwapOutlined />} onClick={() => { setConvertingLead(r); setConvertModalOpen(true); }} />
+            </Tooltip>
+          )}
           <Tooltip title="Edit"><Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(r, 'lead')} /></Tooltip>
           <Tooltip title="Nhân bản"><Button size="small" icon={<CopyOutlined />} onClick={() => handleDuplicate(r, 'lead')} /></Tooltip>
-          <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteConfirm(r.id, 'lead', 'lead')} /></Tooltip>
+          {r.deleted ? (
+            <Tooltip title="Restore"><Button size="small" icon={<UndoOutlined />} onClick={() => handleRestoreLead(r.id)} /></Tooltip>
+          ) : (
+            <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteConfirm(r.id, 'lead', 'lead')} /></Tooltip>
+          )}
         </Space>
       ),
     },
   ];
 
   const oppColumns: ColumnsType<any> = [
-    { title: 'Title', dataIndex: 'title', key: 'title', sorter: true },
+    { title: 'Title', dataIndex: 'title', key: 'title', sorter: true,
+      render: (title: string, r: any) => (
+        <span style={{ textDecoration: r.deleted ? 'line-through' : 'none', color: r.deleted ? '#ff4d4f' : undefined }}>
+          {title}
+          {r.deleted && <Tag color="red" style={{ marginLeft: 8 }}>Deleted</Tag>}
+        </span>
+      ),
+    },
     { title: 'Stage', dataIndex: 'stage', key: 'stage', sorter: true,
       render: (s: string) => <Tag color={oppStageColors[s] || 'blue'}>{s}</Tag> },
     { title: 'Value', dataIndex: 'value', key: 'value', sorter: true,
@@ -455,7 +494,11 @@ export default function CrmPage() {
         <Space>
           <Tooltip title="View"><Button size="small" icon={<EyeOutlined />} onClick={() => router.push(`/crm/opportunities/${r.id}`)} /></Tooltip>
           <Tooltip title="Edit"><Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(r, 'opportunity')} /></Tooltip>
-          <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteConfirm(r.id, 'opportunity', 'opportunity')} /></Tooltip>
+          {r.deleted ? (
+            <Tooltip title="Restore"><Button size="small" icon={<UndoOutlined />} onClick={() => handleRestoreOpp(r.id)} /></Tooltip>
+          ) : (
+            <Tooltip title="Delete"><Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeleteConfirm(r.id, 'opportunity', 'opportunity')} /></Tooltip>
+          )}
         </Space>
       ),
     },
@@ -577,13 +620,22 @@ export default function CrmPage() {
         <Col xs={12} sm={6}><Card><Statistic title="Won" value={stats.wonOpps} valueStyle={{ color: '#52c41a' }} prefix={<CheckCircleOutlined />} /></Card></Col>
       </Row>
 
-      <CommonSearch
-        key={activeTab}
-        fields={searchFields}
-        onSearch={handleSearch}
-        onReset={handleReset}
-        loading={loading[activeTab as keyof typeof loading]}
-      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <CommonSearch
+          key={activeTab}
+          fields={searchFields}
+          onSearch={handleSearch}
+          onReset={handleReset}
+          loading={loading[activeTab as keyof typeof loading]}
+        />
+        <Checkbox checked={urlParams.includeDeleted === 'true'} onChange={(e) => {
+          const val = e.target.checked ? 'true' : '';
+          setUrlParams({ includeDeleted: val, page: '1' });
+          handleSearch({ ...filters, includeDeleted: e.target.checked || undefined });
+        }}>
+          Show Deleted
+        </Checkbox>
+      </div>
       <SavedFilters currentValues={filters} onApply={(v) => { setFilters(v); handleSearch(v); }} storageKey="vcall-saved-filters-crm" />
 
       <Card>

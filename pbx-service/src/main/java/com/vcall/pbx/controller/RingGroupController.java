@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/pbx/ring-groups")
@@ -38,6 +39,7 @@ public class RingGroupController {
     private final RingGroupService ringGroupService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<RingGroupResponse>> createRingGroup(@Valid @RequestBody RingGroupRequest request) {
         RingGroupResponse response = ringGroupService.createRingGroup(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -45,18 +47,21 @@ public class RingGroupController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<RingGroupResponse>>> getAllRingGroups(Pageable pageable) {
         Page<RingGroupResponse> ringGroups = ringGroupService.getAllRingGroups(pageable);
         return ResponseEntity.ok(ApiResponse.success(ringGroups));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<RingGroupResponse>> getRingGroup(@PathVariable Long id) {
         RingGroupResponse response = ringGroupService.getRingGroup(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<RingGroupResponse>> updateRingGroup(@PathVariable Long id,
                                                                             @Valid @RequestBody RingGroupRequest request) {
         RingGroupResponse response = ringGroupService.updateRingGroup(id, request);
@@ -64,12 +69,14 @@ public class RingGroupController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteRingGroup(@PathVariable Long id) {
         ringGroupService.deleteRingGroup(id);
         return ResponseEntity.ok(ApiResponse.success("Ring group deleted successfully", null));
     }
 
     @PostMapping("/{id}/members")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> addMember(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         Long extensionId = Long.valueOf(body.get("extensionId").toString());
         Integer position = body.get("position") != null ? Integer.valueOf(body.get("position").toString()) : null;
@@ -79,12 +86,14 @@ public class RingGroupController {
     }
 
     @DeleteMapping("/{id}/members/{memberId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> removeMember(@PathVariable Long id, @PathVariable Long memberId) {
         ringGroupService.removeMember(memberId);
         return ResponseEntity.ok(ApiResponse.success("Member removed successfully", null));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<RingGroupResponse>>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String strategy,
@@ -94,6 +103,7 @@ public class RingGroupController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@RequestParam(required = false) String keyword,
                            HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -110,6 +120,7 @@ public class RingGroupController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@RequestParam(required = false) String keyword,
                             HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -125,6 +136,7 @@ public class RingGroupController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
         return ResponseEntity.ok(ApiResponse.success(ringGroupService.getStats()));
     }

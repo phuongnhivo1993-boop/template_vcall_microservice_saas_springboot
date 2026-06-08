@@ -33,6 +33,7 @@ import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/recordings")
@@ -42,12 +43,14 @@ public class RecordingController {
     private final RecordingService recordingService;
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<RecordingResponse>> getRecording(@PathVariable UUID id) {
         RecordingResponse response = recordingService.getRecording(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<PagedResponse<RecordingResponse>>> searchRecordings(
             @Valid RecordingSearchRequest request,
             @RequestParam(defaultValue = "0") int page,
@@ -72,6 +75,7 @@ public class RecordingController {
     }
 
     @GetMapping("/{id}/download")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<Resource> downloadRecording(@PathVariable UUID id) {
         RecordingResponse response = recordingService.getRecording(id);
         String downloadUrl = recordingService.getDownloadUrl(id);
@@ -88,6 +92,7 @@ public class RecordingController {
     }
 
     @GetMapping("/{id}/stream")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<Resource> streamRecording(@PathVariable UUID id) {
         RecordingResponse response = recordingService.getRecording(id);
         String downloadUrl = recordingService.getDownloadUrl(id);
@@ -112,6 +117,7 @@ public class RecordingController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<RecordingResponse>> createRecording(@Valid @RequestBody RecordingRequest request) {
         RecordingResponse response = recordingService.createRecording(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -119,6 +125,7 @@ public class RecordingController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<RecordingResponse>> updateRecording(
             @PathVariable UUID id, @Valid @RequestBody RecordingRequest request) {
         RecordingResponse response = recordingService.updateRecording(id, request);
@@ -126,6 +133,7 @@ public class RecordingController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteRecording(@PathVariable UUID id) {
         recordingService.deleteRecording(id);
         return ResponseEntity.ok(ApiResponse.success("Recording deleted successfully", null));

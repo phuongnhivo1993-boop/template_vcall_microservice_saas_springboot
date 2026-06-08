@@ -112,6 +112,7 @@ public class SurveyController {
     }
 
     @GetMapping("/{id}/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get survey statistics (CSAT/NPS)")
     public ResponseEntity<ApiResponse<com.vcall.survey.dto.response.SurveyStatsResponse>> getStats(
             @PathVariable UUID id) {
@@ -120,6 +121,7 @@ public class SurveyController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Export surveys to CSV")
     public void exportCsv(HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -131,6 +133,7 @@ public class SurveyController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Export surveys to Excel")
     public void exportExcel(HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());

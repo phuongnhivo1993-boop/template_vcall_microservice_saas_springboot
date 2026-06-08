@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/gis")
@@ -23,36 +24,42 @@ public class GisController {
     private final IndoorNavigationService navigationService;
 
     @PostMapping("/floors")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Create a floor")
     public ResponseEntity<Floor> createFloor(@RequestBody Floor floor) {
         return ResponseEntity.status(HttpStatus.CREATED).body(navigationService.createFloor(floor));
     }
 
     @GetMapping("/floors/{floorId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get floor by ID")
     public ResponseEntity<Floor> getFloor(@PathVariable UUID floorId) {
         return ResponseEntity.ok(navigationService.getFloor(floorId));
     }
 
     @GetMapping("/floors/building/{buildingId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get floors by building")
     public ResponseEntity<List<Floor>> getFloorsByBuilding(@PathVariable UUID buildingId) {
         return ResponseEntity.ok(navigationService.getFloorsByBuilding(buildingId));
     }
 
     @GetMapping("/floors/tenant/{tenantId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get floors by tenant")
     public ResponseEntity<List<Floor>> getFloorsByTenant(@PathVariable UUID tenantId) {
         return ResponseEntity.ok(navigationService.getFloorsByTenant(tenantId));
     }
 
     @PutMapping("/floors/{floorId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Update floor")
     public ResponseEntity<Floor> updateFloor(@PathVariable UUID floorId, @RequestBody Floor floor) {
         return ResponseEntity.ok(navigationService.updateFloor(floorId, floor));
     }
 
     @DeleteMapping("/floors/{floorId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Delete floor")
     public ResponseEntity<Void> deleteFloor(@PathVariable UUID floorId) {
         navigationService.deleteFloor(floorId);
@@ -60,30 +67,35 @@ public class GisController {
     }
 
     @PostMapping("/rooms")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Create a room")
     public ResponseEntity<Room> createRoom(@RequestBody Room room) {
         return ResponseEntity.status(HttpStatus.CREATED).body(navigationService.createRoom(room));
     }
 
     @GetMapping("/rooms/{roomId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get room by ID")
     public ResponseEntity<Room> getRoom(@PathVariable UUID roomId) {
         return ResponseEntity.ok(navigationService.getRoom(roomId));
     }
 
     @GetMapping("/rooms/floor/{floorId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get rooms by floor")
     public ResponseEntity<List<Room>> getRoomsByFloor(@PathVariable UUID floorId) {
         return ResponseEntity.ok(navigationService.getRoomsByFloor(floorId));
     }
 
     @PutMapping("/rooms/{roomId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Update room")
     public ResponseEntity<Room> updateRoom(@PathVariable UUID roomId, @RequestBody Room room) {
         return ResponseEntity.ok(navigationService.updateRoom(roomId, room));
     }
 
     @DeleteMapping("/rooms/{roomId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Delete room")
     public ResponseEntity<Void> deleteRoom(@PathVariable UUID roomId) {
         navigationService.deleteRoom(roomId);
@@ -91,6 +103,7 @@ public class GisController {
     }
 
     @GetMapping("/rooms/locate")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Find room by GPS coordinates on a floor")
     public ResponseEntity<List<Room>> findRoomByLocation(
             @RequestParam UUID floorId,
@@ -100,6 +113,7 @@ public class GisController {
     }
 
     @GetMapping("/rooms/nearby")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Find nearby rooms by GPS coordinates")
     public ResponseEntity<List<Room>> findNearbyRooms(
             @RequestParam double latitude,
@@ -109,6 +123,7 @@ public class GisController {
     }
 
     @GetMapping("/navigation/context")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Get indoor navigation context for a location")
     public ResponseEntity<Map<String, Object>> getNavigationContext(
             @RequestParam UUID floorId,
@@ -118,6 +133,7 @@ public class GisController {
     }
 
     @GetMapping("/building/{buildingId}/map")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get building map with all floors")
     public ResponseEntity<Map<String, Object>> getBuildingMap(@PathVariable UUID buildingId) {
         return ResponseEntity.ok(navigationService.getBuildingMap(buildingId));

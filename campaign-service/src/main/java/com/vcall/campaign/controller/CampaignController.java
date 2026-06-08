@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/campaigns")
@@ -43,6 +44,7 @@ public class CampaignController {
     private final CampaignService campaignService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CampaignResponse>> createCampaign(
             @Valid @RequestBody CampaignRequest request) {
         CampaignResponse response = campaignService.createCampaign(request);
@@ -51,18 +53,21 @@ public class CampaignController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<CampaignResponse>>> getAllCampaigns(Pageable pageable) {
         Page<CampaignResponse> campaigns = campaignService.getAllCampaigns(pageable);
         return ResponseEntity.ok(ApiResponse.success(campaigns));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CampaignResponse>> getCampaign(@PathVariable Long id) {
         CampaignResponse response = campaignService.getCampaign(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CampaignResponse>> updateCampaign(@PathVariable Long id,
                                                                          @Valid @RequestBody CampaignRequest request) {
         CampaignResponse response = campaignService.updateCampaign(id, request);
@@ -70,30 +75,35 @@ public class CampaignController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteCampaign(@PathVariable Long id) {
         campaignService.deleteCampaign(id);
         return ResponseEntity.ok(ApiResponse.success("Campaign deleted successfully", null));
     }
 
     @PostMapping("/{id}/start")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CampaignResponse>> startCampaign(@PathVariable Long id) {
         CampaignResponse response = campaignService.startCampaign(id);
         return ResponseEntity.ok(ApiResponse.success("Campaign started successfully", response));
     }
 
     @PostMapping("/{id}/pause")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CampaignResponse>> pauseCampaign(@PathVariable Long id) {
         CampaignResponse response = campaignService.pauseCampaign(id);
         return ResponseEntity.ok(ApiResponse.success("Campaign paused successfully", response));
     }
 
     @PostMapping("/{id}/stop")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CampaignResponse>> stopCampaign(@PathVariable Long id) {
         CampaignResponse response = campaignService.completeCampaign(id);
         return ResponseEntity.ok(ApiResponse.success("Campaign stopped successfully", response));
     }
 
     @PostMapping("/{id}/status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CampaignResponse>> updateStatus(@PathVariable Long id,
                                                                        @Valid @RequestBody CampaignStatusRequest request) {
         CampaignResponse response = campaignService.updateStatus(id, request);
@@ -101,12 +111,14 @@ public class CampaignController {
     }
 
     @GetMapping("/{id}/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getCampaignStats(@PathVariable Long id) {
         Map<String, Object> stats = campaignService.getStats(id);
         return ResponseEntity.ok(ApiResponse.success(stats));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<CampaignResponse>>> searchCampaigns(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
@@ -133,6 +145,7 @@ public class CampaignController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCampaignsCsv(@RequestParam(required = false) String keyword,
                                     HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -151,6 +164,7 @@ public class CampaignController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@RequestParam(required = false) String keyword,
                             HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -168,6 +182,7 @@ public class CampaignController {
     }
 
     @PostMapping("/bulk-delete")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<Long>>> bulkDelete(
             @RequestBody List<Long> ids) {
         BulkOperationUtil.BulkResult<Long> result = new BulkOperationUtil.BulkResult<>();
@@ -183,6 +198,7 @@ public class CampaignController {
     }
 
     @PostMapping("/bulk-status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<Long>>> bulkStatus(
             @RequestBody Map<String, Object> body) {
         @SuppressWarnings("unchecked")

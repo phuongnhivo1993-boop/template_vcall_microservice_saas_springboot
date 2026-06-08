@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/audit/reconciliation")
@@ -21,6 +22,7 @@ public class ReconciliationController {
     private final ReconciliationAuditService reconciliationAuditService;
 
     @PostMapping("/run")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ReconciliationAuditResponse>> runReconciliation(
             @RequestParam String type) {
         ReconciliationAudit.ReconciliationType reconciliationType =
@@ -32,12 +34,14 @@ public class ReconciliationController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ReconciliationAuditResponse>> getReconciliationById(@PathVariable UUID id) {
         ReconciliationAuditResponse response = reconciliationAuditService.getById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ReconciliationAuditResponse>>> getReconciliations(
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String status,

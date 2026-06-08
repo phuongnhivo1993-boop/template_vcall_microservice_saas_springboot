@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/cdr/analytics")
@@ -23,6 +24,7 @@ public class CdrAnalyticsController {
     private final CdrAnalyticsService cdrAnalyticsService;
 
     @GetMapping("/volume")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getCallVolume(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
@@ -31,6 +33,7 @@ public class CdrAnalyticsController {
     }
 
     @GetMapping("/agent-performance")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getAgentPerformance(
             @RequestParam UUID agentId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
@@ -39,6 +42,7 @@ public class CdrAnalyticsController {
     }
 
     @GetMapping("/cost")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getCostAnalysis(
             @RequestParam UUID tenantId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
@@ -47,6 +51,7 @@ public class CdrAnalyticsController {
     }
 
     @GetMapping("/concurrent-calls")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getConcurrentCalls(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {

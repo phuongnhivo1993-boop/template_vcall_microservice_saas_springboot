@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,6 +33,7 @@ public class AutomationRuleController {
     private final AutomationRuleService automationRuleService;
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<AutomationRuleResponse>>> getAllRules(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Boolean isActive,
@@ -41,12 +43,14 @@ public class AutomationRuleController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AutomationRuleResponse>> getRule(@PathVariable Long id) {
         AutomationRuleResponse rule = automationRuleService.getRule(id);
         return ResponseEntity.ok(ApiResponse.success(rule));
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AutomationRuleResponse>> createRule(
             @Valid @RequestBody AutomationRuleRequest request) {
         AutomationRuleResponse rule = automationRuleService.createRule(request);
@@ -55,6 +59,7 @@ public class AutomationRuleController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AutomationRuleResponse>> updateRule(
             @PathVariable Long id,
             @Valid @RequestBody AutomationRuleRequest request) {
@@ -63,12 +68,14 @@ public class AutomationRuleController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteRule(@PathVariable Long id) {
         automationRuleService.deleteRule(id);
         return ResponseEntity.ok(ApiResponse.success("Rule deleted successfully", null));
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AutomationRuleResponse>> toggleRule(
             @PathVariable Long id,
             @RequestBody Map<String, Boolean> body) {
@@ -78,12 +85,14 @@ public class AutomationRuleController {
     }
 
     @PostMapping("/bulk-delete")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> bulkDeleteRules(@RequestBody List<Long> ids) {
         automationRuleService.bulkDeleteRules(ids);
         return ResponseEntity.ok(ApiResponse.success("Rules deleted successfully", null));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<AutomationRuleResponse>>> searchRules(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String trigger,
@@ -95,6 +104,7 @@ public class AutomationRuleController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getRuleStats() {
         Map<String, Object> stats = automationRuleService.getRuleStats();
         return ResponseEntity.ok(ApiResponse.success(stats));

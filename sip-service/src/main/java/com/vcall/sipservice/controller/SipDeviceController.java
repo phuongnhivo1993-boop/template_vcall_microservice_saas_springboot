@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/sip/devices")
@@ -38,18 +39,21 @@ public class SipDeviceController {
     private final SipDeviceService sipDeviceService;
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SipDeviceResponse>>> getAll(Pageable pageable) {
         Page<SipDeviceResponse> devices = sipDeviceService.findAll(pageable);
         return ResponseEntity.ok(ApiResponse.success(devices));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SipDeviceResponse>> getById(@PathVariable Long id) {
         SipDeviceResponse device = sipDeviceService.findById(id);
         return ResponseEntity.ok(ApiResponse.success(device));
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SipDeviceResponse>> create(@Valid @RequestBody SipDeviceRequest request,
                                                                  @RequestParam Long sipAccountId) {
         SipDeviceResponse device = sipDeviceService.create(request, sipAccountId);
@@ -57,6 +61,7 @@ public class SipDeviceController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SipDeviceResponse>> update(@PathVariable Long id,
                                                                  @Valid @RequestBody SipDeviceRequest request) {
         SipDeviceResponse device = sipDeviceService.update(id, request);
@@ -64,12 +69,14 @@ public class SipDeviceController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         sipDeviceService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("SipDevice deleted", null));
     }
 
     @GetMapping("/account/{accountId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SipDeviceResponse>>> getByAccountId(@PathVariable Long accountId,
                                                                                  Pageable pageable) {
         Page<SipDeviceResponse> devices = sipDeviceService.findByAccountId(accountId, pageable);
@@ -77,6 +84,7 @@ public class SipDeviceController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SipDeviceResponse>>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String deviceType,
@@ -86,6 +94,7 @@ public class SipDeviceController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@RequestParam(required = false) String keyword,
                            HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -102,6 +111,7 @@ public class SipDeviceController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@RequestParam(required = false) String keyword,
                             HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -117,6 +127,7 @@ public class SipDeviceController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
         return ResponseEntity.ok(ApiResponse.success(sipDeviceService.getStats()));
     }

@@ -20,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/dashboard")
@@ -29,36 +30,42 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
         Map<String, Object> stats = dashboardService.getDashboardStats();
         return ResponseEntity.ok(ApiResponse.success(stats));
     }
 
     @GetMapping("/activities")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<Map<String, Object>>>> getActivities() {
         List<Map<String, Object>> activities = dashboardService.getRecentActivities();
         return ResponseEntity.ok(ApiResponse.success(activities));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<DashboardDataResponse>>> getDashboardData() {
         List<DashboardDataResponse> responses = dashboardService.getDashboardData();
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping("/widgets")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<DashboardWidgetResponse>>> getWidgets() {
         List<DashboardWidgetResponse> responses = dashboardService.getWidgets();
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping("/widgets/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<DashboardDataResponse>> getWidgetData(@PathVariable Long id) {
         DashboardDataResponse response = dashboardService.getWidgetData(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportDashboardCsv(HttpServletResponse response) throws IOException {
         Map<String, Object> stats = dashboardService.getDashboardStats();
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
@@ -80,6 +87,7 @@ public class DashboardController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportDashboardExcel(HttpServletResponse response) throws IOException {
         Map<String, Object> stats = dashboardService.getDashboardStats();
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));

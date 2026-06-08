@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/omnichannel/conversations/{id}/messages")
@@ -27,6 +28,7 @@ public class MessageController {
     private final MessageService messageService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<MessageResponse>> send(
             @PathVariable UUID id,
             @Valid @RequestBody MessageRequest request) {
@@ -35,6 +37,7 @@ public class MessageController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<MessageResponse>>> getMessages(@PathVariable UUID id, Pageable pageable) {
         Page<MessageResponse> responses = messageService.getMessages(id, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));

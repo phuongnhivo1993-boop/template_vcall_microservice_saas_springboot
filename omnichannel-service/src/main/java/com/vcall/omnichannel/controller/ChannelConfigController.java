@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/omnichannel/channels")
@@ -29,30 +30,35 @@ public class ChannelConfigController {
     private final ChannelConfigService channelConfigService;
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ChannelConfigResponse>>> getAll(Pageable pageable) {
         Page<ChannelConfigResponse> responses = channelConfigService.getAll(pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ChannelConfigResponse>> getById(@PathVariable Long id) {
         ChannelConfigResponse response = channelConfigService.getById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/channel/{channel}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ChannelConfigResponse>> getByChannel(@PathVariable Channel channel) {
         ChannelConfigResponse response = channelConfigService.getByChannel(channel);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ChannelConfigResponse>> create(@Valid @RequestBody ChannelConfigRequest request) {
         ChannelConfigResponse response = channelConfigService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Channel config created", response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ChannelConfigResponse>> update(
             @PathVariable Long id,
             @Valid @RequestBody ChannelConfigRequest request) {
@@ -61,12 +67,14 @@ public class ChannelConfigController {
     }
 
     @PatchMapping("/{id}/toggle")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ChannelConfigResponse>> toggleEnabled(@PathVariable Long id) {
         ChannelConfigResponse response = channelConfigService.toggleEnabled(id);
         return ResponseEntity.ok(ApiResponse.success("Channel config toggled", response));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         channelConfigService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("Channel config deleted", null));

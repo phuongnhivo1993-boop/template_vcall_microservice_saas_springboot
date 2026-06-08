@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/chat/conversations")
@@ -37,6 +38,7 @@ public class ChatConversationController {
     private final ChatMessageService chatMessageService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ChatConversationResponse>> createConversation(
             @Valid @RequestBody ChatConversationRequest request) {
         ChatConversationResponse response = chatService.createConversation(request);
@@ -45,12 +47,14 @@ public class ChatConversationController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ChatConversationResponse>> getConversation(@PathVariable UUID id) {
         ChatConversationResponse response = chatService.getConversationHistory(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ChatConversationResponse>> updateConversation(
             @PathVariable UUID id, @Valid @RequestBody ChatConversationUpdateRequest request) {
         ChatConversationResponse response = chatService.updateConversation(id, request);
@@ -58,12 +62,14 @@ public class ChatConversationController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteConversation(@PathVariable UUID id) {
         chatService.deleteConversation(id);
         return ResponseEntity.ok(ApiResponse.success("Conversation deleted successfully", null));
     }
 
     @PostMapping("/{id}/assign")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ChatConversationResponse>> assignAgent(
             @PathVariable UUID id, @Valid @RequestBody ChatAssignRequest request) {
         ChatConversationResponse response = chatService.assignAgent(id, request);
@@ -71,24 +77,28 @@ public class ChatConversationController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ChatConversationResponse>> updateStatus(@PathVariable UUID id) {
         ChatConversationResponse response = chatService.closeConversation(id);
         return ResponseEntity.ok(ApiResponse.success("Conversation closed successfully", response));
     }
 
     @GetMapping("/active")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<ChatConversationResponse>>> getActiveConversations(Pageable pageable) {
         Page<ChatConversationResponse> conversations = chatService.getActiveConversations(pageable);
         return ResponseEntity.ok(ApiResponse.success(conversations));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ChatConversationResponse>>> getAllConversations(Pageable pageable) {
         Page<ChatConversationResponse> conversations = chatService.getByStatus(Status.ACTIVE, pageable);
         return ResponseEntity.ok(ApiResponse.success(conversations));
     }
 
     @GetMapping("/agent/{agentId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ChatConversationResponse>>> getConversationsByAgent(
             @PathVariable UUID agentId, Pageable pageable) {
         Page<ChatConversationResponse> conversations = chatService.getByAgentId(agentId, pageable);
@@ -96,12 +106,14 @@ public class ChatConversationController {
     }
 
     @PostMapping("/{id}/read")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable UUID id) {
         chatMessageService.markAsRead(id);
         return ResponseEntity.ok(ApiResponse.success("Messages marked as read", null));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ChatConversationResponse>>> searchConversations(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String source,
@@ -119,12 +131,14 @@ public class ChatConversationController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<ChatConversationResponse>>> exportCsv() {
         List<ChatConversationResponse> all = chatService.getAllConversations();
         return ResponseEntity.ok(ApiResponse.success(all));
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<ChatConversationResponse>>> exportExcel() {
         List<ChatConversationResponse> all = chatService.getAllConversations();
         return ResponseEntity.ok(ApiResponse.success(all));

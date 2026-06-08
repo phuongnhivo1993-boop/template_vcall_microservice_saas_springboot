@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/webhooks")
@@ -32,18 +33,21 @@ public class WebhookController {
     private final WebhookService webhookService;
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<WebhookResponse>>> getAllWebhooks(Pageable pageable) {
         Page<WebhookResponse> page = webhookService.getAllWebhooks(pageable);
         return ResponseEntity.ok(ApiResponse.success(page));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<WebhookResponse>> getWebhook(@PathVariable Long id) {
         WebhookResponse response = webhookService.getWebhook(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<WebhookResponse>> createWebhook(
             @Valid @RequestBody WebhookRequest request) {
         WebhookResponse response = webhookService.createWebhook(request);
@@ -52,6 +56,7 @@ public class WebhookController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<WebhookResponse>> updateWebhook(
             @PathVariable Long id,
             @Valid @RequestBody WebhookRequest request) {
@@ -60,24 +65,28 @@ public class WebhookController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteWebhook(@PathVariable Long id) {
         webhookService.deleteWebhook(id);
         return ResponseEntity.ok(ApiResponse.success("Webhook deleted successfully", null));
     }
 
     @PostMapping("/{id}/test")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<TestResultResponse>> testWebhook(@PathVariable Long id) {
         TestResultResponse result = webhookService.testWebhook(id);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @PostMapping("/bulk-delete")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> bulkDeleteWebhooks(@RequestBody List<Long> ids) {
         webhookService.bulkDeleteWebhooks(ids);
         return ResponseEntity.ok(ApiResponse.success("Webhooks deleted successfully", null));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<WebhookResponse>>> searchWebhooks(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String event,
@@ -88,6 +97,7 @@ public class WebhookController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getWebhookStats() {
         Map<String, Object> stats = webhookService.getWebhookStats();
         return ResponseEntity.ok(ApiResponse.success(stats));

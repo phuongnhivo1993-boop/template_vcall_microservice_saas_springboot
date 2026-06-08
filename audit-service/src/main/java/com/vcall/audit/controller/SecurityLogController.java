@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/audit/security-logs")
@@ -21,18 +22,21 @@ public class SecurityLogController {
     private final SecurityLogService securityLogService;
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SecurityLogResponse>>> getAllLogs(Pageable pageable) {
         Page<SecurityLogResponse> responses = securityLogService.getAllLogs(pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SecurityLogResponse>> getLogById(@PathVariable UUID id) {
         SecurityLogResponse response = securityLogService.getById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/events/{eventType}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SecurityLogResponse>>> getByEventType(
             @PathVariable String eventType, Pageable pageable) {
         SecurityLog.EventType type = SecurityLog.EventType.valueOf(eventType.toUpperCase());
@@ -41,12 +45,14 @@ public class SecurityLogController {
     }
 
     @GetMapping("/suspicious")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<SecurityLogResponse>>> getSuspicious() {
         List<SecurityLogResponse> responses = securityLogService.detectSuspiciousActivity();
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping("/login-history/{actorId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<SecurityLogResponse>>> getLoginHistory(
             @PathVariable UUID actorId) {
         List<SecurityLogResponse> responses = securityLogService.getLoginHistory(actorId);

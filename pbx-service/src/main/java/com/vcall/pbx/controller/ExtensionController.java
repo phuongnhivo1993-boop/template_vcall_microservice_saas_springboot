@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/pbx/extensions")
@@ -39,6 +40,7 @@ public class ExtensionController {
     private final ExtensionService extensionService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ExtensionResponse>> createExtension(@Valid @RequestBody ExtensionRequest request) {
         ExtensionResponse response = extensionService.createExtension(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -46,18 +48,21 @@ public class ExtensionController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ExtensionResponse>>> getAllExtensions(Pageable pageable) {
         Page<ExtensionResponse> extensions = extensionService.getAllExtensions(pageable);
         return ResponseEntity.ok(ApiResponse.success(extensions));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ExtensionResponse>> getExtension(@PathVariable Long id) {
         ExtensionResponse response = extensionService.getExtension(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ExtensionResponse>> updateExtension(@PathVariable Long id,
                                                                             @Valid @RequestBody ExtensionRequest request) {
         ExtensionResponse response = extensionService.updateExtension(id, request);
@@ -65,12 +70,14 @@ public class ExtensionController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteExtension(@PathVariable Long id) {
         extensionService.deleteExtension(id);
         return ResponseEntity.ok(ApiResponse.success("Extension deleted successfully", null));
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ExtensionResponse>> updateStatus(@PathVariable Long id,
                                                                         @RequestBody ExtensionStatusRequest request) {
         ExtensionResponse response = extensionService.updateStatus(id, request.getStatus());
@@ -78,6 +85,7 @@ public class ExtensionController {
     }
 
     @PutMapping("/{id}/forwarding")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ExtensionResponse>> updateForwarding(@PathVariable Long id,
                                                                             @RequestBody ExtensionForwardingRequest request) {
         ExtensionResponse response = extensionService.setCallForwarding(id, request.getCallForwarding());
@@ -85,6 +93,7 @@ public class ExtensionController {
     }
 
     @GetMapping("/status/{status}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ExtensionResponse>>> getExtensionsByStatus(@PathVariable String status,
                                                                                        Pageable pageable) {
         Page<ExtensionResponse> extensions = extensionService.getByStatus(status, pageable);
@@ -92,6 +101,7 @@ public class ExtensionController {
     }
 
     @GetMapping("/sip-account/{sipAccountId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ExtensionResponse>>> getExtensionsBySipAccount(@PathVariable Long sipAccountId,
                                                                                             Pageable pageable) {
         Page<ExtensionResponse> extensions = extensionService.getBySipAccount(sipAccountId, pageable);
@@ -99,6 +109,7 @@ public class ExtensionController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ExtensionResponse>>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
@@ -109,6 +120,7 @@ public class ExtensionController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@RequestParam(required = false) String keyword,
                            HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -125,6 +137,7 @@ public class ExtensionController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@RequestParam(required = false) String keyword,
                             HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -140,6 +153,7 @@ public class ExtensionController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
         return ResponseEntity.ok(ApiResponse.success(extensionService.getStats()));
     }

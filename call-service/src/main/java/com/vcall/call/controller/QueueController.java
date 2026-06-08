@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/call-queues")
@@ -39,32 +40,38 @@ public class QueueController {
     private final QueueService queueService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<QueueResponse> createQueue(@Valid @RequestBody QueueRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(queueService.createQueue(request));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<Page<QueueResponse>> getAllQueues(Pageable pageable) {
         return ResponseEntity.ok(queueService.getAllQueues(pageable));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<QueueResponse> getQueue(@PathVariable Long id) {
         return ResponseEntity.ok(queueService.getQueue(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<QueueResponse> updateQueue(@PathVariable Long id, @Valid @RequestBody QueueRequest request) {
         return ResponseEntity.ok(queueService.updateQueue(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<Void> deleteQueue(@PathVariable Long id) {
         queueService.deleteQueue(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{queueId}/agents/{agentId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<Void> addAgentToQueue(@PathVariable Long queueId,
                                                  @PathVariable UUID agentId,
                                                  @RequestParam(required = false) Integer priority) {
@@ -73,6 +80,7 @@ public class QueueController {
     }
 
     @DeleteMapping("/{queueId}/agents/{agentId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<Void> removeAgentFromQueue(@PathVariable Long queueId,
                                                       @PathVariable UUID agentId) {
         queueService.removeAgentFromQueue(queueId, agentId);
@@ -80,6 +88,7 @@ public class QueueController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<QueueResponse>>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String strategy,
@@ -89,6 +98,7 @@ public class QueueController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@RequestParam(required = false) String keyword,
                            HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -105,6 +115,7 @@ public class QueueController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@RequestParam(required = false) String keyword,
                             HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -120,6 +131,7 @@ public class QueueController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
         return ResponseEntity.ok(ApiResponse.success(queueService.getStats()));
     }

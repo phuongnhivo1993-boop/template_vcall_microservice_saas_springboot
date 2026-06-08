@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/crm/opportunities")
@@ -42,18 +43,21 @@ public class OpportunityController {
     private final OpportunityService opportunityService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<OpportunityResponse>> createOpportunity(@Valid @RequestBody OpportunityRequest request) {
         OpportunityResponse response = opportunityService.createOpportunity(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Opportunity created successfully", response));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<OpportunityResponse>> getOpportunity(@PathVariable UUID id) {
         OpportunityResponse response = opportunityService.getOpportunity(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<OpportunityResponse>>> getAllOpportunities(
             @RequestParam(required = false) UUID leadId,
             @RequestParam(required = false) OpportunityStage stage,
@@ -70,18 +74,21 @@ public class OpportunityController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<OpportunityResponse>> updateOpportunity(@PathVariable UUID id, @Valid @RequestBody OpportunityRequest request) {
         OpportunityResponse response = opportunityService.updateOpportunity(id, request);
         return ResponseEntity.ok(ApiResponse.success("Opportunity updated successfully", response));
     }
 
     @PatchMapping("/{id}/stage")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<OpportunityResponse>> updateStage(@PathVariable UUID id, @RequestBody OpportunityStage stage) {
         OpportunityResponse response = opportunityService.updateStage(id, stage);
         return ResponseEntity.ok(ApiResponse.success("Opportunity stage updated successfully", response));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<OpportunityResponse>>> searchOpportunities(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) OpportunityStage stage,
@@ -102,6 +109,7 @@ public class OpportunityController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportOpportunitiesCsv(@RequestParam(required = false) String keyword,
                                        @RequestParam(required = false) OpportunityStage stage,
                                        HttpServletResponse response) throws IOException {
@@ -125,6 +133,7 @@ public class OpportunityController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportOpportunitiesExcel(@RequestParam(required = false) String keyword,
                                          @RequestParam(required = false) OpportunityStage stage,
                                          HttpServletResponse response) throws IOException {
@@ -147,12 +156,14 @@ public class OpportunityController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
         Map<String, Object> stats = opportunityService.getOpportunityStats();
         return ResponseEntity.ok(ApiResponse.success(stats));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteOpportunity(@PathVariable UUID id) {
         opportunityService.deleteOpportunity(id);
         return ResponseEntity.ok(ApiResponse.success("Opportunity deleted successfully", null));

@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @Slf4j
 @RestController
@@ -30,6 +31,7 @@ public class StreamingController {
     private final CdnService cdnService;
 
     @PostMapping("/streams/{streamId}/manifest/hls")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Generate HLS manifest for a stream")
     public ResponseEntity<ManifestResponse> generateHlsManifest(
             @PathVariable UUID streamId,
@@ -47,6 +49,7 @@ public class StreamingController {
     }
 
     @PostMapping("/streams/{streamId}/manifest/dash")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Generate DASH manifest for a stream")
     public ResponseEntity<ManifestResponse> generateDashManifest(
             @PathVariable UUID streamId,
@@ -64,6 +67,7 @@ public class StreamingController {
     }
 
     @GetMapping("/streams/{streamId}/manifest")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get stream manifest URLs")
     public ResponseEntity<StreamManifestResponse> getStreamManifest(
             @PathVariable UUID streamId,
@@ -83,6 +87,7 @@ public class StreamingController {
     }
 
     @GetMapping("/streams/{streamId}/segment/{variant}/{segmentName}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Serve a video segment")
     public void serveSegment(
             @PathVariable UUID streamId,
@@ -99,6 +104,7 @@ public class StreamingController {
     }
 
     @GetMapping("/streams/{streamId}/variant/{variant}/playlist.m3u8")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Serve a variant playlist")
     public void serveVariantPlaylist(
             @PathVariable UUID streamId,
@@ -113,6 +119,7 @@ public class StreamingController {
     }
 
     @GetMapping("/streams/{streamId}/cdn-info")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get CDN configuration for a stream")
     public ResponseEntity<CdnService.CdnInfo> getCdnInfo(@PathVariable UUID streamId) {
         CdnService.CdnInfo info = cdnService.getCdnInfo(streamId);
@@ -120,6 +127,7 @@ public class StreamingController {
     }
 
     @DeleteMapping("/streams/{streamId}/cache")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Invalidate CDN cache for a stream")
     public ResponseEntity<Void> invalidateCache(@PathVariable UUID streamId) {
         log.info("Invalidating CDN cache for stream {}", streamId);
@@ -128,6 +136,7 @@ public class StreamingController {
     }
 
     @GetMapping("/streams/{streamId}/playback")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get playback URLs with CDN headers")
     public ResponseEntity<PlaybackResponse> getPlaybackInfo(
             @PathVariable UUID streamId,

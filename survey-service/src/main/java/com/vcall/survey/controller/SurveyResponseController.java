@@ -43,6 +43,7 @@ public class SurveyResponseController {
     private final SurveyResponseService responseService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Submit a survey answer")
     public ResponseEntity<ApiResponse<SurveyAnswerResponse>> submitAnswer(@Valid @RequestBody SurveyAnswerRequest request) {
         SurveyAnswerResponse response = responseService.submitAnswer(request);
@@ -93,6 +94,7 @@ public class SurveyResponseController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Export survey responses to CSV")
     public void exportCsv(@RequestParam(required = false) UUID surveyId,
                           HttpServletResponse response) throws IOException {
@@ -109,6 +111,7 @@ public class SurveyResponseController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Export survey responses to Excel")
     public void exportExcel(@RequestParam(required = false) UUID surveyId,
                             HttpServletResponse response) throws IOException {

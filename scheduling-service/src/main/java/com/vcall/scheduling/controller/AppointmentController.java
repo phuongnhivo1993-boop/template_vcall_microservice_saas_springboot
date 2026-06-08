@@ -162,6 +162,7 @@ public class AppointmentController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get appointment statistics by status")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
         Map<String, Long> stats = appointmentService.getStats();
@@ -169,6 +170,7 @@ public class AppointmentController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Export appointments to CSV")
     public void exportCsv(@RequestParam(required = false) String keyword,
                           @RequestParam(required = false) String status,
@@ -191,6 +193,7 @@ public class AppointmentController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Export appointments to Excel")
     public void exportExcel(@RequestParam(required = false) String keyword,
                             @RequestParam(required = false) String status,

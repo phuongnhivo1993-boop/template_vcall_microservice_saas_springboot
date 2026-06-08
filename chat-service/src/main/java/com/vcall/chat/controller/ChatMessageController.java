@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/chat/conversations/{id}/messages")
@@ -28,6 +29,7 @@ public class ChatMessageController {
     private final ChatMessageService chatMessageService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ChatMessageResponse>> sendMessage(
             @PathVariable UUID id, @Valid @RequestBody ChatMessageRequest request) {
         ChatMessageResponse response = chatMessageService.sendMessage(id, request);
@@ -36,18 +38,21 @@ public class ChatMessageController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ChatMessageResponse>>> getMessages(@PathVariable UUID id, Pageable pageable) {
         Page<ChatMessageResponse> messages = chatMessageService.getMessages(id, pageable);
         return ResponseEntity.ok(ApiResponse.success(messages));
     }
 
     @GetMapping("/unread-count")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getUnreadCount(@PathVariable UUID id) {
         long count = chatMessageService.getUnreadCount(id);
         return ResponseEntity.ok(ApiResponse.success(Map.of("unreadCount", count)));
     }
 
     @PostMapping("/read")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable UUID id) {
         chatMessageService.markAsRead(id);
         return ResponseEntity.ok(ApiResponse.success("Messages marked as read", null));

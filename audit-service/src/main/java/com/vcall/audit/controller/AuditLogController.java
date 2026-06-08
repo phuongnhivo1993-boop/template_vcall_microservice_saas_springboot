@@ -30,6 +30,7 @@ public class AuditLogController {
     private final AuditLogService auditLogService;
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<AuditLogResponse>>> getAllLogs(Pageable pageable) {
         AuditSearchRequest request = AuditSearchRequest.builder()
                 .page(pageable.getPageNumber())
@@ -40,12 +41,14 @@ public class AuditLogController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AuditLogResponse>> getLogById(@PathVariable UUID id) {
         AuditLogResponse response = auditLogService.getById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<PagedResponse<AuditLogResponse>>> searchLogs(
             @RequestParam(required = false) UUID actorId,
             @RequestParam(required = false) String action,
@@ -80,6 +83,7 @@ public class AuditLogController {
     }
 
     @GetMapping("/actor/{actorId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<AuditLogResponse>>> getByActor(@PathVariable UUID actorId,
                                                                            Pageable pageable) {
         Page<AuditLogResponse> responses = auditLogService.getByActor(actorId, pageable);
@@ -87,6 +91,7 @@ public class AuditLogController {
     }
 
     @GetMapping("/resource/{resourceType}/{resourceId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<AuditLogResponse>>> getByResource(
             @PathVariable String resourceType,
             @PathVariable String resourceId,
@@ -103,6 +108,7 @@ public class AuditLogController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<byte[]> exportCsv(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
@@ -122,6 +128,7 @@ public class AuditLogController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<AuditLogResponse>>> exportExcel(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
@@ -130,6 +137,7 @@ public class AuditLogController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
         Map<String, Long> stats = auditLogService.getStats();
         return ResponseEntity.ok(ApiResponse.success(stats));

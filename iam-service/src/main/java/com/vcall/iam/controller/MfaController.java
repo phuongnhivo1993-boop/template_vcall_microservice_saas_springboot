@@ -11,6 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/mfa")
@@ -20,12 +21,14 @@ public class MfaController {
     private final MfaService mfaService;
 
     @PostMapping("/setup")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<MfaSetupResponse>> setup(@AuthenticationPrincipal UUID userId) {
         MfaSetupResponse response = mfaService.generateSetup(userId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PostMapping("/verify")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<String>> verify(
             @AuthenticationPrincipal UUID userId,
             @Valid @RequestBody MfaVerifyRequest request) {
@@ -38,6 +41,7 @@ public class MfaController {
     }
 
     @PostMapping("/disable")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<String>> disable(@AuthenticationPrincipal UUID userId) {
         mfaService.disableMfa(userId);
         return ResponseEntity.ok(ApiResponse.success("MFA disabled", "disabled"));

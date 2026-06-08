@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/reports/definitions")
@@ -27,6 +28,7 @@ public class ReportDefinitionController {
     private final ReportDefinitionService reportDefinitionService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ReportDefinitionResponse>> createReport(
             @Valid @RequestBody ReportDefinitionRequest request) {
         ReportDefinitionResponse response = reportDefinitionService.createReport(request);
@@ -34,6 +36,7 @@ public class ReportDefinitionController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ReportDefinitionResponse>> updateReport(
             @PathVariable Long id, @Valid @RequestBody ReportDefinitionRequest request) {
         ReportDefinitionResponse response = reportDefinitionService.updateReport(id, request);
@@ -41,12 +44,14 @@ public class ReportDefinitionController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ReportDefinitionResponse>> getReport(@PathVariable Long id) {
         ReportDefinitionResponse response = reportDefinitionService.getReport(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ReportDefinitionResponse>>> getAllReports(
             @RequestParam(required = false) String reportType,
             Pageable pageable) {
@@ -60,12 +65,14 @@ public class ReportDefinitionController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteReport(@PathVariable Long id) {
         reportDefinitionService.deleteReport(id);
         return ResponseEntity.ok(ApiResponse.success("Report definition deleted", null));
     }
 
     @PostMapping("/{id}/execute")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> executeReport(@PathVariable Long id) {
         reportDefinitionService.executeReport(id);
         return ResponseEntity.ok(ApiResponse.success("Report execution started", null));

@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/sms/providers")
@@ -27,6 +28,7 @@ public class SmsProviderController {
     private final SmsProviderService smsProviderService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SmsProviderResponse>> createProvider(@Valid @RequestBody SmsProviderRequest request) {
         SmsProviderResponse response = smsProviderService.createProvider(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -34,18 +36,21 @@ public class SmsProviderController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SmsProviderResponse>> getProvider(@PathVariable Long id) {
         SmsProviderResponse response = smsProviderService.getProvider(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SmsProviderResponse>>> getAllProviders(Pageable pageable) {
         Page<SmsProviderResponse> responses = smsProviderService.getAllProviders(pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SmsProviderResponse>> updateProvider(
             @PathVariable Long id, @Valid @RequestBody SmsProviderRequest request) {
         SmsProviderResponse response = smsProviderService.updateProvider(id, request);
@@ -53,12 +58,14 @@ public class SmsProviderController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteProvider(@PathVariable Long id) {
         smsProviderService.deleteProvider(id);
         return ResponseEntity.ok(ApiResponse.success("Provider deleted successfully", null));
     }
 
     @PostMapping("/{id}/test")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Boolean>> testProvider(@PathVariable Long id) {
         boolean result = smsProviderService.testProvider(id);
         return ResponseEntity.ok(ApiResponse.success("Provider test completed", result));

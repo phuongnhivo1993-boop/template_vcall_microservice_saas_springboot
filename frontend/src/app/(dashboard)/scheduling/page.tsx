@@ -441,6 +441,26 @@ export default function SchedulingPage() {
     setAvailabilityModalOpen(true);
   };
 
+  const handleBulkDeleteAvailability = () => {
+    Modal.confirm({
+      title: 'Delete Selected Availability',
+      content: `Are you sure you want to delete ${selectedAvailabilityKeys.length} selected availability slots?`,
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await schedulingApi.bulkDeleteAvailability(selectedAvailabilityKeys);
+          message.success(`Deleted ${selectedAvailabilityKeys.length} availability slots`);
+          setSelectedAvailabilityKeys([]);
+          fetchAvailability(availabilityPagination.current, availabilityPagination.pageSize);
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Delete failed');
+        }
+      },
+    });
+  };
+
   const handleDeleteAvailability = (record: AvailabilitySlot) => {
     showDeleteConfirm({
       title: 'Delete Availability',
@@ -906,14 +926,20 @@ export default function SchedulingPage() {
               storageKey="vcall-saved-filters-scheduling-availability"
             />
           </div>
+          {selectedAvailabilityKeys.length > 0 && (
+            <Button danger onClick={handleBulkDeleteAvailability} style={{ marginBottom: 16 }}>
+              Delete Selected ({selectedAvailabilityKeys.length})
+            </Button>
+          )}
           <CommonTable<AvailabilitySlot>
+            rowSelection={{ selectedRowKeys: selectedAvailabilityKeys, onChange: (keys: React.Key[]) => setSelectedAvailabilityKeys(keys as string[]) }}
             columns={availabilityColumns}
             dataSource={availability}
             loading={availabilityLoading}
             error={availabilityError}
             rowKey="id"
             pagination={availabilityPagination}
-            onRefresh={() => fetchAvailability(availabilityPagination.current, availabilityPagination.pageSize)}
+            onRefresh={() => { setSelectedAvailabilityKeys([]); fetchAvailability(availabilityPagination.current, availabilityPagination.pageSize); }}
             onExportCsv={handleExportAvailabilityCsv}
             onExportExcel={handleExportAvailabilityExcel}
             onTableChange={handleAvailabilityTableChange}

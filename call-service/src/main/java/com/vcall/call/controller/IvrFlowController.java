@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/ivr-flows")
@@ -39,43 +40,51 @@ public class IvrFlowController {
     private final IvrFlowService ivrFlowService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<IvrFlowResponse> createFlow(@Valid @RequestBody IvrFlowRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ivrFlowService.createFlow(request));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<Page<IvrFlowResponse>> getAllFlows(Pageable pageable) {
         return ResponseEntity.ok(ivrFlowService.getAllFlows(pageable));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<IvrFlowResponse> getFlow(@PathVariable Long id) {
         return ResponseEntity.ok(ivrFlowService.getFlow(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<IvrFlowResponse> updateFlow(@PathVariable Long id, @Valid @RequestBody IvrFlowRequest request) {
         return ResponseEntity.ok(ivrFlowService.updateFlow(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<Void> deleteFlow(@PathVariable Long id) {
         ivrFlowService.deleteFlow(id);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{flowId}/steps")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<IvrStepRequest> addStep(@PathVariable Long flowId,
                                                     @Valid @RequestBody IvrStepRequest stepRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ivrFlowService.addStep(flowId, stepRequest));
     }
 
     @GetMapping("/{flowId}/steps")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<List<IvrStepRequest>> getSteps(@PathVariable Long flowId) {
         return ResponseEntity.ok(ivrFlowService.getSteps(flowId));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<IvrFlowResponse>>> search(
             @RequestParam(required = false) String keyword,
             Pageable pageable) {
@@ -84,6 +93,7 @@ public class IvrFlowController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@RequestParam(required = false) String keyword,
                            HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -100,6 +110,7 @@ public class IvrFlowController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@RequestParam(required = false) String keyword,
                             HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -115,6 +126,7 @@ public class IvrFlowController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
         return ResponseEntity.ok(ApiResponse.success(ivrFlowService.getStats()));
     }

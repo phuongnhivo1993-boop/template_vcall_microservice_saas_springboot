@@ -60,12 +60,14 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UserResponse>> getUserById(@PathVariable UUID id) {
         UserResponse response = userService.getUserById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<PagedResponse<UserResponse>>> getAllUsers(Pageable pageable) {
         Page<UserResponse> users = userService.getAllUsers(pageable);
         PagedResponse<UserResponse> paged = PagedResponse.<UserResponse>builder()
@@ -80,6 +82,7 @@ public class UserController {
     }
 
     @GetMapping("/by-username")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UserResponse>> getUserByUsername(@RequestParam String username) {
         UserResponse response = userService.getUserByUsername(username);
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -151,6 +154,7 @@ public class UserController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportUsersCsv(@RequestParam(required = false) String keyword,
                                HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, Math.min(maxExportSize, 1000), Sort.by("createdAt").descending());

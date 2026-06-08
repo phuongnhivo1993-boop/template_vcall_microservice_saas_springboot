@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/customer-tags")
@@ -27,22 +28,26 @@ public class CustomerTagController {
     private final CustomerTagService customerTagService;
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<CustomerTagResponse>>> getAll(Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.success(customerTagService.findAll(pageable)));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CustomerTagResponse>> getById(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(customerTagService.findById(id)));
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CustomerTagResponse>> create(@Valid @RequestBody CustomerTagRequest request) {
         CustomerTagResponse response = customerTagService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tag created", response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CustomerTagResponse>> update(@PathVariable Long id,
                                                                     @Valid @RequestBody CustomerTagRequest request) {
         CustomerTagResponse response = customerTagService.update(id, request);
@@ -50,6 +55,7 @@ public class CustomerTagController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         customerTagService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("Tag deleted", null));

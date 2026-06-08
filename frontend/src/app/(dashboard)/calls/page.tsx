@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUrlState } from '@/lib/hooks/useUrlState';
-import { Card, Tag, Typography, Space, Button, message, Row, Col, Statistic, Form, Input, Select, Modal, Tooltip } from 'antd';
-import { SearchOutlined, PhoneOutlined, DownloadOutlined, CopyOutlined } from '@ant-design/icons';
+import { Card, Tag, Typography, Space, Button, message, Row, Col, Statistic, Form, Input, Select, Modal, Tooltip, Checkbox } from 'antd';
+import { SearchOutlined, PhoneOutlined, DownloadOutlined, CopyOutlined, UndoOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import CommonTable from '@/components/common/CommonTable';
 import CommonSearch from '@/components/common/CommonSearch';
@@ -46,7 +46,7 @@ export default function CallsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [urlParams, setUrlParams] = useUrlState({
-    q: '', status: '', direction: '',
+    q: '', status: '', direction: '', includeDeleted: '',
     page: '1', pageSize: '10',
   });
   const [searchParams, setSearchParams] = useState<Record<string, any>>({});
@@ -288,36 +288,46 @@ export default function CallsPage() {
       </Row>
 
       <Card>
-        <CommonSearch
-          fields={[
-            { name: 'search', label: 'Search', type: 'input', placeholder: 'Search by caller, callee, or ID' },
-            {
-              name: 'status',
-              label: 'Status',
-              type: 'select',
-              placeholder: 'Filter by status',
-              options: [
-                { value: 'completed', label: 'Completed' },
-                { value: 'ongoing', label: 'Ongoing' },
-                { value: 'missed', label: 'Missed' },
-                { value: 'failed', label: 'Failed' },
-              ],
-            },
-            {
-              name: 'direction',
-              label: 'Direction',
-              type: 'select',
-              placeholder: 'Filter by direction',
-              options: [
-                { value: 'inbound', label: 'Inbound' },
-                { value: 'outbound', label: 'Outbound' },
-              ],
-            },
-          ]}
-          onSearch={handleSearch}
-          onReset={handleReset}
-          loading={loading}
-        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <CommonSearch
+            fields={[
+              { name: 'search', label: 'Search', type: 'input', placeholder: 'Search by caller, callee, or ID' },
+              {
+                name: 'status',
+                label: 'Status',
+                type: 'select',
+                placeholder: 'Filter by status',
+                options: [
+                  { value: 'completed', label: 'Completed' },
+                  { value: 'ongoing', label: 'Ongoing' },
+                  { value: 'missed', label: 'Missed' },
+                  { value: 'failed', label: 'Failed' },
+                ],
+              },
+              {
+                name: 'direction',
+                label: 'Direction',
+                type: 'select',
+                placeholder: 'Filter by direction',
+                options: [
+                  { value: 'inbound', label: 'Inbound' },
+                  { value: 'outbound', label: 'Outbound' },
+                ],
+              },
+            ]}
+            onSearch={handleSearch}
+            onReset={handleReset}
+            loading={loading}
+          />
+          <Checkbox checked={urlParams.includeDeleted === 'true'} onChange={(e) => {
+            const val = e.target.checked ? 'true' : '';
+            setUrlParams({ includeDeleted: val, page: '1' });
+            setSearchParams((prev) => ({ ...prev, includeDeleted: e.target.checked || undefined }));
+            fetchData(1, pagination.pageSize);
+          }}>
+            Show Deleted
+          </Checkbox>
+        </div>
         <SavedFilters currentValues={searchParams} onApply={(v) => { setSearchParams(v); handleSearch(v); }} storageKey="vcall-saved-filters-calls" />
       </Card>
 

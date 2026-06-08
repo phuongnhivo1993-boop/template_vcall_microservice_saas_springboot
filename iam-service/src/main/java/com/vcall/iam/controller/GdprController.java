@@ -26,12 +26,14 @@ public class GdprController {
     private final UserRepository userRepository;
 
     @GetMapping("/export")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UserResponse>> exportMyData(Authentication authentication) {
         UserResponse response = userService.getUserByUsername(authentication.getName());
         return ResponseEntity.ok(ApiResponse.success("Data export requested. Check your email.", response));
     }
 
     @GetMapping(value = "/export/json", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<String> exportMyDataJson(Authentication authentication) {
         User user = userRepository.findByUsername(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -43,6 +45,7 @@ public class GdprController {
     }
 
     @DeleteMapping("/delete")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> deleteMyData(Authentication authentication) {
         User user = userRepository.findByUsername(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));

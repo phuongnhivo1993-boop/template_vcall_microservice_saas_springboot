@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/agent-groups")
@@ -40,6 +41,7 @@ public class AgentGroupController {
     private final AgentGroupService agentGroupService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AgentGroupResponse>> createGroup(@Valid @RequestBody AgentGroupRequest request) {
         AgentGroupResponse response = agentGroupService.createGroup(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -47,18 +49,21 @@ public class AgentGroupController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<AgentGroupResponse>>> getAllGroups(Pageable pageable) {
         Page<AgentGroupResponse> groups = agentGroupService.getAllGroups(pageable);
         return ResponseEntity.ok(ApiResponse.success(groups));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AgentGroupResponse>> getGroup(@PathVariable Long id) {
         AgentGroupResponse response = agentGroupService.getGroup(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AgentGroupResponse>> updateGroup(@PathVariable Long id,
                                                                         @Valid @RequestBody AgentGroupRequest request) {
         AgentGroupResponse response = agentGroupService.updateGroup(id, request);
@@ -66,24 +71,28 @@ public class AgentGroupController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteGroup(@PathVariable Long id) {
         agentGroupService.deleteGroup(id);
         return ResponseEntity.ok(ApiResponse.success("Group deleted successfully", null));
     }
 
     @PostMapping("/{groupId}/agents/{agentId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> addMember(@PathVariable Long groupId, @PathVariable UUID agentId) {
         agentGroupService.addMember(groupId, agentId);
         return ResponseEntity.ok(ApiResponse.success("Agent added to group successfully", null));
     }
 
     @DeleteMapping("/{groupId}/agents/{agentId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> removeMember(@PathVariable Long groupId, @PathVariable UUID agentId) {
         agentGroupService.removeMember(groupId, agentId);
         return ResponseEntity.ok(ApiResponse.success("Agent removed from group successfully", null));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<AgentGroupResponse>>> searchGroups(
             @RequestParam(required = false) String keyword,
             Pageable pageable) {
@@ -100,6 +109,7 @@ public class AgentGroupController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportGroupsCsv(@RequestParam(required = false) String keyword,
                                 HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -121,6 +131,7 @@ public class AgentGroupController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportGroupsExcel(@RequestParam(required = false) String keyword,
                                   HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -141,6 +152,7 @@ public class AgentGroupController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
         Map<String, Object> stats = agentGroupService.getGroupStats();
         return ResponseEntity.ok(ApiResponse.success(stats));

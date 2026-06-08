@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/crm/activities")
@@ -41,18 +42,21 @@ public class ActivityController {
     private final ActivityService activityService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ActivityResponse>> createActivity(@Valid @RequestBody ActivityRequest request) {
         ActivityResponse response = activityService.createActivity(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Activity created successfully", response));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ActivityResponse>> getActivity(@PathVariable Long id) {
         ActivityResponse response = activityService.getActivity(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ActivityResponse>>> getAllActivities(
             @RequestParam(required = false) UUID assignedTo,
             @RequestParam(required = false) LocalDateTime startDate,
@@ -68,6 +72,7 @@ public class ActivityController {
     }
 
     @GetMapping("/customer/{customerId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ActivityResponse>>> getActivitiesByCustomer(
             @PathVariable UUID customerId, Pageable pageable) {
         Page<ActivityResponse> responses = activityService.getActivitiesByCustomer(customerId, pageable);
@@ -75,12 +80,14 @@ public class ActivityController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ActivityResponse>> updateActivity(@PathVariable Long id, @Valid @RequestBody ActivityRequest request) {
         ActivityResponse response = activityService.updateActivity(id, request);
         return ResponseEntity.ok(ApiResponse.success("Activity updated successfully", response));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ActivityResponse>>> searchActivities(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) UUID assignedTo,
@@ -109,6 +116,7 @@ public class ActivityController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportActivitiesCsv(@RequestParam(required = false) String keyword,
                                     HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("activityDate").descending());
@@ -128,6 +136,7 @@ public class ActivityController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportActivitiesExcel(@RequestParam(required = false) String keyword,
                                       HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("activityDate").descending());
@@ -146,12 +155,14 @@ public class ActivityController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
         Map<String, Object> stats = activityService.getActivityStats();
         return ResponseEntity.ok(ApiResponse.success(stats));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteActivity(@PathVariable Long id) {
         activityService.deleteActivity(id);
         return ResponseEntity.ok(ApiResponse.success("Activity deleted successfully", null));

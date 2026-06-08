@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/sip/accounts")
@@ -39,24 +40,28 @@ public class SipAccountController {
     private final SipAccountService sipAccountService;
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SipAccountResponse>>> getAll(Pageable pageable) {
         Page<SipAccountResponse> accounts = sipAccountService.findAll(pageable);
         return ResponseEntity.ok(ApiResponse.success(accounts));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SipAccountResponse>> getById(@PathVariable Long id) {
         SipAccountResponse account = sipAccountService.findById(id);
         return ResponseEntity.ok(ApiResponse.success(account));
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SipAccountResponse>> create(@Valid @RequestBody SipAccountRequest request) {
         SipAccountResponse account = sipAccountService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("SipAccount created", account));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SipAccountResponse>> update(@PathVariable Long id,
                                                                   @Valid @RequestBody SipAccountRequest request) {
         SipAccountResponse account = sipAccountService.update(id, request);
@@ -64,12 +69,14 @@ public class SipAccountController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         sipAccountService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("SipAccount deleted", null));
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SipAccountResponse>> updateStatus(@PathVariable Long id,
                                                                          @RequestBody Map<String, String> body) {
         String status = body.get("status");
@@ -78,6 +85,7 @@ public class SipAccountController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SipAccountResponse>>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
@@ -88,6 +96,7 @@ public class SipAccountController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@RequestParam(required = false) String keyword,
                            HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -104,6 +113,7 @@ public class SipAccountController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@RequestParam(required = false) String keyword,
                             HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -119,6 +129,7 @@ public class SipAccountController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
         return ResponseEntity.ok(ApiResponse.success(sipAccountService.getStats()));
     }

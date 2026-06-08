@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/knowledge-base/articles")
@@ -28,6 +29,7 @@ public class ArticleController {
     private final ArticleService articleService;
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ArticleResponse>>> getAllArticles(
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String search,
@@ -37,12 +39,14 @@ public class ArticleController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ArticleResponse>> getArticle(@PathVariable Long id) {
         ArticleResponse response = articleService.getArticle(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ArticleResponse>> createArticle(
             @Valid @RequestBody ArticleRequest request) {
         ArticleResponse response = articleService.createArticle(request);
@@ -51,6 +55,7 @@ public class ArticleController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ArticleResponse>> updateArticle(
             @PathVariable Long id,
             @Valid @RequestBody ArticleRequest request) {
@@ -59,12 +64,14 @@ public class ArticleController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteArticle(@PathVariable Long id) {
         articleService.deleteArticle(id);
         return ResponseEntity.ok(ApiResponse.success("Article deleted successfully", null));
     }
 
     @PostMapping("/{id}/view")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ArticleResponse>> incrementViewCount(@PathVariable Long id) {
         ArticleResponse response = articleService.incrementViewCount(id);
         return ResponseEntity.ok(ApiResponse.success(response));

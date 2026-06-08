@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/billing/usage")
@@ -30,17 +31,20 @@ public class UsageRecordController {
     private final UsageRecordService usageRecordService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<UsageRecordResponse> recordUsage(@Valid @RequestBody UsageRecordRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(usageRecordService.recordUsage(request));
     }
 
     @GetMapping("/{subscriberId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<Page<UsageRecordResponse>> getUsage(@PathVariable UUID subscriberId,
                                                                Pageable pageable) {
         return ResponseEntity.ok(usageRecordService.getUsageBySubscriber(subscriberId, pageable));
     }
 
     @GetMapping("/{subscriberId}/summary")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<UsageRecordService.UsageSummary> getUsageSummary(
             @PathVariable UUID subscriberId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
@@ -49,6 +53,7 @@ public class UsageRecordController {
     }
 
     @GetMapping("/{subscriberId}/type/{usageType}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<Page<UsageRecordResponse>> getUsageByTypeAndPeriod(
             @PathVariable UUID subscriberId,
             @PathVariable UsageRecord.UsageType usageType,

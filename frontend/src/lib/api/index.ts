@@ -45,6 +45,7 @@ export const agentsApi = {
   getStatusHistory: (id: string) => apiClient.get(`/agents/${id}/status-history`),
   getProfile: (userId: string) => apiClient.get('/agents/profile', { params: { userId } }),
   getStats: () => apiClient.get('/agents/stats'),
+  restore: (id: string) => apiClient.post(`/agents/${id}/restore`),
   getSessions: (id: string) => apiClient.get(`/agent-sessions/active/${id}`),
   exportCsv: (params?: Record<string, unknown>) =>
     apiClient.get('/agents/export/csv', { params, responseType: 'blob' }),
@@ -60,6 +61,7 @@ export const customersApi = {
   delete: (id: string) => apiClient.delete(`/customers/${id}`),
   duplicate: (id: string) => apiClient.post(`/customers/${id}/duplicate`),
   bulkDelete: (ids: string[]) => apiClient.post('/customers/bulk-delete', ids),
+  restore: (id: string) => apiClient.post(`/customers/${id}/restore`),
   search: (keyword: string, params?: Record<string, unknown>) =>
     apiClient.get('/customers/search', { params: { keyword, ...params } }),
   addContact: (id: string, data: Record<string, unknown>) =>
@@ -88,6 +90,7 @@ export const crmApi = {
     update: (id: string, data: Record<string, unknown>) => apiClient.put(`/crm/leads/${id}`, data),
     delete: (id: string) => apiClient.delete(`/crm/leads/${id}`),
     duplicate: (id: string) => apiClient.post(`/crm/leads/${id}/duplicate`),
+    restore: (id: string) => apiClient.post(`/crm/leads/${id}/restore`),
     bulkDelete: (ids: string[]) => apiClient.post('/crm/leads/bulk-delete', ids),
     updateStatus: (id: string, status: string) =>
       apiClient.patch(`/crm/leads/${id}/status`, { status }),
@@ -101,6 +104,7 @@ export const crmApi = {
     update: (id: string, data: Record<string, unknown>) => apiClient.put(`/crm/opportunities/${id}`, data),
     delete: (id: string) => apiClient.delete(`/crm/opportunities/${id}`),
     duplicate: (id: string) => apiClient.post(`/crm/opportunities/${id}/duplicate`),
+    restore: (id: string) => apiClient.post(`/crm/opportunities/${id}/restore`),
     bulkDelete: (ids: string[]) => apiClient.post('/crm/opportunities/bulk-delete', ids),
     updateStage: (id: string, stage: string) =>
       apiClient.patch(`/crm/opportunities/${id}/stage`, { stage }),
@@ -142,6 +146,7 @@ export const callsApi = {
     apiClient.put(`/calls/${id}`, data),
   delete: (id: string) => apiClient.delete(`/calls/${id}`),
   duplicate: (id: string) => apiClient.post(`/calls/${id}/duplicate`),
+  restore: (id: string) => apiClient.post(`/calls/${id}/restore`),
   bulkDelete: (ids: string[]) => apiClient.post('/calls/bulk-delete', ids),
   updateStatus: (id: string, data: Record<string, unknown>) =>
     apiClient.patch(`/calls/${id}/status`, data),
@@ -174,6 +179,7 @@ export const ticketsApi = {
   update: (id: string, data: Record<string, unknown>) => apiClient.put(`/tickets/${id}`, data),
   delete: (id: string) => apiClient.delete(`/tickets/${id}`),
   duplicate: (id: string) => apiClient.post(`/tickets/${id}/duplicate`),
+  restore: (id: string) => apiClient.post(`/tickets/${id}/restore`),
   bulkDelete: (ids: string[]) => apiClient.post('/tickets/bulk-delete', ids),
   updateStatus: (id: string, status: string) =>
     apiClient.patch(`/tickets/${id}/status`, { status }),
@@ -472,6 +478,7 @@ export const schedulingApi = {
   getAvailabilityById: (id: string) => apiClient.get(`/availability/${id}`),
   createAvailability: (data: Record<string, unknown>) => apiClient.post('/availability', data),
   deleteAvailability: (id: string) => apiClient.delete(`/availability/${id}`),
+  bulkDeleteAvailability: (ids: string[]) => apiClient.post('/availability/bulk-delete', ids),
   updateAvailabilityStatus: (id: string, status: string) =>
     apiClient.patch(`/availability/${id}/status`, null, { params: { status } }),
   toggleBooked: (id: string) => apiClient.patch(`/availability/${id}/toggle-booked`),

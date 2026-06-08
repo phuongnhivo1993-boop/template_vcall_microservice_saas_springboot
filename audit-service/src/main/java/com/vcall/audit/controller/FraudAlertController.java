@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/audit/fraud-alerts")
@@ -24,6 +25,7 @@ public class FraudAlertController {
     private final FraudDetectionService fraudDetectionService;
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<FraudAlertResponse>>> getAlerts(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String severity,
@@ -35,12 +37,14 @@ public class FraudAlertController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<FraudAlertResponse>> getAlertById(@PathVariable UUID id) {
         FraudAlertResponse response = fraudDetectionService.getAlertById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<FraudAlertResponse>> updateAlertStatus(
             @PathVariable UUID id,
             @Valid @RequestBody FraudAlertStatusRequest request) {
@@ -49,6 +53,7 @@ public class FraudAlertController {
     }
 
     @PostMapping("/detect")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<FraudAlertResponse>> detectFraud(
             @Valid @RequestBody FraudAlertRequest request) {
         FraudAlertResponse response = fraudDetectionService.createAlert(request);

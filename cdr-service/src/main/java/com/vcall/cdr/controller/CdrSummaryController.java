@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/cdr/summary")
@@ -26,6 +27,7 @@ public class CdrSummaryController {
     private final CdrSummaryRepository cdrSummaryRepository;
 
     @GetMapping("/daily")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<CdrSummaryResponse>>> getDailySummary(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
@@ -36,6 +38,7 @@ public class CdrSummaryController {
     }
 
     @GetMapping("/tenant/{tenantId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<CdrSummaryResponse>>> getSummaryByTenant(
             @PathVariable UUID tenantId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,

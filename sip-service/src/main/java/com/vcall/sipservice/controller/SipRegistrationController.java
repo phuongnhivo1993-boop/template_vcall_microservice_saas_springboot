@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/sip/registrations")
@@ -36,6 +37,7 @@ public class SipRegistrationController {
     private final SipRegistrationService sipRegistrationService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SipRegistrationResponse>> register(@RequestBody Map<String, Object> body) {
         Long sipAccountId = Long.valueOf(body.get("sipAccountId").toString());
         String contactUri = (String) body.get("contactUri");
@@ -52,30 +54,35 @@ public class SipRegistrationController {
     }
 
     @PutMapping("/{id}/refresh")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SipRegistrationResponse>> refresh(@PathVariable Long id) {
         SipRegistrationResponse registration = sipRegistrationService.refresh(id);
         return ResponseEntity.ok(ApiResponse.success("SipRegistration refreshed", registration));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> unregister(@PathVariable Long id) {
         sipRegistrationService.unregister(id);
         return ResponseEntity.ok(ApiResponse.success("SipRegistration unregistered", null));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SipRegistrationResponse>>> getAll(Pageable pageable) {
         Page<SipRegistrationResponse> registrations = sipRegistrationService.findAll(pageable);
         return ResponseEntity.ok(ApiResponse.success(registrations));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SipRegistrationResponse>> getById(@PathVariable Long id) {
         SipRegistrationResponse registration = sipRegistrationService.findById(id);
         return ResponseEntity.ok(ApiResponse.success(registration));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SipRegistrationResponse>>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status,
@@ -85,6 +92,7 @@ public class SipRegistrationController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@RequestParam(required = false) String keyword,
                            HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("registeredAt").descending());
@@ -101,6 +109,7 @@ public class SipRegistrationController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@RequestParam(required = false) String keyword,
                             HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("registeredAt").descending());
@@ -116,6 +125,7 @@ public class SipRegistrationController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
         return ResponseEntity.ok(ApiResponse.success(sipRegistrationService.getStats()));
     }

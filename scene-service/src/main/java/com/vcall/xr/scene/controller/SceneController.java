@@ -35,6 +35,7 @@ public class SceneController {
     private final HotspotService hotspotService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SceneResponse>> createScene(@Valid @RequestBody SceneRequest request) {
         SceneResponse response = sceneService.createScene(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -42,18 +43,21 @@ public class SceneController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SceneResponse>> getSceneById(@PathVariable UUID id) {
         SceneResponse response = sceneService.getSceneById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SceneResponse>>> getAllScenes(Pageable pageable) {
         Page<SceneResponse> response = sceneService.getAllScenes(pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SceneResponse>>> searchScenes(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String type,
@@ -85,12 +89,14 @@ public class SceneController {
     }
 
     @GetMapping("/tenant/{tenantId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<SceneResponse>>> getScenesByTenant(@PathVariable UUID tenantId) {
         List<SceneResponse> response = sceneService.getScenesByTenant(tenantId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/tenant/{tenantId}/status/{status}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<SceneResponse>>> getScenesByTenantAndStatus(
             @PathVariable UUID tenantId, @PathVariable String status) {
         List<SceneResponse> response = sceneService.getScenesByTenantAndStatus(tenantId, status);
@@ -98,6 +104,7 @@ public class SceneController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SceneResponse>> updateScene(
             @PathVariable UUID id, @Valid @RequestBody SceneRequest request) {
         SceneResponse response = sceneService.updateScene(id, request);
@@ -105,24 +112,28 @@ public class SceneController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteScene(@PathVariable UUID id) {
         sceneService.deleteScene(id);
         return ResponseEntity.ok(ApiResponse.success("Scene deleted successfully", null));
     }
 
     @PostMapping("/{id}/publish")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SceneResponse>> publishScene(@PathVariable UUID id) {
         SceneResponse response = sceneService.publishScene(id);
         return ResponseEntity.ok(ApiResponse.success("Scene published successfully", response));
     }
 
     @PostMapping("/{id}/unpublish")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SceneResponse>> unpublishScene(@PathVariable UUID id) {
         SceneResponse response = sceneService.unpublishScene(id);
         return ResponseEntity.ok(ApiResponse.success("Scene unpublished successfully", response));
     }
 
     @PostMapping("/{id}/duplicate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SceneResponse>> duplicateScene(
             @PathVariable UUID id,
             @RequestParam(required = false) String newName) {
@@ -132,12 +143,14 @@ public class SceneController {
     }
 
     @PostMapping("/{id}/view")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SceneResponse>> incrementViewCount(@PathVariable UUID id) {
         SceneResponse response = sceneService.incrementViewCount(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PostMapping("/{sceneId}/nodes")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SceneNodeResponse>> addNode(
             @PathVariable UUID sceneId, @Valid @RequestBody SceneNodeRequest request) {
         SceneNodeResponse response = sceneGraphService.addNode(sceneId, request);
@@ -146,12 +159,14 @@ public class SceneController {
     }
 
     @GetMapping("/{sceneId}/nodes")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<SceneNodeResponse>>> getNodes(@PathVariable UUID sceneId) {
         List<SceneNodeResponse> response = sceneGraphService.getNodesByScene(sceneId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/{sceneId}/nodes/{nodeId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SceneNodeResponse>> getNode(
             @PathVariable UUID sceneId, @PathVariable UUID nodeId) {
         SceneNodeResponse response = sceneGraphService.getNodeById(nodeId);
@@ -159,6 +174,7 @@ public class SceneController {
     }
 
     @GetMapping("/{sceneId}/nodes/{parentId}/children")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<SceneNodeResponse>>> getChildNodes(
             @PathVariable UUID sceneId, @PathVariable UUID parentId) {
         List<SceneNodeResponse> response = sceneGraphService.getChildNodes(sceneId, parentId);
@@ -166,6 +182,7 @@ public class SceneController {
     }
 
     @PutMapping("/{sceneId}/nodes/{nodeId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SceneNodeResponse>> updateNode(
             @PathVariable UUID sceneId,
             @PathVariable UUID nodeId,
@@ -175,6 +192,7 @@ public class SceneController {
     }
 
     @DeleteMapping("/{sceneId}/nodes/{nodeId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteNode(
             @PathVariable UUID sceneId, @PathVariable UUID nodeId) {
         sceneGraphService.deleteNode(nodeId);
@@ -182,6 +200,7 @@ public class SceneController {
     }
 
     @PutMapping("/{sceneId}/nodes/reorder")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<SceneNodeResponse>>> reorderNodes(
             @PathVariable UUID sceneId, @RequestBody List<UUID> nodeOrder) {
         List<SceneNodeResponse> response = sceneGraphService.reorderNodes(sceneId, nodeOrder);
@@ -189,6 +208,7 @@ public class SceneController {
     }
 
     @PostMapping("/{sceneId}/hotspots")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<HotspotResponse>> createHotspot(
             @PathVariable UUID sceneId, @Valid @RequestBody HotspotRequest request) {
         HotspotResponse response = hotspotService.createHotspot(sceneId, request);
@@ -197,12 +217,14 @@ public class SceneController {
     }
 
     @GetMapping("/{sceneId}/hotspots")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<HotspotResponse>>> getHotspots(@PathVariable UUID sceneId) {
         List<HotspotResponse> response = hotspotService.getHotspotsByScene(sceneId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/{sceneId}/hotspots/{hotspotId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<HotspotResponse>> getHotspot(
             @PathVariable UUID sceneId, @PathVariable UUID hotspotId) {
         HotspotResponse response = hotspotService.getHotspotById(hotspotId);
@@ -210,6 +232,7 @@ public class SceneController {
     }
 
     @GetMapping("/{sceneId}/hotspots/node/{nodeId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<HotspotResponse>>> getHotspotsByNode(
             @PathVariable UUID sceneId, @PathVariable UUID nodeId) {
         List<HotspotResponse> response = hotspotService.getHotspotsByNode(nodeId);
@@ -217,6 +240,7 @@ public class SceneController {
     }
 
     @PutMapping("/{sceneId}/hotspots/{hotspotId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<HotspotResponse>> updateHotspot(
             @PathVariable UUID sceneId,
             @PathVariable UUID hotspotId,
@@ -226,6 +250,7 @@ public class SceneController {
     }
 
     @DeleteMapping("/{sceneId}/hotspots/{hotspotId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteHotspot(
             @PathVariable UUID sceneId, @PathVariable UUID hotspotId) {
         hotspotService.deleteHotspot(hotspotId);

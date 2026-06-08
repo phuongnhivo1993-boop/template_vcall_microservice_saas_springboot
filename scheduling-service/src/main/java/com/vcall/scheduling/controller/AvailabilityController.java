@@ -160,6 +160,7 @@ public class AvailabilityController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Export availability to CSV")
     public void exportCsv(@RequestParam(required = false) UUID agentId,
                           HttpServletResponse response) throws IOException {
@@ -176,6 +177,7 @@ public class AvailabilityController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Export availability to Excel")
     public void exportExcel(@RequestParam(required = false) UUID agentId,
                             HttpServletResponse response) throws IOException {

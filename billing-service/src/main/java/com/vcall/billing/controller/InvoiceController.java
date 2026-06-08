@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/billing/invoices")
@@ -26,6 +27,7 @@ public class InvoiceController {
     private final BillingService billingService;
 
     @PostMapping("/generate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<InvoiceResponse> generateInvoice(
             @RequestParam UUID subscriberId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
@@ -35,17 +37,20 @@ public class InvoiceController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<InvoiceResponse> getInvoice(@PathVariable Long id) {
         return ResponseEntity.ok(billingService.getInvoice(id));
     }
 
     @GetMapping("/subscriber/{subscriberId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<Page<InvoiceResponse>> getSubscriberInvoices(@PathVariable UUID subscriberId,
                                                                         Pageable pageable) {
         return ResponseEntity.ok(billingService.getInvoiceHistory(subscriberId, pageable));
     }
 
     @PostMapping("/{id}/pay")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<InvoiceResponse> payInvoice(@PathVariable Long id) {
         return ResponseEntity.ok(billingService.processPayment(id));
     }

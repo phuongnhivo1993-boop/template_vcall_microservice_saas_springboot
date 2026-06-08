@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/bim")
@@ -25,6 +26,7 @@ public class BimController {
     private final BimViewerService bimViewerService;
 
     @PostMapping("/upload")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Upload an IFC/Revit file")
     public ResponseEntity<Map<String, String>> uploadFile(
             @RequestParam("file") MultipartFile file,
@@ -35,30 +37,35 @@ public class BimController {
     }
 
     @GetMapping("/parse/{objectName:.+}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Parse an IFC file")
     public ResponseEntity<Map<String, Object>> parseIfcFile(@PathVariable String objectName) {
         return ResponseEntity.ok(ifcParserService.parseIfcFile(objectName));
     }
 
     @GetMapping("/viewer/{objectName:.+}/metadata")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get BIM model metadata for viewer")
     public ResponseEntity<Map<String, Object>> getModelMetadata(@PathVariable String objectName) {
         return ResponseEntity.ok(bimViewerService.getModelMetadata(objectName));
     }
 
     @GetMapping("/viewer/{objectName:.+}/hierarchy")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get BIM model hierarchy")
     public ResponseEntity<Map<String, Object>> getModelHierarchy(@PathVariable String objectName) {
         return ResponseEntity.ok(bimViewerService.getModelHierarchy(objectName));
     }
 
     @GetMapping("/viewer/{objectName:.+}/statistics")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get BIM model statistics")
     public ResponseEntity<Map<String, Object>> getModelStatistics(@PathVariable String objectName) {
         return ResponseEntity.ok(bimViewerService.getModelStatistics(objectName));
     }
 
     @GetMapping("/download/{objectName:.+}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Download a BIM/CAD file")
     public ResponseEntity<InputStreamResource> downloadFile(@PathVariable String objectName) {
         InputStream stream = bimViewerService.getModelStream(objectName);
@@ -69,6 +76,7 @@ public class BimController {
     }
 
     @GetMapping("/exists/{objectName:.+}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Check if file exists")
     public ResponseEntity<Map<String, Boolean>> fileExists(@PathVariable String objectName) {
         return ResponseEntity.ok(Map.of("exists", ifcParserService.fileExists(objectName)));

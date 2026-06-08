@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/campaigns/{campaignId}/results")
@@ -36,6 +37,7 @@ public class CampaignResultController {
     private final CampaignResultService campaignResultService;
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<CampaignResultResponse>>> getResults(
             @PathVariable Long campaignId, Pageable pageable) {
         Page<CampaignResultResponse> results = campaignResultService.getResults(campaignId, pageable);
@@ -43,6 +45,7 @@ public class CampaignResultController {
     }
 
     @GetMapping("/agent/{agentId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<CampaignResultResponse>>> getAgentResults(
             @PathVariable Long campaignId,
             @PathVariable UUID agentId, Pageable pageable) {
@@ -51,6 +54,7 @@ public class CampaignResultController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<CampaignResultResponse>>> search(
             @PathVariable Long campaignId,
             @RequestParam(required = false) String keyword,
@@ -61,6 +65,7 @@ public class CampaignResultController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@PathVariable Long campaignId,
                           @RequestParam(required = false) String keyword,
                           HttpServletResponse response) throws IOException {
@@ -73,6 +78,7 @@ public class CampaignResultController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@PathVariable Long campaignId,
                             @RequestParam(required = false) String keyword,
                             HttpServletResponse response) throws IOException {
@@ -84,17 +90,20 @@ public class CampaignResultController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats(@PathVariable Long campaignId) {
         return ResponseEntity.ok(ApiResponse.success(campaignResultService.getStats(campaignId)));
     }
 
     @DeleteMapping("/{resultId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteResult(@PathVariable Long resultId) {
         campaignResultService.deleteResult(resultId);
         return ResponseEntity.ok(ApiResponse.success("Result deleted", null));
     }
 
     @PostMapping("/bulk-delete")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<BulkOperationUtil.BulkResult<Long>>> bulkDelete(
             @PathVariable Long campaignId, @RequestBody List<Long> ids) {
         BulkOperationUtil.BulkResult<Long> result = new BulkOperationUtil.BulkResult<>();

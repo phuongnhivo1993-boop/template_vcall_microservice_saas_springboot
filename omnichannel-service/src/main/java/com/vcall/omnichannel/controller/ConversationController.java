@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/omnichannel/conversations")
@@ -36,18 +37,21 @@ public class ConversationController {
     private final ConversationService conversationService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ConversationResponse>> create(@Valid @RequestBody ConversationRequest request) {
         ConversationResponse response = conversationService.createConversation(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Conversation created", response));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ConversationResponse>> getById(@PathVariable UUID id) {
         ConversationResponse response = conversationService.getById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ConversationResponse>> update(
             @PathVariable UUID id, @Valid @RequestBody ConversationUpdateRequest request) {
         ConversationResponse response = conversationService.updateConversation(id, request);
@@ -55,12 +59,14 @@ public class ConversationController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID id) {
         conversationService.deleteConversation(id);
         return ResponseEntity.ok(ApiResponse.success("Conversation deleted", null));
     }
 
     @PostMapping("/{id}/assign")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ConversationResponse>> assign(
             @PathVariable UUID id,
             @Valid @RequestBody ConversationAssignRequest request) {
@@ -69,6 +75,7 @@ public class ConversationController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ConversationResponse>> updateStatus(
             @PathVariable UUID id,
             @Valid @RequestBody ConversationStatusRequest request) {
@@ -77,12 +84,14 @@ public class ConversationController {
     }
 
     @GetMapping("/channel/{channel}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ConversationResponse>>> getByChannel(@PathVariable Channel channel, Pageable pageable) {
         Page<ConversationResponse> responses = conversationService.getByChannel(channel, pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ConversationResponse>>> search(
             @RequestParam(required = false) Channel channel,
             @RequestParam(required = false) ConversationStatus status,

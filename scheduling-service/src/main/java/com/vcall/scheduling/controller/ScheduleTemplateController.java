@@ -142,6 +142,7 @@ public class ScheduleTemplateController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Export schedule templates to CSV")
     public void exportCsv(@RequestParam(required = false) UUID agentId,
                           HttpServletResponse response) throws IOException {
@@ -158,6 +159,7 @@ public class ScheduleTemplateController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Export schedule templates to Excel")
     public void exportExcel(@RequestParam(required = false) UUID agentId,
                             HttpServletResponse response) throws IOException {

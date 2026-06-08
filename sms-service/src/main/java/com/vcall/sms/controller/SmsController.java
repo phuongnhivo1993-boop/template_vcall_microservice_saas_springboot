@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/sms")
@@ -32,6 +33,7 @@ public class SmsController {
     private final SmsService smsService;
 
     @PostMapping("/send")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SmsResponse>> sendSms(@Valid @RequestBody SmsRequest request) {
         SmsResponse response = smsService.sendSms(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -39,6 +41,7 @@ public class SmsController {
     }
 
     @PostMapping("/batch")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<SmsResponse>>> sendBatchSms(@Valid @RequestBody List<SmsRequest> requests) {
         List<SmsResponse> responses = smsService.sendBatchSms(requests);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -46,18 +49,21 @@ public class SmsController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteSms(@PathVariable UUID id) {
         smsService.deleteSms(id);
         return ResponseEntity.ok(ApiResponse.success("SMS deleted successfully", null));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SmsResponse>> getSms(@PathVariable UUID id) {
         SmsResponse response = smsService.getSmsStatus(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SmsResponse>>> getAllSms(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
@@ -67,6 +73,7 @@ public class SmsController {
     }
 
     @GetMapping("/history")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<SmsResponse>>> getSmsHistory(
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to,

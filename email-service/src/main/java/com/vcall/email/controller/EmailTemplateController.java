@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/email/templates")
@@ -28,33 +29,39 @@ public class EmailTemplateController {
     private final EmailTemplateService emailTemplateService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<EmailTemplateResponse> createTemplate(@Valid @RequestBody EmailTemplateRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(emailTemplateService.createTemplate(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<EmailTemplateResponse> updateTemplate(@PathVariable Long id,
                                                                  @Valid @RequestBody EmailTemplateRequest request) {
         return ResponseEntity.ok(emailTemplateService.updateTemplate(id, request));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<EmailTemplateResponse> getTemplate(@PathVariable Long id) {
         return ResponseEntity.ok(emailTemplateService.getTemplate(id));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<EmailTemplateResponse>>> getAllTemplates(Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.success(emailTemplateService.getAllTemplates(pageable)));
     }
 
     @GetMapping("/category")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<EmailTemplateResponse>>> getByCategory(@RequestParam String category,
                                                                                    Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.success(emailTemplateService.getByCategory(category, pageable)));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<Void> deleteTemplate(@PathVariable Long id) {
         emailTemplateService.deleteTemplate(id);
         return ResponseEntity.noContent().build();

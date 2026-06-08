@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/routing-rules")
@@ -38,24 +39,28 @@ public class RoutingRuleController {
     private final RoutingService routingService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<RoutingRuleResponse>> createRule(@Valid @RequestBody RoutingRuleRequest request) {
         RoutingRuleResponse response = routingService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Routing rule created", response));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<RoutingRuleResponse>>> getAllRules(Pageable pageable) {
         Page<RoutingRuleResponse> rules = routingService.findAll(pageable);
         return ResponseEntity.ok(ApiResponse.success(rules));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<RoutingRuleResponse>> getRule(@PathVariable Long id) {
         RoutingRuleResponse response = routingService.findById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<RoutingRuleResponse>> updateRule(@PathVariable Long id,
                                                                         @Valid @RequestBody RoutingRuleRequest request) {
         RoutingRuleResponse response = routingService.update(id, request);
@@ -63,12 +68,14 @@ public class RoutingRuleController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteRule(@PathVariable Long id) {
         routingService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("Routing rule deleted", null));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<RoutingRuleResponse>>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String destination,
@@ -79,6 +86,7 @@ public class RoutingRuleController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@RequestParam(required = false) String keyword,
                            HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -95,6 +103,7 @@ public class RoutingRuleController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@RequestParam(required = false) String keyword,
                             HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -110,6 +119,7 @@ public class RoutingRuleController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
         return ResponseEntity.ok(ApiResponse.success(routingService.getStats()));
     }

@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/sla-rules")
@@ -38,6 +39,7 @@ public class SlaRuleController {
     private final SlaService slaService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SlaRuleResponse>> createRule(@Valid @RequestBody SlaRuleRequest request) {
         SlaRuleResponse response = slaService.createRule(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -45,18 +47,21 @@ public class SlaRuleController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SlaRuleResponse>>> getAllRules(Pageable pageable) {
         Page<SlaRuleResponse> rules = slaService.getAllRules(pageable);
         return ResponseEntity.ok(ApiResponse.success(rules));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SlaRuleResponse>> getRule(@PathVariable Long id) {
         SlaRuleResponse response = slaService.getRule(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<SlaRuleResponse>> updateRule(@PathVariable Long id,
                                                                     @Valid @RequestBody SlaRuleRequest request) {
         SlaRuleResponse response = slaService.updateRule(id, request);
@@ -64,24 +69,28 @@ public class SlaRuleController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteRule(@PathVariable Long id) {
         slaService.deleteRule(id);
         return ResponseEntity.ok(ApiResponse.success("SLA rule deleted successfully", null));
     }
 
     @GetMapping("/active")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<SlaRuleResponse>>> getActiveRules(Pageable pageable) {
         Page<SlaRuleResponse> rules = slaService.getActiveRules(pageable);
         return ResponseEntity.ok(ApiResponse.success(rules));
     }
 
     @PostMapping("/check")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<String>> checkSla() {
         slaService.monitorSla();
         return ResponseEntity.ok(ApiResponse.success("SLA check completed"));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<SlaRuleResponse>>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String priority,
@@ -92,6 +101,7 @@ public class SlaRuleController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@RequestParam(required = false) String keyword,
                           HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -103,6 +113,7 @@ public class SlaRuleController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@RequestParam(required = false) String keyword,
                             HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -113,6 +124,7 @@ public class SlaRuleController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
         return ResponseEntity.ok(ApiResponse.success(slaService.getStats()));
     }

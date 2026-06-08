@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/campaigns/{campaignId}/members")
@@ -39,6 +40,7 @@ public class CampaignMemberController {
     private final CampaignMemberService campaignMemberService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CampaignMemberResponse>> addMember(
             @PathVariable Long campaignId,
             @Valid @RequestBody CampaignMemberRequest request) {
@@ -48,6 +50,7 @@ public class CampaignMemberController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<CampaignMemberResponse>>> getMembers(
             @PathVariable Long campaignId, Pageable pageable) {
         Page<CampaignMemberResponse> members = campaignMemberService.getMembers(campaignId, pageable);
@@ -55,6 +58,7 @@ public class CampaignMemberController {
     }
 
     @GetMapping("/{memberId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CampaignMemberResponse>> getMember(
             @PathVariable Long campaignId,
             @PathVariable Long memberId) {
@@ -63,6 +67,7 @@ public class CampaignMemberController {
     }
 
     @DeleteMapping("/{memberId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> removeMember(
             @PathVariable Long campaignId,
             @PathVariable Long memberId) {
@@ -71,6 +76,7 @@ public class CampaignMemberController {
     }
 
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<CampaignMemberResponse>>> importMembers(
             @PathVariable Long campaignId,
             @RequestParam("file") MultipartFile file) {
@@ -79,6 +85,7 @@ public class CampaignMemberController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<CampaignMemberResponse>>> search(
             @PathVariable Long campaignId,
             @RequestParam(required = false) String keyword,
@@ -89,6 +96,7 @@ public class CampaignMemberController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@PathVariable Long campaignId,
                           @RequestParam(required = false) String keyword,
                           HttpServletResponse response) throws IOException {
@@ -101,6 +109,7 @@ public class CampaignMemberController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@PathVariable Long campaignId,
                             @RequestParam(required = false) String keyword,
                             HttpServletResponse response) throws IOException {
@@ -112,6 +121,7 @@ public class CampaignMemberController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats(@PathVariable Long campaignId) {
         return ResponseEntity.ok(ApiResponse.success(campaignMemberService.getStats(campaignId)));
     }

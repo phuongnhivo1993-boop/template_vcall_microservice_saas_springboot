@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/digital-twins")
@@ -22,6 +23,7 @@ public class DigitalTwinController {
     private final DigitalTwinService digitalTwinService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Create a digital twin")
     public ResponseEntity<DigitalTwin> createDigitalTwin(@RequestBody DigitalTwin twin) {
         DigitalTwin created = digitalTwinService.createDigitalTwin(twin);
@@ -29,36 +31,42 @@ public class DigitalTwinController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get digital twin by ID")
     public ResponseEntity<DigitalTwin> getDigitalTwin(@PathVariable UUID id) {
         return ResponseEntity.ok(digitalTwinService.getDigitalTwin(id));
     }
 
     @GetMapping("/tenant/{tenantId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get all digital twins for a tenant")
     public ResponseEntity<List<DigitalTwin>> getByTenant(@PathVariable UUID tenantId) {
         return ResponseEntity.ok(digitalTwinService.getByTenant(tenantId));
     }
 
     @GetMapping("/type/{type}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get digital twins by type")
     public ResponseEntity<List<DigitalTwin>> getByType(@PathVariable String type) {
         return ResponseEntity.ok(digitalTwinService.getByType(type));
     }
 
     @GetMapping("/scene/{sceneId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Get digital twins by scene ID")
     public ResponseEntity<List<DigitalTwin>> getBySceneId(@PathVariable UUID sceneId) {
         return ResponseEntity.ok(digitalTwinService.getBySceneId(sceneId));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Update digital twin")
     public ResponseEntity<DigitalTwin> updateDigitalTwin(@PathVariable UUID id, @RequestBody DigitalTwin twin) {
         return ResponseEntity.ok(digitalTwinService.updateDigitalTwin(id, twin));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Delete digital twin")
     public ResponseEntity<Void> deleteDigitalTwin(@PathVariable UUID id) {
         digitalTwinService.deleteDigitalTwin(id);
@@ -66,12 +74,14 @@ public class DigitalTwinController {
     }
 
     @PostMapping("/{id}/sync")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Sync twin data")
     public ResponseEntity<DigitalTwin> syncTwinData(@PathVariable UUID id, @RequestBody Map<String, String> payload) {
         return ResponseEntity.ok(digitalTwinService.syncTwinData(id, payload.get("payload")));
     }
 
     @PostMapping("/{id}/iot-endpoints")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @Operation(summary = "Update IoT endpoints")
     public ResponseEntity<Void> updateIoTEndpoints(@PathVariable UUID id, @RequestBody Map<String, String> payload) {
         digitalTwinService.updateIoTEndpoints(id, payload.get("endpoints"));

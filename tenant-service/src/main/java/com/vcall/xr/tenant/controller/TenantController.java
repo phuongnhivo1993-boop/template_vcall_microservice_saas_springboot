@@ -35,18 +35,21 @@ public class TenantController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<TenantResponse>> getTenantById(@PathVariable UUID id) {
         TenantResponse response = tenantService.getTenantById(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/by-slug/{slug}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<TenantResponse>> getTenantBySlug(@PathVariable String slug) {
         TenantResponse response = tenantService.getTenantBySlug(slug);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<TenantResponse>>> getAllTenants(Pageable pageable) {
         Page<TenantResponse> response = tenantService.getAllTenants(pageable);
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -90,12 +93,14 @@ public class TenantController {
     }
 
     @GetMapping("/{tenantId}/feature-flags")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<FeatureFlagResponse>>> getFeatureFlags(@PathVariable UUID tenantId) {
         List<FeatureFlagResponse> response = tenantService.getFeatureFlags(tenantId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/{tenantId}/feature-flags/{featureKey}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<FeatureFlagResponse>> getFeatureFlag(@PathVariable UUID tenantId,
                                                                             @PathVariable String featureKey) {
         FeatureFlagResponse response = tenantService.getFeatureFlag(tenantId, featureKey);
@@ -103,6 +108,7 @@ public class TenantController {
     }
 
     @GetMapping("/{tenantId}/feature-flags/{featureKey}/enabled")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Boolean>> isFeatureEnabled(@PathVariable UUID tenantId,
                                                                   @PathVariable String featureKey) {
         boolean enabled = tenantService.isFeatureEnabled(tenantId, featureKey);

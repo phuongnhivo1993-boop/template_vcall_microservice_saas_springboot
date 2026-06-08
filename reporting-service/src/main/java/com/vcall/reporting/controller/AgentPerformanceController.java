@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/reports/agent-performance")
@@ -23,6 +24,7 @@ public class AgentPerformanceController {
     private final AgentPerformanceService agentPerformanceService;
 
     @GetMapping("/{agentId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<AgentPerformanceResponse>> getAgentPerformance(
             @PathVariable UUID agentId,
             @RequestParam(defaultValue = "DAILY") String period,
@@ -33,6 +35,7 @@ public class AgentPerformanceController {
     }
 
     @GetMapping("/summary")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<List<AgentPerformanceResponse>>> getPerformanceSummary(
             @RequestParam(defaultValue = "DAILY") String period,
             @RequestParam(required = false) LocalDate startDate,

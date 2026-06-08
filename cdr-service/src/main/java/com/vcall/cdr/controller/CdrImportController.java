@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/cdr/import")
@@ -25,17 +26,20 @@ public class CdrImportController {
     private final CdrImportService cdrImportService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CdrImportLog>> importCdr(@Valid @RequestBody CdrImportRequest request) {
         CdrImportLog importLog = cdrImportService.importFromFile(request);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(ApiResponse.success("Import started", importLog));
     }
 
     @GetMapping("/{id}/status")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CdrImportLog>> getImportStatus(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(cdrImportService.getImportStatus(id)));
     }
 
     @GetMapping("/history")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<CdrImportLog>>> getImportHistory(Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.success(cdrImportService.getImportHistory(pageable)));
     }

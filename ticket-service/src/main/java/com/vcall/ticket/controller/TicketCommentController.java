@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/tickets/{ticketId}/comments")
@@ -37,6 +38,7 @@ public class TicketCommentController {
     private final TicketCommentService commentService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<TicketCommentResponse>> addComment(
             @PathVariable UUID ticketId,
             @Valid @RequestBody TicketCommentRequest request,
@@ -50,6 +52,7 @@ public class TicketCommentController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<TicketCommentResponse>>> getComments(
             @PathVariable UUID ticketId, Pageable pageable) {
         Page<TicketCommentResponse> comments = commentService.getComments(ticketId, pageable);
@@ -57,6 +60,7 @@ public class TicketCommentController {
     }
 
     @GetMapping("/internal")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<TicketCommentResponse>>> getInternalComments(
             @PathVariable UUID ticketId, Pageable pageable) {
         Page<TicketCommentResponse> comments = commentService.getInternalComments(ticketId, pageable);
@@ -64,6 +68,7 @@ public class TicketCommentController {
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<TicketCommentResponse>>> search(
             @PathVariable UUID ticketId,
             @RequestParam(required = false) String keyword,
@@ -74,6 +79,7 @@ public class TicketCommentController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@PathVariable UUID ticketId,
                           @RequestParam(required = false) String keyword,
                           HttpServletResponse response) throws IOException {
@@ -86,6 +92,7 @@ public class TicketCommentController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@PathVariable UUID ticketId,
                             @RequestParam(required = false) String keyword,
                             HttpServletResponse response) throws IOException {

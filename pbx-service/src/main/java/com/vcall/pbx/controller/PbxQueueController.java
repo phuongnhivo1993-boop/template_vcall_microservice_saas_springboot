@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/pbx/queues")
@@ -38,6 +39,7 @@ public class PbxQueueController {
     private final PbxQueueService pbxQueueService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<PbxQueueResponse>> createQueue(@Valid @RequestBody PbxQueueRequest request) {
         PbxQueueResponse response = pbxQueueService.createQueue(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -45,18 +47,21 @@ public class PbxQueueController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<PbxQueueResponse>>> getAllQueues(Pageable pageable) {
         Page<PbxQueueResponse> queues = pbxQueueService.getAllQueues(pageable);
         return ResponseEntity.ok(ApiResponse.success(queues));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<PbxQueueResponse>> getQueue(@PathVariable Long id) {
         PbxQueueResponse response = pbxQueueService.getQueue(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<PbxQueueResponse>> updateQueue(@PathVariable Long id,
                                                                        @Valid @RequestBody PbxQueueRequest request) {
         PbxQueueResponse response = pbxQueueService.updateQueue(id, request);
@@ -64,12 +69,14 @@ public class PbxQueueController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteQueue(@PathVariable Long id) {
         pbxQueueService.deleteQueue(id);
         return ResponseEntity.ok(ApiResponse.success("Queue deleted successfully", null));
     }
 
     @PostMapping("/{id}/members")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> addMember(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         Long extensionId = Long.valueOf(body.get("extensionId").toString());
         Integer priority = body.get("priority") != null ? Integer.valueOf(body.get("priority").toString()) : null;
@@ -79,12 +86,14 @@ public class PbxQueueController {
     }
 
     @DeleteMapping("/{id}/members/{memberId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> removeMember(@PathVariable Long id, @PathVariable Long memberId) {
         pbxQueueService.removeMember(memberId);
         return ResponseEntity.ok(ApiResponse.success("Member removed successfully", null));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<PbxQueueResponse>>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String strategy,
@@ -94,6 +103,7 @@ public class PbxQueueController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportCsv(@RequestParam(required = false) String keyword,
                            HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -110,6 +120,7 @@ public class PbxQueueController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportExcel(@RequestParam(required = false) String keyword,
                             HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -125,6 +136,7 @@ public class PbxQueueController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Long>>> getStats() {
         return ResponseEntity.ok(ApiResponse.success(pbxQueueService.getStats()));
     }

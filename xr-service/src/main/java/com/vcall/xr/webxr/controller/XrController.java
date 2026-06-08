@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/xr-sessions")
@@ -32,24 +33,28 @@ public class XrController {
     private final XrSessionService xrSessionService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<XrSession>> startSession(@Valid @RequestBody XrSession request) {
         XrSession session = xrSessionService.startSession(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Session started", session));
     }
 
     @PostMapping("/{id}/end")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<XrSession>> endSession(@PathVariable UUID id) {
         XrSession session = xrSessionService.endSession(id);
         return ResponseEntity.ok(ApiResponse.success("Session ended", session));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<XrSession>> getSession(@PathVariable UUID id) {
         XrSession session = xrSessionService.getSession(id);
         return ResponseEntity.ok(ApiResponse.success(session));
     }
 
     @GetMapping("/user/{userId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<XrSession>>> getSessionsByUser(
             @PathVariable UUID userId, Pageable pageable) {
         Page<XrSession> sessions = xrSessionService.getSessionsByUser(userId, pageable);
@@ -57,6 +62,7 @@ public class XrController {
     }
 
     @GetMapping("/scene/{sceneId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<XrSession>>> getSessionsByScene(
             @PathVariable UUID sceneId, Pageable pageable) {
         Page<XrSession> sessions = xrSessionService.getSessionsByScene(sceneId, pageable);
@@ -64,6 +70,7 @@ public class XrController {
     }
 
     @GetMapping("/device/{deviceType}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<XrSession>>> getSessionsByDeviceType(
             @PathVariable DeviceType deviceType, Pageable pageable) {
         Page<XrSession> sessions = xrSessionService.getSessionsByDeviceType(deviceType, pageable);
@@ -71,6 +78,7 @@ public class XrController {
     }
 
     @GetMapping("/date-range")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Page<XrSession>>> getSessionsByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
@@ -80,6 +88,7 @@ public class XrController {
     }
 
     @PutMapping("/{id}/gaze-data")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<XrSession>> updateGazeData(
             @PathVariable UUID id, @RequestBody Map<String, String> body) {
         XrSession session = xrSessionService.updateGazeData(id, body.get("gazeData"));
@@ -87,6 +96,7 @@ public class XrController {
     }
 
     @PutMapping("/{id}/interactions")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<XrSession>> updateInteractions(
             @PathVariable UUID id, @RequestBody Map<String, String> body) {
         XrSession session = xrSessionService.updateInteractions(id, body.get("interactions"));
@@ -94,6 +104,7 @@ public class XrController {
     }
 
     @PutMapping("/{id}/fps")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<XrSession>> updateFps(
             @PathVariable UUID id, @RequestBody Map<String, Double> body) {
         XrSession session = xrSessionService.updateFps(id, body.get("fpsAvg"));
@@ -101,6 +112,7 @@ public class XrController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats(
             @RequestParam(defaultValue = "default") String tenantId) {
         Map<String, Object> stats = xrSessionService.getSessionStats(tenantId);

@@ -68,6 +68,7 @@ public class AssetController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     @CircuitBreaker(name = "assetService", fallbackMethod = "getAssetFallback")
     public ResponseEntity<ApiResponse<Asset>> getAsset(@PathVariable UUID id) {
         Asset asset = assetService.getAssetById(id);
@@ -75,6 +76,7 @@ public class AssetController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<Asset>>> getAssets(
             @RequestParam(required = false) UUID tenantId,
             @RequestParam(required = false) AssetType type,
@@ -93,6 +95,7 @@ public class AssetController {
     }
 
     @GetMapping("/{id}/streaming-url")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, String>>> getStreamingUrl(
             @PathVariable UUID id,
             @RequestParam(defaultValue = "original") String quality) {
@@ -122,6 +125,7 @@ public class AssetController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getAssetStats(
             @RequestParam UUID tenantId) {
         Map<String, Object> stats = assetService.getAssetStats(tenantId);

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/settings")
@@ -27,12 +28,14 @@ public class SettingsController {
     private final PasswordEncoder passwordEncoder;
 
     @GetMapping("/profile")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UserResponse>> getProfile(Authentication authentication) {
         UserResponse response = userService.getUserByUsername(authentication.getName());
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/profile")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
             Authentication authentication, @Valid @RequestBody ProfileRequest request) {
         UserResponse response = userService.updateProfile(authentication.getName(), request);
@@ -40,6 +43,7 @@ public class SettingsController {
     }
 
     @GetMapping("/security")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getSecurity(Authentication authentication) {
         UserResponse user = userService.getUserByUsername(authentication.getName());
         Map<String, Object> security = Map.of(
@@ -51,6 +55,7 @@ public class SettingsController {
     }
 
     @PutMapping("/security")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> updateSecurity(
             Authentication authentication, @Valid @RequestBody ChangePasswordRequest request) {
         userService.changePassword(authentication.getName(),
@@ -59,6 +64,7 @@ public class SettingsController {
     }
 
     @GetMapping("/organization")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getOrganization() {
         return ResponseEntity.ok(ApiResponse.success(Map.of(
                 "name", "VCall Contact Center",
@@ -68,12 +74,14 @@ public class SettingsController {
     }
 
     @PutMapping("/organization")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> updateOrganization(
             @RequestBody Map<String, Object> body) {
         return ResponseEntity.ok(ApiResponse.success("Organization updated", null));
     }
 
     @GetMapping("/channels")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getChannels() {
         return ResponseEntity.ok(ApiResponse.success(Map.of(
                 "voice", true,
@@ -84,6 +92,7 @@ public class SettingsController {
     }
 
     @PutMapping("/channels")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> updateChannels(
             @RequestBody Map<String, Object> body) {
         return ResponseEntity.ok(ApiResponse.success("Channels updated", null));

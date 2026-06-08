@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/ai")
@@ -27,6 +28,7 @@ public class AiController {
     private final AiTourGuideService tourGuideService;
 
     @PostMapping("/scenes/generate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> generateScene(
             @RequestBody Map<String, String> request) {
         Map<String, Object> result = sceneGeneratorService.generateScene(
@@ -38,6 +40,7 @@ public class AiController {
     }
 
     @PostMapping("/scenes/refine")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> refineScene(
             @RequestBody Map<String, String> request) {
         Map<String, Object> result = sceneGeneratorService.refineScene(
@@ -48,6 +51,7 @@ public class AiController {
     }
 
     @PostMapping("/scenes/variations")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> generateSceneVariations(
             @RequestBody Map<String, Object> request) {
         Map<String, Object> result = sceneGeneratorService.generateSceneVariations(
@@ -58,6 +62,7 @@ public class AiController {
     }
 
     @PostMapping("/narration/generate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> generateNarration(
             @RequestBody Map<String, String> request) {
         Map<String, Object> result = narrationService.generateNarration(
@@ -69,6 +74,7 @@ public class AiController {
     }
 
     @PostMapping("/narration/script")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> generateNarrationScript(
             @RequestBody Map<String, String> request) {
         Map<String, Object> result = narrationService.generateNarrationScript(
@@ -80,6 +86,7 @@ public class AiController {
     }
 
     @PostMapping("/translate")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> translateText(
             @RequestBody Map<String, String> request) {
         Map<String, Object> result = translationService.translateText(
@@ -91,6 +98,7 @@ public class AiController {
     }
 
     @PostMapping("/translate/narration")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> translateNarration(
             @RequestBody Map<String, String> request) {
         Map<String, Object> result = translationService.translateNarration(
@@ -101,6 +109,7 @@ public class AiController {
     }
 
     @PostMapping("/translate/detect")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> detectLanguage(
             @RequestBody Map<String, String> request) {
         Map<String, Object> result = translationService.detectLanguage(request.get("text"));
@@ -108,6 +117,7 @@ public class AiController {
     }
 
     @PostMapping("/tour-guide/create")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> createTourGuide(
             @RequestBody Map<String, String> request) {
         Map<String, Object> result = tourGuideService.createTourGuide(
@@ -119,6 +129,7 @@ public class AiController {
     }
 
     @PostMapping("/tour-guide/respond")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> guideRespond(
             @RequestBody Map<String, String> request) {
         Map<String, Object> result = tourGuideService.guideResponse(
@@ -130,6 +141,7 @@ public class AiController {
     }
 
     @PostMapping("/tour-guide/route")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> generateTourRoute(
             @RequestBody Map<String, String> request) {
         Map<String, Object> result = tourGuideService.generateTourRoute(

@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/reports/analytics")
@@ -23,6 +24,7 @@ public class AnalyticsController {
     private final ReportingDataService reportingDataService;
 
     @GetMapping("/call-volume")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getCallVolume(
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate,
@@ -36,6 +38,7 @@ public class AnalyticsController {
     }
 
     @GetMapping("/sla")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getSlaReport(
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate) {

@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/crm/notes")
@@ -45,24 +46,28 @@ public class CustomerNoteController {
     private final CustomerNoteService customerNoteService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CustomerNoteResponse>> createNote(@Valid @RequestBody CustomerNoteRequest request) {
         CustomerNoteResponse response = customerNoteService.createNote(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Note created successfully", response));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CustomerNoteResponse>> getNote(@PathVariable Long id) {
         CustomerNoteResponse response = customerNoteService.getNote(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<CustomerNoteResponse>>> getAllNotes(Pageable pageable) {
         Page<CustomerNoteResponse> responses = customerNoteService.getAllNotes(pageable);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 
     @GetMapping("/customer/{customerId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<CustomerNoteResponse>>> getNotesByCustomer(
             @PathVariable UUID customerId, Pageable pageable) {
         Page<CustomerNoteResponse> responses = customerNoteService.getNotesByCustomer(customerId, pageable);
@@ -70,12 +75,14 @@ public class CustomerNoteController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<CustomerNoteResponse>> updateNote(@PathVariable Long id, @Valid @RequestBody CustomerNoteRequest request) {
         CustomerNoteResponse response = customerNoteService.updateNote(id, request);
         return ResponseEntity.ok(ApiResponse.success("Note updated successfully", response));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<CustomerNoteResponse>>> searchNotes(
             @RequestParam(required = false) String keyword,
             Pageable pageable) {
@@ -92,6 +99,7 @@ public class CustomerNoteController {
     }
 
     @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportNotesCsv(@RequestParam(required = false) String keyword,
                                HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -111,6 +119,7 @@ public class CustomerNoteController {
     }
 
     @GetMapping("/export/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public void exportNotesExcel(@RequestParam(required = false) String keyword,
                                  HttpServletResponse response) throws IOException {
         Pageable pageable = PageRequest.of(0, 10000, Sort.by("createdAt").descending());
@@ -129,12 +138,14 @@ public class CustomerNoteController {
     }
 
     @GetMapping("/stats")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats() {
         Map<String, Object> stats = customerNoteService.getNoteStats();
         return ResponseEntity.ok(ApiResponse.success(stats));
     }
 
     @PostMapping("/import/csv")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<CustomerNoteResponse>>> importNotesCsv(
             @RequestParam("file") MultipartFile file) throws Exception {
         List<String[]> rows = CsvUtil.parseCsv(file.getInputStream());
@@ -161,6 +172,7 @@ public class CustomerNoteController {
     }
 
     @PostMapping("/import/excel")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<List<CustomerNoteResponse>>> importNotesExcel(
             @RequestParam("file") MultipartFile file) throws Exception {
         List<String[]> rows = ExcelImportUtil.parseXlsx(file.getInputStream());
@@ -187,6 +199,7 @@ public class CustomerNoteController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deleteNote(@PathVariable Long id) {
         customerNoteService.deleteNote(id);
         return ResponseEntity.ok(ApiResponse.success("Note deleted successfully", null));

@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -52,6 +53,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<UserResponse>> me(Authentication authentication) {
         UserResponse response = authService.getCurrentUser(authentication.getName());
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -72,6 +74,7 @@ public class AuthController {
     }
 
     @PostMapping("/send-verification")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> sendVerificationEmail(Authentication authentication) {
         String username = authentication.getName();
         com.vcall.iam.dto.UserResponse userResponse = userService.getUserByUsername(username);

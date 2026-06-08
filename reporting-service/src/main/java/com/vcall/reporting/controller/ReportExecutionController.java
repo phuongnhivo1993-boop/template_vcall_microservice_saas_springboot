@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/reports")
@@ -25,12 +26,14 @@ public class ReportExecutionController {
     private final PdfExportService pdfExportService;
 
     @GetMapping("/executions/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<ReportExecutionResponse>> getExecution(@PathVariable Long id) {
         ReportExecutionResponse response = reportExecutionService.getExecution(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @GetMapping("/definitions/{id}/executions")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<ReportExecutionResponse>>> getExecutionHistory(
             @PathVariable Long id,
             Pageable pageable) {
@@ -39,6 +42,7 @@ public class ReportExecutionController {
     }
 
     @GetMapping("/{id}/download")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<Resource> downloadReport(@PathVariable Long id) {
         ReportExecutionResponse response = reportExecutionService.getExecution(id);
         Resource pdfResource = pdfExportService.exportToPdf(

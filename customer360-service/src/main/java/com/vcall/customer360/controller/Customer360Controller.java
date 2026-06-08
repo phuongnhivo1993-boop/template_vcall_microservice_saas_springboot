@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/customer360")
@@ -20,11 +21,13 @@ public class Customer360Controller {
     private final Customer360Service customer360Service;
 
     @GetMapping("/{customerId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Customer360Response>> getCustomer360(@PathVariable UUID customerId) {
         return ResponseEntity.ok(ApiResponse.success(customer360Service.getCustomer360(customerId)));
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<PagedResponse<Customer360Response>>> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String segment,
@@ -45,6 +48,7 @@ public class Customer360Controller {
     }
 
     @PutMapping("/{customerId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Customer360Response>> updateProfile(
             @PathVariable UUID customerId,
             @RequestBody Map<String, Object> updates) {

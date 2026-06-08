@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/retention-policies")
@@ -29,6 +30,7 @@ public class RetentionPolicyController {
     private final RetentionPolicyService retentionPolicyService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<RetentionPolicyResponse>> createPolicy(
             @Valid @RequestBody RetentionPolicyRequest request) {
         RetentionPolicyResponse response = retentionPolicyService.createPolicy(request);
@@ -37,18 +39,21 @@ public class RetentionPolicyController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Page<RetentionPolicyResponse>>> getAllPolicies(Pageable pageable) {
         Page<RetentionPolicyResponse> policies = retentionPolicyService.getAllPolicies(pageable);
         return ResponseEntity.ok(ApiResponse.success(policies));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<RetentionPolicyResponse>> getPolicy(@PathVariable Long id) {
         RetentionPolicyResponse response = retentionPolicyService.getPolicy(id);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<RetentionPolicyResponse>> updatePolicy(
             @PathVariable Long id,
             @Valid @RequestBody RetentionPolicyRequest request) {
@@ -57,12 +62,14 @@ public class RetentionPolicyController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Void>> deletePolicy(@PathVariable Long id) {
         retentionPolicyService.deletePolicy(id);
         return ResponseEntity.ok(ApiResponse.success("Retention policy deleted successfully", null));
     }
 
     @PostMapping("/apply")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('SUPERVISOR')")
     public ResponseEntity<ApiResponse<Map<String, Integer>>> applyRetention() {
         int affected = retentionPolicyService.applyRetention();
         return ResponseEntity.ok(ApiResponse.success(
