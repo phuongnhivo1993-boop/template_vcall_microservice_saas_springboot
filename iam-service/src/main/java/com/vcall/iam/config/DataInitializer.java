@@ -10,6 +10,7 @@ import com.vcall.iam.repository.UserRepository;
 import com.vcall.iam.repository.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,15 @@ public class DataInitializer implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${app.default-admin-password:Admin@12345}")
+    private String defaultAdminPassword;
+
+    @Value("${app.default-supervisor-password:Sup@12345}")
+    private String defaultSupervisorPassword;
+
+    @Value("${app.default-agent-password:Agent@12345}")
+    private String defaultAgentPassword;
 
     @Override
     @Transactional
@@ -49,9 +59,9 @@ public class DataInitializer implements CommandLineRunner {
 
     private void seedDefaultAccounts() {
         List<DefaultAccount> defaults = List.of(
-                new DefaultAccount("admin", "admin@123", "Super Administrator", Set.of(RoleName.SUPER_ADMIN)),
-                new DefaultAccount("supervisor", "supervisor@123", "Supervisor", Set.of(RoleName.SUPERVISOR)),
-                new DefaultAccount("agent", "agent@123", "Agent", Set.of(RoleName.AGENT))
+                new DefaultAccount("admin", defaultAdminPassword, "Super Administrator", Set.of(RoleName.SUPER_ADMIN)),
+                new DefaultAccount("supervisor", defaultSupervisorPassword, "Supervisor", Set.of(RoleName.SUPERVISOR)),
+                new DefaultAccount("agent", defaultAgentPassword, "Agent", Set.of(RoleName.AGENT))
         );
 
         for (DefaultAccount acc : defaults) {

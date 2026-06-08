@@ -3,6 +3,7 @@ package com.vcall.iam.service;
 import com.vcall.common.exception.DuplicateResourceException;
 import com.vcall.common.exception.ResourceNotFoundException;
 import com.vcall.common.security.PasswordPolicy;
+import com.vcall.iam.dto.ProfileRequest;
 import com.vcall.iam.dto.UserRequest;
 import com.vcall.iam.dto.UserResponse;
 import com.vcall.iam.entity.Role;
@@ -184,6 +185,40 @@ public class UserService {
     public User findByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+    }
+
+    @Transactional
+    public UserResponse updateProfile(String username, ProfileRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+
+        if (request.getFullName() != null) user.setFullName(request.getFullName());
+        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(request.getEmail())) {
+                throw new DuplicateResourceException("Email already exists: " + request.getEmail());
+            }
+            user.setEmail(request.getEmail());
+        }
+        if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getAvatar() != null) user.setAvatar(request.getAvatar());
+
+        user = userRepository.save(user);
+        return toUserResponse(user);
+    }
+
+    @Transactional
+    public void changePassword(String username, String currentPassword, String newPassword) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+
+        passwordPolicy.validate(newPassword);
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordChangedAt(LocalDateTime.now());
+        userRepository.save(user);
     }
 
     public UserResponse toUserResponse(User user) {

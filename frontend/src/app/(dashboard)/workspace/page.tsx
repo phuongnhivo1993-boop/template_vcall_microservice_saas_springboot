@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Row, Col, Card, Tabs, Input, Badge, Avatar, Typography, Space, Button, List, Tag, Spin, Alert, Select, Statistic, Empty, Tooltip } from 'antd';
-import { PhoneOutlined, MessageOutlined, CustomerServiceOutlined, SearchOutlined, UserOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, MoreOutlined } from '@ant-design/icons';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Row, Col, Card, Tabs, Input, Badge, Avatar, Typography, Space, Button, List, Tag, Spin, Alert, Select, Statistic, Empty, Tooltip, Modal, message } from 'antd';
+import { PhoneOutlined, MessageOutlined, CustomerServiceOutlined, SearchOutlined, UserOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, MoreOutlined, StopOutlined, PauseCircleOutlined, ForwardOutlined, SoundOutlined } from '@ant-design/icons';
 import CommonTable from '@/components/common/CommonTable';
 import PageHeader from '@/components/common/PageHeader';
 import ScreenPop from '@/components/common/ScreenPop';
 import { agentsApi, customersApi, callsApi, chatApi, ticketsApi, notificationsApi } from '@/lib/api';
+import { io, Socket } from 'socket.io-client';
 import dayjs from 'dayjs';
 
 const { Title, Text } = Typography;
@@ -27,6 +28,8 @@ export default function WorkspacePage() {
   const [customerSearching, setCustomerSearching] = useState(false);
   const [screenPopVisible, setScreenPopVisible] = useState(false);
   const [incomingCallData, setIncomingCallData] = useState<any>(null);
+
+  const socketRef = useRef<Socket | null>(null);
 
   const loadWorkspaceData = useCallback(async () => {
     setLoading(true);
@@ -55,30 +58,36 @@ export default function WorkspacePage() {
 
   useEffect(() => {
     loadWorkspaceData();
+    socketRef.current = io(process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8080', {
+      path: '/ws/agent',
+      transports: ['websocket'],
+    });
+    socketRef.current.on('call:new', (data: any) => {
+      setActiveCalls(prev => [...prev, data]);
+      if (data.status === 'RINGING') {
+        setIncomingCallData({
+          callerNumber: data.callerNumber,
+          callerName: data.callerName,
+          customer: {
+            id: '', fullName: data.callerName, phone: data.callerNumber,
+            email: '', company: '', totalCalls: 0, totalTickets: 0, satisfactionScore: 0, tags: [],
+          },
+          recentActivity: [],
+        });
+        setScreenPopVisible(true);
+      }
+    });
+    socketRef.current.on('call:update', (data: any) => {
+      setActiveCalls(prev => prev.map(c => c.id === data.id ? { ...c, ...data } : c));
+    });
+    socketRef.current.on('call:end', (data: any) => {
+      setActiveCalls(prev => prev.filter(c => c.id !== data.id));
+    });
+    socketRef.current.on('chat:new', (data: any) => {
+      setActiveChats(prev => [data, ...prev]);
+    });
+    return () => { socketRef.current?.disconnect(); };
   }, [loadWorkspaceData]);
-
-  useEffect(() => {
-    const ringing = activeCalls.find((c: any) => c.status === 'RINGING');
-    if (ringing) {
-      setIncomingCallData({
-        callerNumber: ringing.callerNumber,
-        callerName: ringing.callerName,
-        customer: {
-          id: '',
-          fullName: ringing.callerName,
-          phone: ringing.callerNumber,
-          email: '',
-          company: '',
-          totalCalls: 0,
-          totalTickets: 0,
-          satisfactionScore: 0,
-          tags: [],
-        },
-        recentActivity: [],
-      });
-      setScreenPopVisible(true);
-    }
-  }, [activeCalls]);
 
   const handleCustomerSearch = async (value: string) => {
     setCustomerSearch(value);
@@ -94,7 +103,10 @@ export default function WorkspacePage() {
     }
   };
 
-  const handleAnswerCall = useCallback(() => {
+  const [transferModalVisible, setTransferModalVisible] = useState(false);
+  const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
+
+  const handleAnswerCall = useCallback(async () => {
     setScreenPopVisible(false);
     setIncomingCallData(null);
   }, []);
@@ -102,6 +114,28 @@ export default function WorkspacePage() {
   const handleRejectCall = useCallback(() => {
     setScreenPopVisible(false);
     setIncomingCallData(null);
+  }, []);
+
+  const handleHoldCall = useCallback(async (callId: string) => {
+    try {
+      await callsApi.hold(callId);
+      message.success('Call on hold');
+    } catch { message.error('Failed to hold call'); }
+  }, []);
+
+  const handleMuteCall = useCallback(async (callId: string) => {
+    try {
+      await callsApi.mute(callId);
+      message.success('Call muted');
+    } catch { message.error('Failed to mute call'); }
+  }, []);
+
+  const handleTransferCall = useCallback(async (callId: string, target: string) => {
+    try {
+      await callsApi.transfer(callId, { target });
+      message.success('Call transferred');
+      setTransferModalVisible(false);
+    } catch { message.error('Failed to transfer call'); }
   }, []);
 
   const statusColors: Record<string, string> = {
@@ -163,9 +197,16 @@ export default function WorkspacePage() {
                         renderItem={(call: any) => (
                           <List.Item
                             actions={[
-                              <Button key="answer" type="primary" size="small" icon={<PhoneOutlined />}>Answer</Button>,
-                              <Button key="end" danger size="small" icon={<CloseCircleOutlined />}>End</Button>,
-                              <Tooltip key="more" title="More actions"><Button size="small" icon={<MoreOutlined />} /></Tooltip>,
+                              call.status === 'RINGING' ? (
+                                <Button key="answer" type="primary" size="small" icon={<PhoneOutlined />} onClick={() => handleAnswerCall()}>Answer</Button>
+                              ) : (
+                                <>
+                                  <Tooltip title="Hold"><Button key="hold" size="small" icon={<PauseCircleOutlined />} onClick={() => handleHoldCall(call.id)} /></Tooltip>
+                                  <Tooltip title="Mute"><Button key="mute" size="small" icon={<SoundOutlined />} onClick={() => handleMuteCall(call.id)} /></Tooltip>
+                                  <Tooltip title="Transfer"><Button key="transfer" size="small" icon={<ForwardOutlined />} onClick={() => { setSelectedCallId(call.id); setTransferModalVisible(true); }} /></Tooltip>
+                                  <Tooltip title="End"><Button key="end" danger size="small" icon={<CloseCircleOutlined />} onClick={() => callsApi.end(call.id).catch(() => {})} /></Tooltip>
+                                </>
+                              ),
                             ]}
                           >
                             <List.Item.Meta
@@ -305,6 +346,22 @@ export default function WorkspacePage() {
         onAnswer={handleAnswerCall}
         onReject={handleRejectCall}
       />
+      <Modal
+        title="Transfer Call"
+        open={transferModalVisible}
+        onCancel={() => setTransferModalVisible(false)}
+        footer={null}
+      >
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Input.Search
+            placeholder="Search agent or extension..."
+            onSearch={(value) => {
+              if (selectedCallId && value) handleTransferCall(selectedCallId, value);
+            }}
+            enterButton="Transfer"
+          />
+        </Space>
+      </Modal>
     </div>
   );
 }

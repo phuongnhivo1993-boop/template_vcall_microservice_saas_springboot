@@ -33,9 +33,11 @@ public class AuditEventConsumer {
             KafkaEvent event = objectMapper.readValue(message, KafkaEvent.class);
             log.info("Consumed Kafka event: type={}, topic={}, id={}", event.getType(), event.getTopic(), event.getId());
 
+            String actorIdStr = event.getKey();
+            UUID actorId = actorIdStr != null ? parseUuidSafe(actorIdStr) : UUID.randomUUID();
             AuditLog auditLog = AuditLog.builder()
                     .timestamp(event.getTimestamp() != null ? event.getTimestamp() : LocalDateTime.now())
-                    .actorId(UUID.randomUUID())
+                    .actorId(actorId)
                     .actorType(determineActorType(event))
                     .action(determineAction(event))
                     .resource(event.getTopic())
@@ -119,6 +121,14 @@ public class AuditEventConsumer {
         String type = event.getType() != null ? event.getType().toUpperCase() : "";
         return type.contains("LOGIN") || type.contains("LOGOUT") || type.contains("PASSWORD")
                 || type.contains("TOKEN") || type.contains("MFA") || type.contains("ACCESS");
+    }
+
+    private UUID parseUuidSafe(String str) {
+        try {
+            return UUID.fromString(str);
+        } catch (IllegalArgumentException e) {
+            return UUID.randomUUID();
+        }
     }
 
     private SecurityLog.EventType mapToSecurityEventType(KafkaEvent event) {

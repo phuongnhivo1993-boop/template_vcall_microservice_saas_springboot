@@ -1,9 +1,13 @@
 package com.vcall.iam.repository;
 
 import com.vcall.iam.entity.User;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -30,4 +34,12 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
 
     @EntityGraph(attributePaths = {"userRoles", "userRoles.role", "userRoles.role.rolePermissions"})
     Optional<User> findByEmailVerificationToken(String token);
+
+    @NonNull
+    @EntityGraph(attributePaths = {"userRoles", "userRoles.role"})
+    Page<User> findAll(Pageable pageable);
+
+    @NonNull
+    @EntityGraph(attributePaths = {"userRoles", "userRoles.role"})
+    Page<User> findAll(Specification<User> spec, Pageable pageable);
 }

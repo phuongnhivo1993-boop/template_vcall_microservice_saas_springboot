@@ -40,10 +40,19 @@ public class EncryptionUtil {
             this.key = new SecretKeySpec(fallback, "AES");
             log.warn("Using auto-generated encryption key. Set ENCRYPTION_SECRET environment variable in production.");
         } else {
-            byte[] keyBytes = new byte[AES_KEY_SIZE];
-            byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
-            System.arraycopy(secretBytes, 0, keyBytes, 0, Math.min(secretBytes.length, AES_KEY_SIZE));
-            this.key = new SecretKeySpec(keyBytes, "AES");
+            try {
+                javax.crypto.SecretKeyFactory factory = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+                java.security.spec.KeySpec spec = new javax.crypto.spec.PBEKeySpec(
+                        secret.toCharArray(),
+                        "VCallSalt".getBytes(StandardCharsets.UTF_8),
+                        65536,
+                        AES_KEY_SIZE * 8);
+                javax.crypto.SecretKey tmp = factory.generateSecret(spec);
+                this.key = new SecretKeySpec(tmp.getEncoded(), "AES");
+            } catch (Exception e) {
+                log.error("Failed to derive encryption key: {}", e.getMessage());
+                throw new RuntimeException("Failed to initialize encryption", e);
+            }
         }
     }
 

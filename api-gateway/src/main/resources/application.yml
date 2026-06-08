@@ -15,6 +15,26 @@ spring:
           uri: lb://customer360-service
           predicates:
             - Path=/api/v1/customer360/**
+        - id: customer-tags
+          uri: lb://customer-service
+          predicates:
+            - Path=/api/v1/customer-tags/**
+        - id: agent-groups
+          uri: lb://agent-service
+          predicates:
+            - Path=/api/v1/agent-groups/**
+        - id: notification-preferences
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notification-preferences/**
+        - id: notification-templates
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notification-templates/**
+        - id: push-devices
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/push-devices/**
           filters:
             - name: Retry
               args:
@@ -129,6 +149,10 @@ spring:
           uri: lb://agent-service
           predicates:
             - Path=/api/v1/agent-sessions/**
+        - id: permissions-service
+          uri: lb://iam-service
+          predicates:
+            - Path=/api/v1/permissions/**
         - id: roles-service
           uri: lb://iam-service
           predicates:

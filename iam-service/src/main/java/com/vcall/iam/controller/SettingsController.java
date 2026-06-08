@@ -1,13 +1,15 @@
 package com.vcall.iam.controller;
 
 import com.vcall.common.dto.ApiResponse;
-import com.vcall.iam.dto.UserRequest;
+import com.vcall.iam.dto.ChangePasswordRequest;
+import com.vcall.iam.dto.ProfileRequest;
 import com.vcall.iam.dto.UserResponse;
 import com.vcall.iam.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,6 +24,7 @@ import java.util.Map;
 public class SettingsController {
 
     private final UserService userService;
+    private final PasswordEncoder passwordEncoder;
 
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<UserResponse>> getProfile(Authentication authentication) {
@@ -31,9 +34,8 @@ public class SettingsController {
 
     @PutMapping("/profile")
     public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
-            Authentication authentication, @Valid @RequestBody UserRequest request) {
-        UserResponse user = userService.getUserByUsername(authentication.getName());
-        UserResponse response = userService.updateUser(user.getId(), request);
+            Authentication authentication, @Valid @RequestBody ProfileRequest request) {
+        UserResponse response = userService.updateProfile(authentication.getName(), request);
         return ResponseEntity.ok(ApiResponse.success("Profile updated successfully", response));
     }
 
@@ -50,13 +52,9 @@ public class SettingsController {
 
     @PutMapping("/security")
     public ResponseEntity<ApiResponse<Void>> updateSecurity(
-            Authentication authentication, @RequestBody Map<String, String> body) {
-        UserResponse user = userService.getUserByUsername(authentication.getName());
-        if (body.containsKey("password") && body.containsKey("currentPassword")) {
-            UserRequest request = new UserRequest();
-            request.setPassword(body.get("password"));
-            userService.updateUser(user.getId(), request);
-        }
+            Authentication authentication, @Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(authentication.getName(),
+                request.getCurrentPassword(), request.getNewPassword());
         return ResponseEntity.ok(ApiResponse.success("Security settings updated", null));
     }
 

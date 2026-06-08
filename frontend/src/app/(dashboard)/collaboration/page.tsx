@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Table, Button, Tag, Space, Modal, Form, Input, Select, InputNumber, message, Avatar, Tooltip, Spin, Alert, Empty } from 'antd';
-import { PlusOutlined, VideoCameraOutlined, UserOutlined, StopOutlined } from '@ant-design/icons';
+import { PlusOutlined, VideoCameraOutlined, UserOutlined, StopOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { xrCollaborationApi, xrScenesApi } from '@/lib/api/xr-api';
 
@@ -30,11 +30,14 @@ const statusColors: Record<string, string> = {
 
 export default function CollaborationPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<CollaborationRoom | null>(null);
   const [form] = Form.useForm();
   const [rooms, setRooms] = useState<CollaborationRoom[]>([]);
   const [scenes, setScenes] = useState<SceneOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string | undefined>();
 
   const fetchRooms = useCallback(async () => {
     setLoading(true);
@@ -51,6 +54,12 @@ export default function CollaborationPage() {
     }
   }, []);
 
+  const filteredRooms = rooms.filter(r => {
+    if (searchText && !r.name.toLowerCase().includes(searchText.toLowerCase())) return false;
+    if (statusFilter && r.status !== statusFilter) return false;
+    return true;
+  });
+
   const fetchScenes = useCallback(async () => {
     try {
       const res = await xrScenesApi.list({ page: 0, size: 100 });
@@ -66,6 +75,30 @@ export default function CollaborationPage() {
     fetchRooms();
     fetchScenes();
   }, [fetchRooms, fetchScenes]);
+
+  const handleEditRoom = (record: CollaborationRoom) => {
+    setEditingRoom(record);
+    form.setFieldsValue({ name: record.name, maxParticipants: record.maxParticipants });
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteRoom = (record: CollaborationRoom) => {
+    Modal.confirm({
+      title: 'Delete Room',
+      content: `Delete "${record.name}"?`,
+      okText: 'Delete',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          await xrCollaborationApi.deleteRoom(record.id);
+          message.success('Room deleted');
+          fetchRooms();
+        } catch (err: any) {
+          message.error(err?.response?.data?.message || 'Failed to delete room');
+        }
+      },
+    });
+  };
 
   const handleEndRoom = (record: CollaborationRoom) => {
     Modal.confirm({
@@ -157,9 +190,15 @@ export default function CollaborationPage() {
               <Button type="primary" size="small" icon={<VideoCameraOutlined />} onClick={() => handleJoinRoom(record)} />
             </Tooltip>
           )}
+          <Tooltip title="Edit Room">
+            <Button size="small" icon={<EditOutlined />} onClick={() => handleEditRoom(record)} />
+          </Tooltip>
+          <Tooltip title="Delete Room">
+            <Button danger size="small" icon={<DeleteOutlined />} onClick={() => handleDeleteRoom(record)} />
+          </Tooltip>
           {record.status !== 'ENDED' && (
             <Tooltip title="End Room">
-              <Button danger size="small" icon={<StopOutlined />} onClick={() => handleEndRoom(record)} />
+              <Button size="small" icon={<StopOutlined />} onClick={() => handleEndRoom(record)} />
             </Tooltip>
           )}
         </Space>
@@ -180,20 +219,30 @@ export default function CollaborationPage() {
       <Card
         title="Multi-User VR Collaboration"
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
-            Create Room
-          </Button>
+          <Space>
+            <Input.Search placeholder="Search rooms..." allowClear onSearch={setSearchText} style={{ width: 200 }} />
+            <Select placeholder="Filter status" allowClear style={{ width: 130 }} onChange={setStatusFilter}
+              options={[
+                { value: 'WAITING', label: 'Waiting' },
+                { value: 'ACTIVE', label: 'Active' },
+                { value: 'ENDED', label: 'Ended' },
+              ]}
+            />
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingRoom(null); form.resetFields(); setIsModalOpen(true); }}>
+              Create Room
+            </Button>
+          </Space>
         }
       >
-        {rooms.length === 0 ? (
+        {filteredRooms.length === 0 ? (
           <Empty description="No collaboration rooms found" />
         ) : (
-          <Table columns={columns} dataSource={rooms} rowKey="id" />
+          <Table columns={columns} dataSource={filteredRooms} rowKey="id" pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `${total} rooms` }} />
         )}
       </Card>
 
       <Modal
-        title="Create Collaboration Room"
+        title={editingRoom ? 'Edit Collaboration Room' : 'Create Collaboration Room'}
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         onOk={() => form.submit()}

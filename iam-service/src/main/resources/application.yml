@@ -1,9 +1,12 @@
 server:
   port: 8101
+  shutdown: graceful
 
 spring:
   application:
     name: iam-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
   config:
     import: optional:configserver:http://localhost:8888
   cloud:
@@ -14,6 +17,12 @@ spring:
     username: vcall
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 25
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
   jpa:
     hibernate:
       ddl-auto: validate
@@ -57,4 +66,4 @@ security:
 
 logging:
   level:
-    com.vcall.iam: DEBUG
+    com.vcall: INFO

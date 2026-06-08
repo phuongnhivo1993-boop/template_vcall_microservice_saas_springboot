@@ -190,6 +190,9 @@ export const xrCollaborationApi = {
     apiClient.post('/xr/collaboration/rooms', data),
   joinRoom: (id: string) => apiClient.post(`/xr/collaboration/rooms/${id}/join`),
   leaveRoom: (id: string) => apiClient.post(`/xr/collaboration/rooms/${id}/leave`),
+  updateRoom: (id: string, data: Partial<XRCollaborationRoom>) =>
+    apiClient.put(`/xr/collaboration/rooms/${id}`, data),
+  deleteRoom: (id: string) => apiClient.delete(`/xr/collaboration/rooms/${id}`),
   endRoom: (id: string) => apiClient.post(`/xr/collaboration/rooms/${id}/end`),
   kickParticipant: (roomId: string, userId: string) =>
     apiClient.delete(`/xr/collaboration/rooms/${roomId}/participants/${userId}`),
